@@ -52,7 +52,7 @@ OpenCPN...
 
 The [Glacialis expedition](https://atlasexpeditions.org/glacialis/) in 2021 was an independent expedition supported by [Atlas Expeditions](https://atlasexpeditions.org) with the aim to collect marine wildlife data, with a focus on large whales, over a 10'000 miles voyage from the Azores archipelago to Disko Bay on the west coast of Greenland.
 
-This experimental initiative proved that a well-prepared small craft can contribute to scientific discovery. In particular, we made unprecedented observations of humpback whales which raised new questions about their migration patterns. 
+This experimental initiative proved that a well-prepared small craft can contribute to scientific discovery. In particular, we made unprecedented observations of humpback whales which raised new questions about their migration patterns.
 
 These results were due to the joint effort of a team of trained citizen scientists ([Glacialis](https://atlasexpeditions.org/glacialis/)), supported by a non-profit organisation ([Atlas Expeditions](https://atlasexpeditions.org)) working in direct collaboration with academic and institutional researchers (NAHWC).
 
@@ -60,7 +60,7 @@ At [Atlas Expeditions](https://atlasexpeditions.org), this expedition and the fo
 
 ## Installing Open Observer
 
-Open Observer is still in development and is therefore not yet available directly from the OpenCPN plugin manager. 
+Open Observer is still in development and is therefore not yet available directly from the OpenCPN plugin manager.
 
 If you would like to test the latest beta version, follow the steps below.
 
@@ -69,13 +69,20 @@ If you would like to test the latest beta version, follow the steps below.
     - For Windows, download the .gz file containing “msvc” in the name e.g. https://dl.cloudsmith.io/public/aracais/openobserver-beta/raw/names/openobserver_pi-0.0.1.0-msvc-x86-wx32-10.0.20348-MSVC-tarball/versions/0.0.1.0+236.0369d1c/openobserver_pi-0.0.1.0-msvc-x86-wx32-10.0.20348-MSVC.tar.gz
 2. Open OpenCPN, open the Preferences panel, go to the Plugins tab and click the button “Import plugin…”. Select the downloaded package and click “Open” to install it.
 3. Ensure that the tickbox “Enabled” is ticked.
-4. Click on the Open Observer button in the toolbar to open the plugin windows. 
+4. Click on the Open Observer button in the toolbar to open the plugin windows.
 
 # Development
 
-## Initial setup
+## Install dependencies
+
+Follow the instructions for OpenCPN development to install dependencies for your platform:
+https://opencpn-manuals.github.io/main/opencpn-dev/index.html
+
+
+## Initial repository setup
+
 ```
-git submodule init  
+git submodule init
 git submodule update
 ```
 
