@@ -57,7 +57,7 @@ public:
 
         void SetPositionFix(time_t fixTime, double lat, double lon);
 
-protected:
+      protected:
         void SetupObservationsForProject();
 
         void OnButtonClickProjectEditUse(wxCommandEvent& event);

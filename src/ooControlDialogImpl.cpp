@@ -65,7 +65,11 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
     m_MiniPanel->SetToggleWindowButtonLabel("Minimize");
     this->Connect(wxEVT_SHOW, wxShowEventHandler(ooMiniPanel::OnShow), NULL, m_MiniPanel);
     
-    std::function<void(wxCommandEvent&)> refreshHandler = [&](wxCommandEvent& event) { m_ObservationsTable->Refresh(); event.Skip(); };
+    std::function<void(wxCommandEvent&)> refreshHandler = [&](wxCommandEvent& event)
+        {
+            m_ObservationsTable->Refresh();
+            event.Skip();
+        };
     m_MiniPanel->Bind(OBSERVATION_STARTED, refreshHandler);
     m_MiniPanel->Bind(OBSERVATION_STOPPED, refreshHandler);
 
@@ -343,6 +347,19 @@ void ooControlDialogImpl::SetupObservationsForProject()
 
     // update column sizes of table to match
     m_ObservationsTable->SetColSizes(m_Observations->GetColSizes());
+
+    // Setup listings editors
+    const int C = m_gridProject->GetNumberCols();
+
+    for (int c = 0; c < C; ++c) {
+        const wxString field_type = m_Observations->GetColFieldTypes()[c];
+        wxArrayString items;
+        if (ooObservations::GetListing(field_type, items)) {
+            wxGridCellAttr* attr = new wxGridCellAttr();
+            attr->SetEditor(new wxGridCellChoiceEditor(items, true));
+            m_ObservationsTable->SetColAttr(c, attr);
+        }
+    }
 }
 
 void ooControlDialogImpl::SetPositionFix(time_t fixTime, double lat, double lon)
