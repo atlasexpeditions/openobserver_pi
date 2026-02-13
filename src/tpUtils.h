@@ -26,6 +26,9 @@
 #ifndef ODUTILS_H
 #define ODUTILS_H
 
+#include <wx/xml/xml.h>
+
+ int            GetXmlAttributeInt(wxXmlNode * node, const wxString& attribute, int defaultValue = -1);
  const wxChar   *ParseGPXDateTime( wxDateTime &dt, const wxChar *datetime );
  wxString       GetUUID(void);
  int            GetRandomNumber(int range_min, int range_max);

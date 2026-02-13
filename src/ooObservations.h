@@ -29,7 +29,48 @@
 #include <wx/file.h>
 #include <wx/grid.h>
 #include <wx/stopwatch.h>
+#include <wx/xml/xml.h>
 #include <unordered_map>
+
+#define XML_FILE_VERSION_PROJECT      1
+#define XML_FILE_VERSION_OBSERVATIONS 2
+#define XML_FILE_VERSION_LISTING      1
+
+class ooProject {
+public:
+  ooProject() {}
+  ooProject(const wxString& name, const wxGridSizesInfo& colSizes,
+            const wxArrayString& colFieldTypes, const wxArrayString& colLabels)
+      : m_name(name),
+        m_col_sizes(colSizes),
+        m_col_field_types(colFieldTypes),
+        m_col_labels(colLabels) {}
+
+  bool ReadFromXML(const wxXmlNode* node);
+  wxXmlNode* SaveToXML(wxXmlNode* parent = NULL);
+
+  int GetColCount() const { return m_col_labels.GetCount(); }
+
+  const wxString& GetName() const { return m_name; }
+  void SetName(const wxString& name) { m_name = name; }
+
+  const wxGridSizesInfo& GetColSizes() const { return m_col_sizes; }
+  void SetColSizes(const wxGridSizesInfo& sizeInfo) { m_col_sizes = sizeInfo; }
+
+  const wxArrayString& GetColFieldTypes() const { return m_col_field_types; }
+  void SetColFieldTypes(const wxArrayString& colFieldTypes) {
+    m_col_field_types = colFieldTypes;
+  }
+
+  const wxArrayString& GetColLabels() const { return m_col_labels; }
+  void SetColLabels(const wxArrayString& colLabels) { m_col_labels = colLabels; }
+
+protected:
+  wxString m_name;
+  wxGridSizesInfo m_col_sizes;
+  wxArrayString m_col_field_types;
+  wxArrayString m_col_labels;
+};
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class ooObservations
@@ -40,11 +81,9 @@ public:
     ooObservations();
     ~ooObservations();
 
-    wxGridSizesInfo GetColSizes() const;
-    void SetColSizes(const wxGridSizesInfo &sizeInfo);
-
+    void SetColSizes(const wxGridSizesInfo& colSize);
+    const wxGridSizesInfo& GetColSizes() const;
     const wxArrayString& GetColFieldTypes() const;
-    void SetColFieldTypes(const wxArrayString &colFieldTypes);
 
     void SetPositionFix(time_t fixTime, double lat, double lon);
 
@@ -58,19 +97,19 @@ public:
     void AddMarks();
     void DeleteMarks();
 
+    void SetProject(const ooProject& project);
+
     void SaveToCSV(wxFile *file);
     void SaveToXML(wxFile *file);
-    bool ReadFromXML(wxString& filename);
+    bool ReadFromXML(const wxString& filename, const ooProject& defaultProject);
 
     static wxArrayString GetObservationFieldTypes();
     static void AddListing(const wxString& listing, const wxArrayString& items);
     static bool GetListing(const wxString& listing, wxArrayString& items);
     static bool ReadListingFromXML(const wxString& filename, wxArrayString& result);
 
-
 private:
-    wxGridSizesInfo m_col_sizes;
-    wxArrayString m_col_field_types;
+    ooProject m_project;
     static std::unordered_map<wxString, wxArrayString> m_listings;
 
     time_t m_position_fix_time;

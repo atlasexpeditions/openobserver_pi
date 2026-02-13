@@ -59,6 +59,9 @@ public:
 
       protected:
         void SetupObservationsForProject();
+        bool LoadObservations(const wxString& filename);
+        bool SaveObservations(const wxString& filename = wxString(), bool stopObservation = true);
+        ooProject GenerateProject() const;
 
         void OnButtonClickProjectEditUse(wxCommandEvent& event);
         void OnButtonClickProjectNew(wxCommandEvent& event);
@@ -73,17 +76,21 @@ public:
         void OnButtonClickExportObservations( wxCommandEvent& event );
         void OnButtonClickObservationsAddMarks( wxCommandEvent& event );
         void OnButtonClickObservationsDeleteMarks( wxCommandEvent& event );
-
+        void OnButtonClickSaveObservation(wxCommandEvent& event);
+        void OnButtonClickLoadObservation(wxCommandEvent& event);
         void ooControlCloseClick(wxCommandEvent& event);
         void ooControlDialogDefOnClose(wxCloseEvent& event);
 
 private:
         void OnBackupTimer(wxTimerEvent& event);
 
+        bool LoadProject(const ooProject& project);
+
         ooMiniPanel *m_MiniPanel;
 
         wxString m_BackupFilename;
         wxTimer m_BackupTimer;
+        ooProject m_CurrentProject;
 
         ooObservations * m_Observations;
         wxGrid* m_ObservationsTable;

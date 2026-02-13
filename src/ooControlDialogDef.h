@@ -76,6 +76,8 @@ class ooControlDialogDef : public wxDialog
 		wxButton* m_ObservationsDeleteMarks;
 		wxButton* m_ObservationsExportObservations;
 		wxButton* m_buttonClose;
+		wxButton* m_buttonLoadObs;
+		wxButton* m_buttonSaveObs;
 
 		// Virtual event handlers, override them in your derived class
 		virtual void ooControlDialogDefOnClose( wxCloseEvent& event ) { event.Skip(); }
@@ -92,13 +94,15 @@ class ooControlDialogDef : public wxDialog
 		virtual void OnButtonClickObservationsDeleteMarks( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickExportObservations( wxCommandEvent& event ) { event.Skip(); }
 		virtual void ooControlCloseClick( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickLoadObservation( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickSaveObservation( wxCommandEvent& event ) { event.Skip(); }
 
 
 	public:
 
 		ooControlDialogDef();
-		ooControlDialogDef( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Open Observer"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 750,716 ), long style = wxCAPTION|wxCLOSE_BOX|wxDEFAULT_DIALOG_STYLE|wxSTAY_ON_TOP );
-		bool Create( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Open Observer"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 750,716 ), long style = wxCAPTION|wxCLOSE_BOX|wxDEFAULT_DIALOG_STYLE|wxSTAY_ON_TOP );
+		ooControlDialogDef( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Open Observer"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 750,716 ), long style = wxCAPTION|wxCLOSE_BOX|wxDEFAULT_DIALOG_STYLE );
+		bool Create( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Open Observer"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 750,716 ), long style = wxCAPTION|wxCLOSE_BOX|wxDEFAULT_DIALOG_STYLE );
 
 		~ooControlDialogDef();
 

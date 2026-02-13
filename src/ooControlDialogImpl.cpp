@@ -88,6 +88,8 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
 
     // bind backup timer (started in RestoreBackupObservations)
     m_BackupTimer.Bind(wxEVT_TIMER, &ooControlDialogImpl::OnBackupTimer, this, m_BackupTimer.GetId());
+    // start timer to backup observations every 30 seconds
+    m_BackupTimer.Start(30000);  // 30'000 ms = 30 s
 }
 
 ooControlDialogImpl::~ooControlDialogImpl()
@@ -98,17 +100,7 @@ ooControlDialogImpl::~ooControlDialogImpl()
 
     if (!m_Observations) return;
 
-    m_Observations->StopObservation();
-
-    wxFileOutputStream output_stream(m_BackupFilename);
-    
-    if (!output_stream.IsOk())
-    {
-        wxLogError("Could not save observations to file '%s'.", m_BackupFilename);
-        return;
-    }
-
-    m_Observations->SaveToXML(output_stream.GetFile());
+    SaveObservations(m_BackupFilename);
 }
 
 void ooControlDialogImpl::NewProject()
@@ -164,83 +156,96 @@ void ooControlDialogImpl::NewProject()
     m_textProjectName->SetValue("Default Project");
 }
 
-bool ooControlDialogImpl::LoadProject(const wxString& filename)
+bool ooControlDialogImpl::LoadProject(const ooProject& project)
 {
-    wxXmlDocument xmlDoc;
-    if ((!xmlDoc.Load(filename)) || (xmlDoc.GetRoot()->GetName() != "project")|| (xmlDoc.GetRoot()->GetAttribute("file_version") != "1")) {
-        return false;
-    }
-
     // delete columns
     if (m_gridProject->GetNumberCols() > 0)
         m_gridProject->DeleteCols(0, m_gridProject->GetNumberCols());
 
-    m_textProjectFile->SetValue(filename);
-    m_textProjectName->SetValue(xmlDoc.GetRoot()->GetAttribute("name"));
+    m_textProjectName->SetValue(project.GetName());
 
-    wxXmlNode *field = xmlDoc.GetRoot()->GetChildren();
-    while (field)
-    {
-        int c = -1;
-        if (field->GetAttribute("id").ToInt(&c) && (c>=0)) 
-        {
-            // expand number of columns as needed to accommodate fields
-            if (c >= m_gridProject->GetNumberCols()) 
-            {
-                m_gridProject->AppendCols(c - m_gridProject->GetNumberCols() + 1);
-            }
-
-            // set column size
-            int col_size = -1;
-            if (field->GetAttribute("col_size").ToInt(&col_size) && (col_size>=0)) {
-                m_gridProject->SetColSize(c, col_size);
-            }
-
-            // set label and field type
-            m_gridProject->SetCellValue(0, c, field->GetAttribute("label"));
-            m_gridProject->SetCellValue(1, c, field->GetAttribute("field_type"));
+    const int C = project.GetColCount();
+    for (int c = 0; c < C; c++) {
+        // expand number of columns as needed to accommodate fields
+        if (c >= m_gridProject->GetNumberCols()) {
+            m_gridProject->AppendCols(c - m_gridProject->GetNumberCols() + 1);
         }
-
-        field = field->GetNext();
+        m_gridProject->SetColSize(c, project.GetColSizes().GetSize(c));
+        // set label and field type
+        m_gridProject->SetCellValue(0, c, project.GetColLabels()[c]);
+        m_gridProject->SetCellValue(1, c, project.GetColFieldTypes()[c]);
     }
 
     // set the column labels and cell editors
-    for (int c=0; c<m_gridProject->GetNumberCols(); ++c)
-    {
+    for (int c = 0; c < m_gridProject->GetNumberCols(); ++c) {
         m_gridProject->SetColLabelValue(c, "");
-
-        wxGridCellChoiceEditor *observationFieldTypeEditor = new wxGridCellChoiceEditor(ooObservations::GetObservationFieldTypes());
+        
+        wxGridCellChoiceEditor* observationFieldTypeEditor =
+            new wxGridCellChoiceEditor(
+                ooObservations::GetObservationFieldTypes());
         m_gridProject->SetCellEditor(1, c, observationFieldTypeEditor);
     }
+
+    m_CurrentProject = project;
 
     return true;
 }
 
+bool ooControlDialogImpl::LoadProject(const wxString& filename)
+{
+    wxXmlDocument xmlDoc;
+    if (!xmlDoc.Load(filename)) {
+        return false;
+    }
+
+    ooProject project;
+    int fileVersion = -1;
+    bool res = (xmlDoc.GetRoot()->GetAttribute("file_version").ToInt(&fileVersion) &&
+               fileVersion == XML_FILE_VERSION_PROJECT) &&
+               project.ReadFromXML(xmlDoc.GetRoot()) &&
+               LoadProject(project);
+    if (res) {
+        m_textProjectFile->SetValue(filename);
+    }
+
+    return res;
+}
+
+ooProject ooControlDialogImpl::GenerateProject() const
+{
+  const int C = m_gridProject->GetNumberCols();
+
+  wxArrayString labels, fieldTypes;
+  wxGridSizesInfo colSizes;
+  for (int c = 0; c < C; ++c) {
+      labels.push_back(m_gridProject->GetCellValue(0, c));
+      fieldTypes.push_back(m_gridProject->GetCellValue(1, c));
+      colSizes.m_customSizes[c] = m_gridProject->GetColSize(c);
+  }
+  return ooProject(
+      m_textProjectName->GetValue(),
+      colSizes,
+      fieldTypes,
+      labels);
+}
+
 void ooControlDialogImpl::SaveProject(wxFile *file) const
 {
-    const int C = m_gridProject->GetNumberCols();
+    ooProject project = GenerateProject();
 
-    wxXmlDocument xmlDoc;    
-    wxXmlNode* project = new wxXmlNode(NULL, wxXML_ELEMENT_NODE, "project");
-    project->AddAttribute("creator", "Open Observer for OpenCPN");
-    project->AddAttribute("file_version", "1");
-    project->AddAttribute("name", m_textProjectName->GetValue());
-    xmlDoc.SetRoot(project);
-
-    for (int c=0; c<C; ++c) {
-        wxXmlNode* field = new wxXmlNode(project, wxXML_ELEMENT_NODE, "field");
-        field->AddAttribute("id", wxString::Format(wxT("%i"), c));
-        field->AddAttribute("label", m_gridProject->GetCellValue(0, c));
-        field->AddAttribute("field_type", m_gridProject->GetCellValue(1, c));
-        field->AddAttribute("col_size", wxString::Format(wxT("%i"), m_gridProject->GetColSize(c)));
-    }
+    wxXmlDocument xmlDoc;
+    wxXmlNode* xmlProject = project.SaveToXML();
+    xmlProject->AddAttribute("creator", "Open Observer for OpenCPN");
+    xmlProject->AddAttribute("file_version", wxString::FromDouble(XML_FILE_VERSION_PROJECT));
     
+    xmlDoc.SetRoot(xmlProject);
+
     // write the output to a wxString
     wxStringOutputStream stream;
     xmlDoc.Save(stream);
 
     // write the string to the file
-    file->Write(stream.GetString());    
+    file->Write(stream.GetString());
 }
 
 void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
@@ -285,71 +290,69 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
 	m_fgSizerObservations->Add(m_ObservationsTable, 0, wxALL|wxEXPAND, 5);    
 }
 
-void ooControlDialogImpl::RestoreBackupObservations()
+bool ooControlDialogImpl::SaveObservations(const wxString& filename, bool stopObservation)
 {
-    if (!m_Observations) return;
-
-    // restore observations from backup
-    if (!m_Observations->ReadFromXML(m_BackupFilename))
-    {
-        wxMessageBox("Error loading observations file " + m_BackupFilename + ".", "Error", wxOK, this);
+    wxString savePath = filename;
+    if (savePath.IsEmpty()) {
+        wxFileDialog saveFileDialog(this, _("Save observations to XML file"), "",
+                                    m_ObservationsDate->GetValue(),
+                                    "XML file (*.xml)|*.xml",
+                                    wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+        
+        if (saveFileDialog.ShowModal() == wxID_CANCEL) return false;
+        savePath = saveFileDialog.GetPath();
+    }
+    
+    wxFileOutputStream output_stream(savePath);
+    if (!output_stream.IsOk()) {
+      wxMessageBox("Unable to save observations to file " + savePath + ".",
+          "Error", wxOK, this);
+      return false;
     }
 
-    // start timer to backup observations every 30 seconds
-    m_BackupTimer.Start(30000); // 30'000 ms = 30 s
+    // Update the col size
+    m_Observations->SetColSizes(m_ObservationsTable->GetColSizes());
 
+    if (stopObservation) {
+        m_Observations->StopObservation();
+    }
+    m_Observations->SaveToXML(output_stream.GetFile());
+    return true;
+}
+
+bool ooControlDialogImpl::LoadObservations(const wxString& filename)
+{
+    if (!m_Observations) return false;
+
+    m_Observations->StopObservation();
+
+    if (!m_Observations->ReadFromXML(filename, m_CurrentProject)) {
+        wxMessageBox("Error loading observations file " + filename + ".",
+                     "Error", wxOK, this);
+        return false;
+    }
+    
+    SetupObservationsForProject();
+
+    return true;
+}
+
+void ooControlDialogImpl::RestoreBackupObservations()
+{
+    LoadObservations(m_BackupFilename);
     return;
 }
 
 void ooControlDialogImpl::SetupObservationsForProject()
 {
     if (!m_Observations) return;
-
-    // stop any observation, if one is running
-    m_Observations->StopObservation();
-
-    // delete table
-    if (m_Observations->GetNumberRows() > 0)
-        m_Observations->DeleteRows(0, m_Observations->GetNumberRows());
-
-    if (m_Observations->GetNumberCols() > 0)
-        m_Observations->DeleteCols(0, m_Observations->GetNumberCols());
-
-    // add columns
-    m_Observations->InsertCols(0, m_gridProject->GetNumberCols());
-
-    // set the column sizes
-    m_Observations->SetColSizes(m_gridProject->GetColSizes());
-
-    // set the column labels
-    for (int c=0; c<m_gridProject->GetNumberCols(); ++c)
-    {
-        wxString label = m_gridProject->GetCellValue(0, c);
-        if (label.IsEmpty())
-            label = m_gridProject->GetCellValue(1, c);
-
-        m_Observations->SetColLabelValue(c, label);
-    }
-
-    // set the column field types
-    wxArrayString colFieldTypes;
-    for (int c=0; c<m_gridProject->GetNumberCols(); ++c)
-    {
-        wxString fieldType = m_gridProject->GetCellValue(1, c);
-        if (fieldType.IsEmpty())
-            fieldType = wxString("Text");
-
-        colFieldTypes.Add(fieldType);
-    }
-    m_Observations->SetColFieldTypes(colFieldTypes);
-
     if (!m_ObservationsTable) return;
 
     // update column sizes of table to match
     m_ObservationsTable->SetColSizes(m_Observations->GetColSizes());
 
     // Setup listings editors
-    const int C = m_gridProject->GetNumberCols();
+    const int C = m_Observations->GetColsCount();
 
     for (int c = 0; c < C; ++c) {
         const wxString field_type = m_Observations->GetColFieldTypes()[c];
@@ -377,6 +380,8 @@ void ooControlDialogImpl::SetPositionFix(time_t fixTime, double lat, double lon)
 
 void ooControlDialogImpl::UseProject()
 {
+    // TODO Remove this function once we can create various ooObservations
+
     // update the project tab interface
     m_ProjectEditUse->SetLabel("Edit");
     m_gridProject->Disable();
@@ -392,6 +397,8 @@ void ooControlDialogImpl::UseProject()
     m_textProjectName->SetValue(m_textProjectName->GetValue());
     m_textProjectName->Disable();
 
+    m_Observations->SetProject(GenerateProject());
+
     // setup observations for the project
     SetupObservationsForProject();
 }
@@ -405,23 +412,11 @@ void ooControlDialogImpl::OnButtonClickProjectEditUse(wxCommandEvent& event)
         // first, prompt user to export observations
         if (m_Observations)
         {
-            const int response = wxMessageBox("Warning: your current observations will be cleared. Do you want to export them first?", "Export your observations?", wxYES_NO, this);
+            const int response = wxMessageBox("Warning: your current observations will be cleared. Do you want to save them first?", "Export your observations?", wxYES_NO, this);
             if (response == wxYES)
             {
-                wxFileDialog exportFileDialog(this, _("Export observations to CSV file"), "", m_ObservationsDate->GetValue(), "CSV file (*.csv)|*.csv", wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
-            
-                if (exportFileDialog.ShowModal() == wxID_CANCEL)
+                if (!SaveObservations())
                     return;
-
-                wxFileOutputStream output_stream(exportFileDialog.GetPath());
-                if (!output_stream.IsOk())
-                {
-                    wxMessageBox("Unable to save observations to file " + exportFileDialog.GetPath() + ".", "Error", wxOK, this);
-                    return;
-                }
-                
-                m_Observations->StopObservation();
-                m_Observations->SaveToCSV(output_stream.GetFile());
             }
         }
 
@@ -578,15 +573,7 @@ void ooControlDialogImpl::OnBackupTimer(wxTimerEvent& event)
 {
     if (!m_Observations) return;
 
-    wxFileOutputStream output_stream(m_BackupFilename);
-    
-    if (!output_stream.IsOk())
-    {
-        wxLogError("Could not save observations to file '%s'.", m_BackupFilename);
-        return;
-    }
-
-    m_Observations->SaveToXML(output_stream.GetFile());
+    SaveObservations(m_BackupFilename, false);
 }
 
 void ooControlDialogImpl::OnButtonClickObservationsAddMarks( wxCommandEvent& event )
@@ -605,6 +592,33 @@ void ooControlDialogImpl::OnButtonClickObservationsDeleteMarks( wxCommandEvent& 
     m_Observations->DeleteMarks();
 
     m_ObservationsTable->ForceRefresh();
+}
+
+void ooControlDialogImpl::OnButtonClickLoadObservation(wxCommandEvent& event)
+{
+    const int response = wxMessageBox(
+        "Warning: your current observations will be cleared. Do you want to continue?",
+        "Warning", wxYES_NO, this);
+    
+    if (response != wxYES) return;
+    
+    wxFileDialog loadObservationsDialog(
+        this, _("Load observations from XML file"), "", "", "XML file (*.xml)|*.xml",
+        wxFD_OPEN | wxFD_FILE_MUST_EXIST | wxFD_CHANGE_DIR);
+    
+    if (loadObservationsDialog.ShowModal() == wxID_CANCEL) return;
+    
+    if (!LoadObservations(loadObservationsDialog.GetPath())) {
+        wxMessageBox("Unable to load observations from file " +
+                     loadObservationsDialog.GetPath() + ".",
+                     "Error", wxOK, this);
+        return;
+    }
+}
+
+void ooControlDialogImpl::OnButtonClickSaveObservation(wxCommandEvent& event)
+{
+    SaveObservations();
 }
 
 void ooControlDialogImpl::ooControlCloseClick(wxCommandEvent& event)
