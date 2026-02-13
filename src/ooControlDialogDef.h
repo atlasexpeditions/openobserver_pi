@@ -74,10 +74,11 @@ class ooControlDialogDef : public wxDialog
 		wxButton* m_ObservationsDeleteAll;
 		wxButton* m_ObservationsAddMarks;
 		wxButton* m_ObservationsDeleteMarks;
-		wxButton* m_ObservationsExportObservations;
 		wxButton* m_buttonClose;
 		wxButton* m_buttonLoadObs;
 		wxButton* m_buttonSaveObs;
+		wxButton* m_ObservationsExportObservations;
+		wxButton* m_ObservationsImportObservations;
 
 		// Virtual event handlers, override them in your derived class
 		virtual void ooControlDialogDefOnClose( wxCloseEvent& event ) { event.Skip(); }
@@ -92,10 +93,11 @@ class ooControlDialogDef : public wxDialog
 		virtual void OnButtonClickDeleteAllObservations( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickObservationsAddMarks( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickObservationsDeleteMarks( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnButtonClickExportObservations( wxCommandEvent& event ) { event.Skip(); }
 		virtual void ooControlCloseClick( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickLoadObservation( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickSaveObservation( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickExportObservations( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickImportObservations( wxCommandEvent& event ) { event.Skip(); }
 
 
 	public:

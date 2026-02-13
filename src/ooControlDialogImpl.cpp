@@ -569,6 +569,24 @@ void ooControlDialogImpl::OnButtonClickExportObservations( wxCommandEvent& event
     m_Observations->SaveToCSV(output_stream.GetFile());
 }
 
+void ooControlDialogImpl::OnButtonClickImportObservations(wxCommandEvent& event)
+{
+    if (!m_Observations) return;
+
+    wxFileDialog importFileDialog(this, _("Import observations from CSV file"), "", "",
+                                "CSV file (*.csv)|*.csv",
+                                wxFD_OPEN|wxFD_FILE_MUST_EXIST|wxFD_CHANGE_DIR);
+
+    if (importFileDialog.ShowModal() == wxID_CANCEL) return;
+    const wxString path = importFileDialog.GetPath();
+
+    wxString err;
+    if (!m_Observations->ReadFromCSV(path, err)) {
+        wxMessageBox("Unable to import CSV file " + path + ": " + err,
+                     "Error", wxOK, this);
+    }
+}
+
 void ooControlDialogImpl::OnBackupTimer(wxTimerEvent& event)
 {
     if (!m_Observations) return;

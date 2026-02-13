@@ -27,6 +27,9 @@
 
 #include <wx/log.h>
 #include <wx/sstream.h>
+#include <wx/xml/xml.h>
+#include <wx/txtstrm.h>
+#include <wx/wfstream.h>
 
 #include "tpUtils.h"
 #include "ocpn_plugin.h"
@@ -359,6 +362,53 @@ void ooObservations::SaveToCSV(wxFile *file)
     }
 
     file->Close();
+}
+
+static wxString FormatImportedCsvCell(const wxString& value)
+{
+    wxString res = value;
+    if (value.Length() >= 2 &&
+        value.GetChar(0) == '"' &&
+        value.GetChar(value.Length() - 1) == '"') {
+        int length = res.Length();
+        res = res.Right(length - 1).Left(length - 2);
+    }
+    return res;
+}
+
+bool ooObservations::ReadFromCSV(const wxString& filename, wxString& err)
+{
+    wxFileInputStream file_input(filename);
+    wxTextInputStream input(file_input);
+    const int C = m_project.GetColCount();
+
+    wxString line;
+    int r = GetRowsCount();
+    bool bSkip = true;
+    while ((line = input.ReadLine()).Length() > 0)
+    {
+        if (bSkip) {
+            bSkip = false;
+            continue;
+        }
+        wxArrayString cells = wxSplit(line, ',');
+        const int cellCount = cells.GetCount();
+        if (cellCount != C)
+        {
+            err = wxString::Format(wxT("CSV contains %i columns, but the current project has %i"), cellCount, C);
+            return false;
+        }
+        AppendRows(1);
+        int c = 0;
+        for (auto cell: cells)
+        {
+            SetValue(r, c, FormatImportedCsvCell(cell));
+            c++;
+        }
+        r++;
+    }
+
+    return true;
 }
 
 void ooObservations::SaveToXML(wxFile *file)

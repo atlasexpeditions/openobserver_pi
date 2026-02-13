@@ -74,6 +74,7 @@ public:
         void OnButtonClickDeleteObservation( wxCommandEvent& event );
         void OnButtonClickDeleteAllObservations(wxCommandEvent& event);
         void OnButtonClickExportObservations( wxCommandEvent& event );
+        void OnButtonClickImportObservations(wxCommandEvent& event);
         void OnButtonClickObservationsAddMarks( wxCommandEvent& event );
         void OnButtonClickObservationsDeleteMarks( wxCommandEvent& event );
         void OnButtonClickSaveObservation(wxCommandEvent& event);

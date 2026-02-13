@@ -100,6 +100,7 @@ public:
     void SetProject(const ooProject& project);
 
     void SaveToCSV(wxFile *file);
+    bool ReadFromCSV(const wxString& filename, wxString& err);
     void SaveToXML(wxFile *file);
     bool ReadFromXML(const wxString& filename, const ooProject& defaultProject);
 
