@@ -284,7 +284,7 @@ void ooObservations::AddMarks()
             wxString guid = GetNewGUID();
 
             // add waypoint
-            PlugIn_Waypoint wp(lat, lon, "fish", name, guid);
+            PlugIn_Waypoint wp(lat, lon, "Info-Fish-Whale", name, guid);
             wp.m_MarkDescription = description;
             wp.m_CreateTime = datetime;
             AddSingleWaypoint(&wp);
