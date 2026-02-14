@@ -159,13 +159,19 @@ void ooMiniPanel::UpdateObservationStatus()
   if (g_openobserver_pi->m_ooObservations->IsObserving())
   {
     m_StartStopObservation->SetLabel("Stop Observation");
+    
+    m_ObservationDuration->SetBackgroundColour(*wxRED);
 
     // start timer to update observation duration
     m_ObservationDurationTimer.Start(100);  // 100 ms = 0.1 s
   } else {
+    //VPE color timer 
+    m_ObservationDuration->SetBackgroundColour(*wxWHITE);
+    m_ObservationDuration->Refresh();
     m_StartStopObservation->SetLabel("Start Observation");
-
+ 
     m_ObservationDurationTimer.Stop();
+    
   }
 }
 
