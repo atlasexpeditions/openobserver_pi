@@ -218,6 +218,8 @@ void ooObservations::StartObservation()
     strftime(dateString, 16, "%F", gmtime(&m_position_fix_time));
     char timeString[16];
     strftime(timeString, 16, "%T", gmtime(&m_position_fix_time));
+    char utcTimestampString[64];
+    strftime(utcTimestampString, 64, "%FT%TZ", gmtime(&m_position_fix_time));
 
     // create new observation in table and fill in fields
     InsertRows(0, 1);
@@ -231,6 +233,8 @@ void ooObservations::StartObservation()
                 SetValue(0, c, dateString);
             else if (field_type.IsSameAs("Start Time"))
                 SetValue(0, c, timeString);
+            else if (field_type.IsSameAs("Start Timestamp UTC"))
+                SetValue(0, c, utcTimestampString);
             else if (field_type.IsSameAs("Start Latitude"))
               {
                
@@ -271,6 +275,8 @@ void ooObservations::StopObservation()
     strftime(dateString, 16, "%F", gmtime(&m_position_fix_time));
     char timeString[16];
     strftime(timeString, 16, "%T", gmtime(&m_position_fix_time));
+    char utcTimestampString[64];
+    strftime(utcTimestampString, 64, "%FT%TZ", gmtime(&m_position_fix_time));
 
     // get duration
     const long duration_ms = GetObservationDuration();
@@ -292,6 +298,8 @@ void ooObservations::StopObservation()
                 SetValue(0, c, dateString);
             else if (field_type.IsSameAs("End Time"))
                 SetValue(0, c, timeString);
+            else if (field_type.IsSameAs("End Timestamp UTC"))
+                SetValue(0, c, utcTimestampString);
             else if (field_type.IsSameAs("End Latitude"))
                 SetValue(0, c, toSDMM_PlugIn(1, m_position_fix_lat));
             else if (field_type.IsSameAs("End Longitude"))
@@ -708,11 +716,13 @@ wxArrayString ooObservations::GetObservationFieldTypes()
     wxArrayString observationFieldTypes;
     observationFieldTypes.Add("Start Date");
     observationFieldTypes.Add("Start Time");
+    observationFieldTypes.Add("Start Timestamp UTC");
     observationFieldTypes.Add("Start Latitude");
     observationFieldTypes.Add("Start Longitude");
     observationFieldTypes.Add("Distance");
     observationFieldTypes.Add("End Date");
     observationFieldTypes.Add("End Time");
+    observationFieldTypes.Add("End Timestamp UTC");
     observationFieldTypes.Add("End Latitude");
     observationFieldTypes.Add("End Longitude");
     observationFieldTypes.Add("Observation Duration");
