@@ -34,17 +34,22 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	fgSizer3->AddGrowableCol( 0 );
 	fgSizer3->AddGrowableRow( 0 );
 	fgSizer3->SetFlexibleDirection( wxBOTH );
-	fgSizer3->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+	fgSizer3->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_ALL );
 
 	m_notebookControl = new wxNotebook( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, 0 );
 	m_panelProject = new wxPanel( m_notebookControl, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
+	m_panelProject->SetForegroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOWTEXT ) );
+	m_panelProject->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOW ) );
+
 	wxFlexGridSizer* fgSizerProject;
 	fgSizerProject = new wxFlexGridSizer( 4, 1, 0, 0 );
+	fgSizerProject->AddGrowableCol( 0 );
 	fgSizerProject->SetFlexibleDirection( wxBOTH );
-	fgSizerProject->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+	fgSizerProject->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_ALL );
 
 	wxFlexGridSizer* fgSizerProjectButtons;
 	fgSizerProjectButtons = new wxFlexGridSizer( 1, 6, 0, 0 );
+	fgSizerProjectButtons->AddGrowableCol( 0 );
 	fgSizerProjectButtons->SetFlexibleDirection( wxBOTH );
 	fgSizerProjectButtons->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
@@ -79,10 +84,10 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	fgSizerProjectButtons->Add( m_ProjectDeleteColumn, 0, wxALL, 5 );
 
 
-	fgSizerProject->Add( fgSizerProjectButtons, 1, wxEXPAND, 5 );
+	fgSizerProject->Add( fgSizerProjectButtons, 1, 0, 5 );
 
-	m_staticline3 = new wxStaticLine( m_panelProject, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
-	fgSizerProject->Add( m_staticline3, 0, wxEXPAND | wxALL, 5 );
+	m_staticline3 = new wxStaticLine( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize( 10,1 ), wxLI_HORIZONTAL|wxLI_VERTICAL );
+	fgSizerProject->Add( m_staticline3, 0, wxALL|wxEXPAND, 5 );
 
 	wxFlexGridSizer* fgSizer8;
 	fgSizer8 = new wxFlexGridSizer( 2, 2, 0, 0 );
@@ -108,7 +113,7 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	fgSizer8->Add( m_textProjectName, 0, wxALL, 5 );
 
 
-	fgSizerProject->Add( fgSizer8, 1, wxEXPAND, 5 );
+	fgSizerProject->Add( fgSizer8, 1, 0, 5 );
 
 	m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize( 740,100 ), 0 );
 
@@ -138,17 +143,18 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	m_gridProject->SetDefaultCellAlignment( wxALIGN_LEFT, wxALIGN_TOP );
 	m_gridProject->Enable( false );
 
-	fgSizerProject->Add( m_gridProject, 0, wxALL, 5 );
+	fgSizerProject->Add( m_gridProject, 0, wxALL|wxEXPAND, 5 );
 
 
 	m_panelProject->SetSizer( fgSizerProject );
 	m_panelProject->Layout();
 	fgSizerProject->Fit( m_panelProject );
-	m_notebookControl->AddPage( m_panelProject, _("Project"), false );
+	m_notebookControl->AddPage( m_panelProject, _("Project"), true );
 	m_panelObservations = new wxPanel( m_notebookControl, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxTAB_TRAVERSAL );
 	m_fgSizerObservations = new wxFlexGridSizer( 6, 1, 0, 0 );
+	m_fgSizerObservations->AddGrowableCol( 0 );
 	m_fgSizerObservations->SetFlexibleDirection( wxBOTH );
-	m_fgSizerObservations->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+	m_fgSizerObservations->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_ALL );
 
 	bSizerTopButtons = new wxBoxSizer( wxHORIZONTAL );
 
@@ -234,9 +240,9 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	m_panelObservations->SetSizer( m_fgSizerObservations );
 	m_panelObservations->Layout();
 	m_fgSizerObservations->Fit( m_panelObservations );
-	m_notebookControl->AddPage( m_panelObservations, _("Observations"), true );
+	m_notebookControl->AddPage( m_panelObservations, _("Observations"), false );
 
-	fgSizer3->Add( m_notebookControl, 0, wxEXPAND | wxALL, 5 );
+	fgSizer3->Add( m_notebookControl, 0, wxALL|wxEXPAND|wxRIGHT, 5 );
 
 	wxFlexGridSizer* fgSizerBottomBar;
 	fgSizerBottomBar = new wxFlexGridSizer( 1, 1, 0, 0 );

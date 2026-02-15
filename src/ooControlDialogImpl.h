@@ -84,7 +84,6 @@ public:
 
 private:
         void OnBackupTimer(wxTimerEvent& event);
-
         bool LoadProject(const ooProject& project);
 
         ooMiniPanel *m_MiniPanel;
@@ -95,4 +94,6 @@ private:
 
         ooObservations * m_Observations;
         wxGrid* m_ObservationsTable;
+        void ApplyModernGridStyle(wxGrid* grid);
+        void RefreshGridAppearance(wxGrid* grid);
 };

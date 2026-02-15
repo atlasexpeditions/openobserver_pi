@@ -259,7 +259,7 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
 	// Grid
 	m_ObservationsTable->EnableEditing( true );
 	m_ObservationsTable->EnableGridLines( true );
-	m_ObservationsTable->EnableDragGridSize( false );
+    m_ObservationsTable->EnableDragGridSize(true);
 	m_ObservationsTable->SetMargins( 0, 0 );
 
 	// Columns
@@ -268,8 +268,8 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
 	m_ObservationsTable->SetColLabelSize( wxGRID_AUTOSIZE );
 	m_ObservationsTable->SetColLabelAlignment( wxALIGN_CENTER, wxALIGN_CENTER );
 
-	// Rows
-	m_ObservationsTable->EnableDragRowSize( false );
+	// Rows 
+	m_ObservationsTable->EnableDragRowSize(true);
 	m_ObservationsTable->SetRowLabelSize( 0 );
 	m_ObservationsTable->SetRowLabelAlignment( wxALIGN_CENTER, wxALIGN_CENTER );
 
@@ -287,7 +287,11 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
     m_ObservationsTable->SetDefaultRenderer(renderer);
 
     // m_ObservationsTable is a wxGrid, ultimately derived from wxWindow
-	m_fgSizerObservations->Add(m_ObservationsTable, 0, wxALL|wxEXPAND, 5);    
+	m_fgSizerObservations->Add(m_ObservationsTable, 0, wxALL|wxEXPAND, 5);
+    
+    m_ObservationsTable->EnableDragColSize(true);
+    ApplyModernGridStyle(m_ObservationsTable);
+    RefreshGridAppearance(m_ObservationsTable);
 }
 
 bool ooControlDialogImpl::SaveObservations(const wxString& filename, bool stopObservation)
@@ -342,6 +346,46 @@ void ooControlDialogImpl::RestoreBackupObservations()
     LoadObservations(m_BackupFilename);
     return;
 }
+void ooControlDialogImpl::RefreshGridAppearance(wxGrid* grid) {
+  if (!grid) return;
+
+  int rows = grid->GetNumberRows();
+
+  wxColour evenColor(250, 250, 250);  // blanc doux
+  wxColour oddColor(230, 242, 255);   // bleu clair moderne
+
+  grid->BeginBatch();
+
+  for (int row = 0; row < rows; row++) {
+    wxGridCellAttr* attr = new wxGridCellAttr();
+
+    if (row % 2 == 0)
+      attr->SetBackgroundColour(evenColor);
+    else
+      attr->SetBackgroundColour(oddColor);
+
+    grid->SetRowAttr(row, attr);
+  }
+
+  grid->EndBatch();
+  grid->ForceRefresh();
+}
+void ooControlDialogImpl::ApplyModernGridStyle(wxGrid* grid) {
+  if (!grid) return;
+
+  //grid->EnableGridLines(false);  // supprime lignes moches
+
+  grid->SetDefaultCellFont(wxFont(10, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL,
+                                  wxFONTWEIGHT_NORMAL));
+
+  grid->SetDefaultCellAlignment(wxALIGN_LEFT, wxALIGN_TOP);
+
+  grid->SetSelectionBackground(wxColour(0, 120, 215));  // bleu Windows moderne
+  grid->SetSelectionForeground(*wxWHITE);
+
+  grid->SetRowLabelSize(40);
+}
+
 
 void ooControlDialogImpl::SetupObservationsForProject()
 {
@@ -599,7 +643,7 @@ void ooControlDialogImpl::OnButtonClickObservationsAddMarks( wxCommandEvent& eve
     if (!m_Observations) return;
 
     m_Observations->AddMarks();
-
+    RefreshGridAppearance(m_ObservationsTable);
     m_ObservationsTable->ForceRefresh();
 }
 
