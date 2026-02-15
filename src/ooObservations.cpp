@@ -148,9 +148,18 @@ void ooObservations::StartObservation()
             else if (field_type.IsSameAs("Start Time"))
                 SetValue(0, c, timeString);
             else if (field_type.IsSameAs("Start Latitude"))
+              {
+               
                 SetValue(0, c, toSDMM_PlugIn(1, m_position_fix_lat));
+                StartLatSave = m_position_fix_lat;
+              }
             else if (field_type.IsSameAs("Start Longitude"))
-                SetValue(0, c, toSDMM_PlugIn(2, m_position_fix_lon));
+              {
+                 SetValue(0, c, toSDMM_PlugIn(1, m_position_fix_lon));
+                 StartLongSave = m_position_fix_lon;
+              }
+            else if (field_type.IsSameAs("Distance"))
+              SetValue(0, c, "...");
         }
     } else {
         wxLogError("m_col_field_types.GetCount() does not match number of observation columns");
@@ -195,6 +204,10 @@ void ooObservations::StopObservation()
                 SetValue(0, c, toSDMM_PlugIn(1, m_position_fix_lat));
             else if (field_type.IsSameAs("End Longitude"))
                 SetValue(0, c, toSDMM_PlugIn(2, m_position_fix_lon));
+          else if (field_type.IsSameAs("Distance")) {
+                double dist = HaversineDistance(StartLatSave, StartLongSave, m_position_fix_lat, m_position_fix_lon);
+                SetValue(0, c,wxString::Format("%.3f", dist));
+          }
             else if (field_type.IsSameAs("Observation Duration"))
                 SetValue(0, c, durationString);
         }
@@ -203,6 +216,27 @@ void ooObservations::StopObservation()
     }
 
     m_IsObserving = false;
+}
+
+const double R_EARTH_KM = 6371.0;  // rayon Terre en km
+double ooObservations::DegToRad(double deg) { return deg * M_PI / 180.0; }
+constexpr double KM_TO_NAUTICAL_MILES = 1.0 / 1.8520;
+// Retourne distance en mille entre deux points (lat/lon en degrés)
+double ooObservations::HaversineDistance(double lat1, double lon1, double lat2,
+                                         double lon2) {
+  double dLat = DegToRad(lat2 - lat1);
+  double dLon = DegToRad(lon2 - lon1);
+
+  double radLat1 = DegToRad(lat1);
+  double radLat2 = DegToRad(lat2);
+  
+  double a = sin(dLat / 2) * sin(dLat / 2) +
+             cos(radLat1) * cos(radLat2) * sin(dLon / 2) * sin(dLon / 2);
+
+  double c = 2 * atan2(sqrt(a), sqrt(1 - a));
+
+  double distance = R_EARTH_KM * c * KM_TO_NAUTICAL_MILES;
+  return distance;
 }
 
 bool ooObservations::IsObserving() const
@@ -583,6 +617,7 @@ wxArrayString ooObservations::GetObservationFieldTypes()
     observationFieldTypes.Add("Start Time");
     observationFieldTypes.Add("Start Latitude");
     observationFieldTypes.Add("Start Longitude");
+    observationFieldTypes.Add("Distance");
     observationFieldTypes.Add("End Date");
     observationFieldTypes.Add("End Time");
     observationFieldTypes.Add("End Latitude");

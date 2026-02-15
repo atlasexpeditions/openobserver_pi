@@ -104,6 +104,8 @@ public:
     void SaveToXML(wxFile *file);
     bool ReadFromXML(const wxString& filename, const ooProject& defaultProject);
 
+    double HaversineDistance(double lat1, double lon1, double lat2,double lon2);
+    double DegToRad(double deg);
     static wxArrayString GetObservationFieldTypes();
     static void AddListing(const wxString& listing, const wxArrayString& items);
     static bool GetListing(const wxString& listing, wxArrayString& items);
@@ -116,6 +118,8 @@ private:
     time_t m_position_fix_time;
     double m_position_fix_lat;
     double m_position_fix_lon;
+    double StartLongSave;
+    double StartLatSave;
 
     bool m_IsObserving;
     wxStopWatch m_ObservationDurationStopWatch;
