@@ -31,6 +31,7 @@
 #include <wx/stopwatch.h>
 #include <wx/xml/xml.h>
 #include <unordered_map>
+#include <vector>
 
 #define XML_FILE_VERSION_PROJECT      1
 #define XML_FILE_VERSION_OBSERVATIONS 2
@@ -86,6 +87,7 @@ public:
     const wxArrayString& GetColFieldTypes() const;
 
     void SetPositionFix(time_t fixTime, double lat, double lon);
+    void SetNmeaSentFix(wxString sentenceNmea);
 
     void StartObservation();
     void StopObservation();
@@ -110,6 +112,12 @@ public:
     static void AddListing(const wxString& listing, const wxArrayString& items);
     static bool GetListing(const wxString& listing, wxArrayString& items);
     static bool ReadListingFromXML(const wxString& filename, wxArrayString& result);
+    static void ComputeTrueWind(double sog,
+                                double apparentWindSpeed, double apparentWindAngle,
+                                double& trueWindSpeed, double& trueWindAngle);
+    static wxString GetNMEAField(const wxString& sentence, const wxString& sentenceID,
+                                 int fieldIndex);
+    static std::vector<wxString> SplitNMEAFields(const wxString& sentence, wxChar sep = ',');
 
 private:
     ooProject m_project;
@@ -118,6 +126,16 @@ private:
     time_t m_position_fix_time;
     double m_position_fix_lat;
     double m_position_fix_lon;
+
+    wxString m_sentenceNMEA;
+    double m_apparentWindSpeed = 0;
+    double m_apparentWindAngle = 0;
+    double m_trueWindSpeed = 0;
+    double m_trueWindAngle = 0;
+
+    double m_SOG = 0;
+    double m_COG = 0;
+
     double StartLongSave;
     double StartLatSave;
 

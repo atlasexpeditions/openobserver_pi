@@ -275,7 +275,7 @@ int openobserver_pi::Init(void)
         INSTALLS_TOOLBOX_PAGE     |
         INSTALLS_CONTEXTMENU_ITEMS  |
         WANTS_NMEA_EVENTS         |
-//        WANTS_NMEA_SENTENCES        |
+        WANTS_NMEA_SENTENCES        |
         //    USES_AUI_MANAGER            |
 //        WANTS_PREFERENCES         |
         //    WANTS_ONPAINT_VIEWPORT      |
@@ -427,6 +427,11 @@ void openobserver_pi::SetPositionFix(PlugIn_Position_Fix &pfix)
         m_ooObservations->SetPositionFix(pfix.FixTime, pfix.Lat, pfix.Lon);
     if (m_ooControlDialogImpl)
         m_ooControlDialogImpl->SetPositionFix(pfix.FixTime, pfix.Lat, pfix.Lon);
+}
+
+void openobserver_pi::SetNMEASentence(wxString& sentence)
+{
+    m_ooObservations->SetNmeaSentFix(sentence);
 }
 
 wxBitmap *openobserver_pi::GetPlugInBitmap()

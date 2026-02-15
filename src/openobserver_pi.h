@@ -177,6 +177,8 @@ public:
     bool MouseEventHook( wxMouseEvent &event );
     void SetCursorLatLon(double lat, double lon);
     void SetPositionFix(PlugIn_Position_Fix &pfix);
+    void SetNMEASentence(wxString& sentence);
+
 
     wxString GetProjectFile() const;
     wxString GetProjectName() const;

@@ -23,6 +23,8 @@
  *   51 Franklin Street, Fifth Floor, Boston, MA 02110-1301,  USA.         *
  **************************************************************************/
 
+#include "../opencpn-libs/nmea0183/src/nmea0183.h"
+
 #include "ooObservations.h"
 
 #include <wx/log.h>
@@ -122,6 +124,88 @@ void ooObservations::SetPositionFix(time_t fixTime, double lat, double lon)
     m_position_fix_lon = lon;
 }
 
+////////////VPE NMEA//////////////
+void ooObservations::SetNmeaSentFix(wxString sentenceNmea)
+{
+    m_sentenceNMEA = sentenceNmea;
+    NMEA0183 nmea;
+    nmea << sentenceNmea;
+
+    if (nmea.Parse())
+    {
+        if (nmea.LastSentenceIDParsed == "MWV") {
+            m_apparentWindSpeed = nmea.Mwv.WindSpeed;
+            m_apparentWindAngle = nmea.Mwv.WindAngle;
+            if (m_SOG != 0 && m_COG != 0) {
+                ComputeTrueWind(m_SOG, m_apparentWindSpeed, m_apparentWindAngle, m_trueWindSpeed,
+                                m_trueWindAngle);
+            }
+        }
+        if (nmea.LastSentenceIDParsed == "RMC") {
+             m_SOG = nmea.Rmc.SpeedOverGroundKnots;
+             m_COG = nmea.Rmc.TrackMadeGoodDegreesTrue;
+             //wxLogMessage("SOG: %.2f kn  COG: %.2f∞", m_SOG, m_COG);
+
+             wxString sog = GetNMEAField(m_sentenceNMEA, "RMC", 7);  // SOG
+             wxString cog = GetNMEAField(m_sentenceNMEA, "RMC", 8);  // COG
+             //wxLogMessage("SOG=%s COG=%s", sog, cog);
+        }
+    }
+}
+
+// Computes TrueWindSpeed and TrueWindAngle using the Apparent Wind and the GPS SOG.
+void ooObservations::ComputeTrueWind(double sog,
+                                     double apparentWindSpeed,
+                                     double apparentWindAngle,
+                                     double& trueWindSpeed,
+                                     double& trueWindAngle)
+{
+    double awa_rad = apparentWindAngle * M_PI / 180.0;
+    
+    double Vx = apparentWindSpeed * cos(awa_rad);
+    double Vy = apparentWindSpeed * sin(awa_rad);
+    
+    double Vtx = Vx + sog;
+    double Vty = Vy;
+    
+    trueWindSpeed = sqrt(Vtx * Vtx + Vty * Vty);
+    trueWindAngle = atan2(Vty, Vtx) * 180.0 / M_PI;
+    if (trueWindAngle < 0) trueWindAngle += 360.0;
+}
+
+std::vector<wxString> ooObservations::SplitNMEAFields(const wxString& sentence,
+                                                      wxChar sep)
+{
+    std::vector<wxString> fields;
+    size_t start = 0, end = 0;
+    
+    while ((end = sentence.find(sep, start)) != wxString::npos) {
+        fields.push_back(sentence.Mid(start, end - start));
+        start = end + 1;
+    }
+    fields.push_back(sentence.Mid(start));
+    return fields;
+}
+
+// Get an NMEA field by ID and index
+wxString ooObservations::GetNMEAField(const wxString& sentence,
+                                      const wxString& sentenceID,
+                                      int fieldIndex)
+{
+    if (sentence.IsEmpty()) return "";
+    
+    if (!sentence.Mid(3, sentenceID.Length()).IsSameAs(sentenceID)) return "";
+    
+    std::vector<wxString> fields = SplitNMEAFields(sentence);
+    
+    if (fieldIndex < 0 || fieldIndex >= (int)fields.size()) return "";
+    
+    return fields[fieldIndex];
+}
+
+
+////////////VPE NMEA//////////////
+
 void ooObservations::StartObservation()
 {
     if (m_IsObserving) return;
@@ -158,6 +242,14 @@ void ooObservations::StartObservation()
                  SetValue(0, c, toSDMM_PlugIn(1, m_position_fix_lon));
                  StartLongSave = m_position_fix_lon;
               }
+            else if (field_type.IsSameAs("NMEA TWS"))
+                SetValue(0, c, wxString::Format("%d", (int)round(m_trueWindSpeed)));
+            else if (field_type.IsSameAs("NMEA TWA"))
+                SetValue(0, c, wxString::Format("%d", (int)round(m_trueWindAngle)));
+            else if (field_type.IsSameAs("NMEA COG"))
+                SetValue(0, c, wxString::Format("%d", (int)round(m_COG)));
+            else if (field_type.IsSameAs("NMEA SOG"))
+                SetValue(0, c, wxString::Format("%.1f", m_SOG));
             else if (field_type.IsSameAs("Distance"))
               SetValue(0, c, "...");
         }
@@ -221,7 +313,8 @@ void ooObservations::StopObservation()
 const double R_EARTH_KM = 6371.0;  // rayon Terre en km
 double ooObservations::DegToRad(double deg) { return deg * M_PI / 180.0; }
 constexpr double KM_TO_NAUTICAL_MILES = 1.0 / 1.8520;
-// Retourne distance en mille entre deux points (lat/lon en degr√©s)
+
+// Returns the distance in NM between two GPS positions
 double ooObservations::HaversineDistance(double lat1, double lon1, double lat2,
                                          double lon2) {
   double dLat = DegToRad(lat2 - lat1);
@@ -625,7 +718,11 @@ wxArrayString ooObservations::GetObservationFieldTypes()
     observationFieldTypes.Add("Observation Duration");
     observationFieldTypes.Add("Mark GUID");
     observationFieldTypes.Add("Text");
-    
+    observationFieldTypes.Add("NMEA TWS");
+    observationFieldTypes.Add("NMEA TWA");
+    observationFieldTypes.Add("NMEA COG");
+    observationFieldTypes.Add("NMEA SOG");
+
     for (auto it : m_listings)
     {
       observationFieldTypes.Add(it.first);
