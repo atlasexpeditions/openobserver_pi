@@ -563,8 +563,10 @@ void ooControlDialogImpl::OnButtonClickProjectDeleteColumn(wxCommandEvent& event
 void ooControlDialogImpl::OnButtonClickNewObservation( wxCommandEvent& event )
 {
     if (!m_Observations) return;
+    if (m_Observations->IsObserving()) return;
 
-    m_Observations->InsertRows(0, 1);
+    m_MiniPanel->StartOrStopObservation();
+    m_MiniPanel->StartOrStopObservation();
 }
 
 void ooControlDialogImpl::OnButtonClickDeleteObservation( wxCommandEvent& event )

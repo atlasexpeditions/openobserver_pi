@@ -120,12 +120,11 @@ void ooMiniPanel::SetToggleWindowButtonLabel(const wxString& label)
   m_buttonToggleWindow->SetLabel(label);
 }
 
-void ooMiniPanel::ooControlStartStopObservationClick(wxCommandEvent& event) 
+void ooMiniPanel::StartOrStopObservation()
 {
   if (!g_openobserver_pi->m_ooObservations) return;
 
-  if (g_openobserver_pi->m_ooObservations->IsObserving())
-  {
+  if (g_openobserver_pi->m_ooObservations->IsObserving()) {
     // stop observation
     g_openobserver_pi->m_ooObservations->StopObservation();
 
@@ -144,6 +143,11 @@ void ooMiniPanel::ooControlStartStopObservationClick(wxCommandEvent& event)
   }
 
   UpdateObservationStatus();
+}
+
+void ooMiniPanel::ooControlStartStopObservationClick(wxCommandEvent& event) 
+{
+    StartOrStopObservation();
 }
 
 void ooMiniPanel::OnShow(wxShowEvent& event)

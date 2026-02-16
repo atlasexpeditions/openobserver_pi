@@ -56,6 +56,8 @@ public:
 
   void SetToggleWindowButtonLabel(const wxString& label);
 
+  void StartOrStopObservation();
+
   void OnShow(wxShowEvent& event);
 
 protected:
