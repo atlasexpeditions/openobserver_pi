@@ -67,7 +67,7 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
     
     std::function<void(wxCommandEvent&)> refreshHandler = [&](wxCommandEvent& event)
         {
-            m_ObservationsTable->Refresh();
+            RefreshGridAppearance(m_ObservationsTable);
             event.Skip();
         };
     m_MiniPanel->Bind(OBSERVATION_STARTED, refreshHandler);
@@ -294,7 +294,6 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
     
     m_ObservationsTable->EnableDragColSize(true);
     ApplyModernGridStyle(m_ObservationsTable);
-    RefreshGridAppearance(m_ObservationsTable);
 }
 
 bool ooControlDialogImpl::SaveObservations(const wxString& filename, bool stopObservation)
@@ -340,6 +339,7 @@ bool ooControlDialogImpl::LoadObservations(const wxString& filename)
     }
     
     SetupObservationsForProject();
+    RefreshGridAppearance(m_ObservationsTable);
 
     return true;
 }
@@ -354,8 +354,8 @@ void ooControlDialogImpl::RefreshGridAppearance(wxGrid* grid) {
 
   int rows = grid->GetNumberRows();
 
-  wxColour evenColor(250, 250, 250);  // blanc doux
-  wxColour oddColor(230, 242, 255);   // bleu clair moderne
+  wxColour evenColor(255, 255, 255);  // White
+  wxColour oddColor(250, 250, 250);   // Very light gray
 
   grid->BeginBatch();
 
@@ -648,7 +648,7 @@ void ooControlDialogImpl::OnButtonClickObservationsAddMarks( wxCommandEvent& eve
     if (!m_Observations) return;
 
     m_Observations->AddMarks();
-    RefreshGridAppearance(m_ObservationsTable);
+
     m_ObservationsTable->ForceRefresh();
 }
 
