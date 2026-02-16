@@ -77,6 +77,9 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
     m_panelObservations->Layout();
 	m_fgSizerObservations->Fit(m_panelObservations);
 
+    // Initialize on 'Observations' tab
+    m_notebookControl->SetSelection(1);
+
     for (int c=0; c<m_gridProject->GetNumberCols(); ++c)
     {
         wxGridCellChoiceEditor *observationFieldTypeEditor = new wxGridCellChoiceEditor(ooObservations::GetObservationFieldTypes());
