@@ -353,42 +353,68 @@ long ooObservations::GetObservationDuration()
         return 0;
 }
 
+wxString ooObservations::GetRowDescription(int row)
+{
+    wxString res;
+    const int C = m_project.GetColCount();
+
+    for (int c = 0; c < C; ++c) {
+        wxString field_type = m_project.GetColFieldTypes()[c];
+        if (field_type.IsSameAs("Mark GUID") ||
+            field_type.IsSameAs("Start Date") ||
+            field_type.IsSameAs("Start Time") ||
+            field_type.IsSameAs("Start Timestamp UTC") ||
+            field_type.IsSameAs("End Date") ||
+            field_type.IsSameAs("End Time") ||
+            field_type.IsSameAs("End Timestamp UTC") ||
+            field_type.IsSameAs("Start Latitude") ||
+            field_type.IsSameAs("Start Longitude") ||
+            field_type.IsSameAs("End Latitude") ||
+            field_type.IsSameAs("End Longitude") ||
+            field_type.IsSameAs("Observation Duration") ||
+            field_type.IsSameAs("Distance"))
+            continue;
+        const wxString cell = GetValue(row, c);
+        if (cell.Length() == 0) continue;
+        res += wxString::Format(wxT("%s: %s\n"), field_type, cell);
+    }
+
+    return res;
+}
+
 void ooObservations::AddMarks()
 {
     // Get column indices
     int markGUIDCol = -1;
     int dateCol = -1;
     int timeCol = -1;
+    int tstpCol = -1;
     int latCol = -1;
     int lonCol = -1;
     int nameCol = -1;
     int descriptionCol = -1;
-    
-    const int C = GetNumberCols();
-    if (m_project.GetColCount() == C)
+    const int C = m_project.GetColCount();
+
+    for (int c=0; c<C; ++c)
     {
-        for (int c=0; c<C; ++c)
-        {
-            wxString field_type = m_project.GetColFieldTypes()[c];
-            if (field_type.IsSameAs("Mark GUID")) {
-                if (markGUIDCol < 0) markGUIDCol = c;
-            } else if (field_type.IsSameAs("Start Date")) {
-                if (dateCol < 0) dateCol = c;
-            } else if (field_type.IsSameAs("Start Time")) {
-                if (timeCol < 0) timeCol = c;
-            } else if (field_type.IsSameAs("Start Latitude")) {
-                if (latCol < 0) latCol = c;
-            } else if (field_type.IsSameAs("Start Longitude")) {
-                if (lonCol < 0) lonCol = c;
-            } else if (field_type.IsSameAs("Text")) {
-                // use first text column as name and second as description
-                if (nameCol < 0) nameCol = c;
-                else if (descriptionCol < 0) descriptionCol = c;
-            }
+        wxString field_type = m_project.GetColFieldTypes()[c];
+        if (field_type.IsSameAs("Mark GUID")) {
+            if (markGUIDCol < 0) markGUIDCol = c;
+        } else if (field_type.IsSameAs("Start Date")) {
+            if (dateCol < 0) dateCol = c;
+        } else if (field_type.IsSameAs("Start Time")) {
+            if (timeCol < 0) timeCol = c;
+        } else if (field_type.IsSameAs("Start Timestamp UTC")) {
+            if (tstpCol < 0) tstpCol = c;
+        } else if (field_type.IsSameAs("Start Latitude")) {
+            if (latCol < 0) latCol = c;
+        } else if (field_type.IsSameAs("Start Longitude")) {
+            if (lonCol < 0) lonCol = c;
+        } else if (field_type.IsSameAs("Text")) {
+            // use first text column as name and second as description
+            if (nameCol < 0) nameCol = c;
+            else if (descriptionCol < 0) descriptionCol = c;
         }
-    } else {
-        wxLogError("m_col_field_types.GetCount() does not match number of observation columns");
-        return;
     }
 
     if (markGUIDCol < 0) {
@@ -412,9 +438,10 @@ void ooObservations::AddMarks()
             wxDateTime datetime;
             if (dateCol>=0) datetime.ParseISODate(GetValue(r, dateCol));
             if (timeCol>=0) datetime.ParseISOTime(GetValue(r, timeCol));
+            if (tstpCol>=0) datetime.ParseISOCombined(GetValue(r, tstpCol));
 
-            wxString name = (nameCol>=0) ? GetValue(r, nameCol) + " (OO)" : "Mark (OO)";
-            wxString description = (descriptionCol>=0) ? GetValue(r, descriptionCol) : "";
+            wxString description = GetRowDescription(r);
+            wxString name = wxString::Format(wxT("%s (OO)"), datetime.FormatISOCombined());
 
             wxString guid = GetNewGUID();
 

@@ -106,6 +106,8 @@ public:
     void SaveToXML(wxFile *file);
     bool ReadFromXML(const wxString& filename, const ooProject& defaultProject);
 
+    wxString GetRowDescription(int row);
+
     double HaversineDistance(double lat1, double lon1, double lat2,double lon2);
     double DegToRad(double deg);
     static wxArrayString GetObservationFieldTypes();
