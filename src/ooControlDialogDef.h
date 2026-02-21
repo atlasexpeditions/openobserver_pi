@@ -82,6 +82,7 @@ class ooControlDialogDef : public wxDialog
 
 		// Virtual event handlers, override them in your derived class
 		virtual void ooControlDialogDefOnClose( wxCloseEvent& event ) { event.Skip(); }
+		virtual void OnNotebookPageChanged( wxNotebookEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickProjectEditUse( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickProjectNew( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickProjectLoad( wxCommandEvent& event ) { event.Skip(); }

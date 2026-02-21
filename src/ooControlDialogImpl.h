@@ -82,6 +82,8 @@ public:
         void ooControlCloseClick(wxCommandEvent& event);
         void ooControlDialogDefOnClose(wxCloseEvent& event);
 
+        void OnNotebookPageChanged(wxNotebookEvent& event);
+
 private:
         void OnBackupTimer(wxTimerEvent& event);
         bool LoadProject(const ooProject& project);

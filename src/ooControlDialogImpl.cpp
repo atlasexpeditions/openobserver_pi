@@ -697,3 +697,12 @@ void ooControlDialogImpl::ooControlDialogDefOnClose(wxCloseEvent& event)
 {
     g_openobserver_pi->ToggleToolbarIcon();
 }
+
+void ooControlDialogImpl::OnNotebookPageChanged(wxNotebookEvent& event)
+{
+    bool bShowButtons = (event.GetSelection() == 1);
+    m_buttonLoadObs->Show(bShowButtons);
+    m_buttonSaveObs->Show(bShowButtons);
+    m_ObservationsExportObservations->Show(bShowButtons);
+    m_ObservationsImportObservations->Show(bShowButtons);
+}
