@@ -462,7 +462,7 @@ void ooControlDialogImpl::OnButtonClickProjectEditUse(wxCommandEvent& event)
         // exit edit mode and use project
 
         // first, prompt user to export observations
-        if (m_Observations)
+        if (m_Observations && m_Observations->GetRowsCount() > 0)
         {
             const int response = wxMessageBox("Warning: your current observations will be cleared. Do you want to save them first?", "Export your observations?", wxYES_NO, this);
             if (response == wxYES)
@@ -668,12 +668,14 @@ void ooControlDialogImpl::OnButtonClickObservationsDeleteMarks( wxCommandEvent& 
 
 void ooControlDialogImpl::OnButtonClickLoadObservation(wxCommandEvent& event)
 {
-    const int response = wxMessageBox(
-        "Warning: your current observations will be cleared. Do you want to continue?",
-        "Warning", wxYES_NO, this);
-    
-    if (response != wxYES) return;
-    
+    if (m_Observations->GetRowsCount() > 0) {
+        const int response = wxMessageBox(
+            "Warning: your current observations will be cleared. Do you want to continue?",
+            "Warning", wxYES_NO, this);
+        
+        if (response != wxYES) return;
+    }
+
     wxFileDialog loadObservationsDialog(
         this, _("Load observations from XML file"), "", "", "XML file (*.xml)|*.xml",
         wxFD_OPEN | wxFD_FILE_MUST_EXIST | wxFD_CHANGE_DIR);
