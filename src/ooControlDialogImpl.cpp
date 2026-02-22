@@ -166,6 +166,7 @@ bool ooControlDialogImpl::LoadProject(const ooProject& project)
         m_gridProject->DeleteCols(0, m_gridProject->GetNumberCols());
 
     m_textProjectName->SetValue(project.GetName());
+    m_textProjectFile->SetValue(wxString());
 
     const int C = project.GetColCount();
     for (int c = 0; c < C; c++) {
@@ -340,6 +341,10 @@ bool ooControlDialogImpl::LoadObservations(const wxString& filename)
     
     SetupObservationsForProject();
     RefreshGridAppearance(m_ObservationsTable);
+
+    LoadProject(m_Observations->GetProject());
+    g_openobserver_pi->SetProject(m_textProjectFile->GetValue(),
+                                  m_textProjectName->GetValue());
 
     return true;
 }

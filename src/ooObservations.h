@@ -100,6 +100,7 @@ public:
     void DeleteMarks();
 
     void SetProject(const ooProject& project);
+    const ooProject& GetProject() const;
 
     void SaveToCSV(wxFile *file);
     bool ReadFromCSV(const wxString& filename, wxString& err);

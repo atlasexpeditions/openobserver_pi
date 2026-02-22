@@ -724,6 +724,11 @@ void ooObservations::SetProject(const ooProject& project)
     }
 }
 
+const ooProject& ooObservations::GetProject() const
+{
+    return m_project;
+}
+
 /*
 
   // set the column field types
