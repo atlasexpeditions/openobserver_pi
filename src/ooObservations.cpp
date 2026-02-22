@@ -93,6 +93,8 @@ wxXmlNode* ooProject::SaveToXML(wxXmlNode* parent)
 }
 
 std::unordered_map<wxString, wxArrayString> ooObservations::m_listings;
+wxArrayString ooObservations::m_icons;
+wxString ooObservations::m_iconsListing;
 
 ooObservations::ooObservations() : wxGridStringTable(0, 0), m_IsObserving(false)
 {
@@ -393,6 +395,7 @@ void ooObservations::AddMarks()
     int lonCol = -1;
     int nameCol = -1;
     int descriptionCol = -1;
+    int iconCol = -1;
     const int C = m_project.GetColCount();
 
     for (int c=0; c<C; ++c)
@@ -410,6 +413,8 @@ void ooObservations::AddMarks()
             if (latCol < 0) latCol = c;
         } else if (field_type.IsSameAs("Start Longitude")) {
             if (lonCol < 0) lonCol = c;
+        } else if (field_type.IsSameAs(m_iconsListing)) {
+            if (iconCol < 0) iconCol = c;
         } else if (field_type.IsSameAs("Text")) {
             // use first text column as name and second as description
             if (nameCol < 0) nameCol = c;
@@ -445,8 +450,16 @@ void ooObservations::AddMarks()
 
             wxString guid = GetNewGUID();
 
+            wxString icon;
+            if (iconCol != -1) {
+                wxString iconValue = GetValue(r, iconCol);
+                int iconIndex = m_listings[m_iconsListing].Index(iconValue);
+                if (iconIndex != wxNOT_FOUND) icon = m_icons[iconIndex];
+            }
+            if (icon.IsEmpty()) icon = "Info-Fish-Whale";
+
             // add waypoint
-            PlugIn_Waypoint wp(lat, lon, "Info-Fish-Whale", name, guid);
+            PlugIn_Waypoint wp(lat, lon, icon, name, guid);
             wp.m_MarkDescription = description;
             wp.m_CreateTime = datetime;
             AddSingleWaypoint(&wp);
@@ -609,7 +622,7 @@ void ooObservations::SaveToXML(wxFile *file)
     file->Write(stream.GetString());    
 }
 
-bool ooObservations::ReadListingFromXML(const wxString& filename, wxArrayString& result)
+bool ooObservations::ReadListingFromXML(const wxString& filename, wxArrayString& result, wxArrayString& icons)
 {
     wxXmlDocument xmlDoc;
     int fileVersion = -1;
@@ -619,18 +632,24 @@ bool ooObservations::ReadListingFromXML(const wxString& filename, wxArrayString&
          fileVersion > XML_FILE_VERSION_LISTING) {
         return false;
     }
-    
+
+    bool bHasIcon = false;
     wxXmlNode* item = xmlDoc.GetRoot()->GetChildren();
     while (item) {
         int r = -1;
         wxString label = item->GetAttribute("label");
+        wxString icon = item->GetAttribute("icon");
         if (label.length() > 0) {
             result.Add(label);
+            icons.Add(icon);
         }
+        bHasIcon |= (icon.length() > 0);
         
         item = item->GetNext();
     }
-    
+
+    if (!bHasIcon) icons.clear();
+
     return true;
 }
 
@@ -784,4 +803,10 @@ bool ooObservations::GetListing(const wxString& listing, wxArrayString& items)
 
     items = m_listings.at(listing);
     return true;
+}
+
+void ooObservations::SetIcons(const wxString& listing, const wxArrayString& icons)
+{
+    m_icons = icons;
+    m_iconsListing = listing;
 }

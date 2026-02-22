@@ -170,11 +170,12 @@ openobserver_pi::openobserver_pi(void *ppimgr)
     wxDir::GetAllFiles(*g_pListingDir, &allListings);
     for (auto f : allListings)
     {
-        wxArrayString items;
-        if (ooObservations::ReadListingFromXML(f, items))
+        wxArrayString items, icons;
+        if (ooObservations::ReadListingFromXML(f, items, icons))
         {
             wxString filename = wxFileName(f).GetName();
             ooObservations::AddListing(filename, items);
+            if (icons.GetCount() > 0) ooObservations::SetIcons(filename, icons);
         }
     }
     m_ptpicons = new tpicons();

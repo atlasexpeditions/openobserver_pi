@@ -114,7 +114,10 @@ public:
     static wxArrayString GetObservationFieldTypes();
     static void AddListing(const wxString& listing, const wxArrayString& items);
     static bool GetListing(const wxString& listing, wxArrayString& items);
-    static bool ReadListingFromXML(const wxString& filename, wxArrayString& result);
+    static bool ReadListingFromXML(const wxString& filename,
+                                   wxArrayString& result,
+                                   wxArrayString& icons);
+    static void SetIcons(const wxString& listing, const wxArrayString& icons);
     static void ComputeTrueWind(double sog,
                                 double apparentWindSpeed, double apparentWindAngle,
                                 double& trueWindSpeed, double& trueWindAngle);
@@ -125,6 +128,8 @@ public:
 private:
     ooProject m_project;
     static std::unordered_map<wxString, wxArrayString> m_listings;
+    static wxArrayString m_icons;
+    static wxString m_iconsListing;
 
     time_t m_position_fix_time;
     double m_position_fix_lat;
