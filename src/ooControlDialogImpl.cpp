@@ -86,8 +86,21 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
         m_gridProject->SetCellEditor(1, c, observationFieldTypeEditor);
     }
 
-    wxFileName backup(*g_pData, "observations.xml");
-    m_BackupFilename = backup.GetFullPath();
+    m_currentObservationsIndex = 0;
+    wxArrayString choices = {};
+    for (int i = 0; i < 3; i++) {
+        wxXmlDocument xmlDoc;
+        wxXmlNode * root;
+        int fileVersion;
+        ooProject project;
+        wxString name = wxString::Format(wxT("Empty (%i)"), i+1);
+        if (ooObservations::ReadFromXML(GetBackupFilename(i), fileVersion,
+                                        project, xmlDoc, root, ooProject()) &&
+            !project.GetName().IsEmpty())
+          name = project.GetName();
+        choices.Add(name);
+    }
+    m_choiceObservations->Append(choices);
 
     // bind backup timer (started in RestoreBackupObservations)
     m_BackupTimer.Bind(wxEVT_TIMER, &ooControlDialogImpl::OnBackupTimer, this, m_BackupTimer.GetId());
@@ -103,7 +116,7 @@ ooControlDialogImpl::~ooControlDialogImpl()
 
     if (!m_Observations) return;
 
-    SaveObservations(m_BackupFilename);
+    SaveObservations(GetBackupFilename(m_currentObservationsIndex));
 }
 
 void ooControlDialogImpl::NewProject()
@@ -156,7 +169,7 @@ void ooControlDialogImpl::NewProject()
     m_gridProject->SetCellValue(1, 7, "Mark GUID");
 
     m_textProjectFile->SetValue("");
-    m_textProjectName->SetValue("Default Project");
+    m_textProjectName->SetValue(wxString::Format(wxT("Default Project %i"), m_currentObservationsIndex + 1));
 }
 
 bool ooControlDialogImpl::LoadProject(const ooProject& project)
@@ -344,16 +357,29 @@ bool ooControlDialogImpl::LoadObservations(const wxString& filename)
 
     LoadProject(m_Observations->GetProject());
     g_openobserver_pi->SetProject(m_textProjectFile->GetValue(),
-                                  m_textProjectName->GetValue());
+                                  m_textProjectName->GetValue(),
+                                  m_currentObservationsIndex);
 
     return true;
 }
 
-void ooControlDialogImpl::RestoreBackupObservations()
+bool ooControlDialogImpl::RestoreBackupObservations(int observationsIndex)
 {
-    LoadObservations(m_BackupFilename);
-    return;
+    bool bOldFormat = (observationsIndex == -1);
+    wxString backupFilename = GetBackupFilename(observationsIndex);
+    if (observationsIndex < 0 ||
+        observationsIndex >= (int)m_choiceObservations->GetCount())
+        observationsIndex = 0;
+
+    m_currentObservationsIndex = observationsIndex;
+    m_choiceObservations->SetSelection(observationsIndex);
+    bool result = (wxFile::Exists(backupFilename) && // We do not want to show an error if the file does not exists.
+                   LoadObservations(backupFilename));
+    if (bOldFormat)
+      m_choiceObservations->SetString(0, m_Observations->GetProject().GetName());
+    return result;
 }
+
 void ooControlDialogImpl::RefreshGridAppearance(wxGrid* grid) {
   if (!grid) return;
 
@@ -443,7 +469,7 @@ void ooControlDialogImpl::UseProject()
     m_ProjectNewColumn->Disable();
     m_ProjectDeleteColumn->Disable();
 
-    g_openobserver_pi->SetProject(m_textProjectFile->GetValue(), m_textProjectName->GetValue());
+    g_openobserver_pi->SetProject(m_textProjectFile->GetValue(), m_textProjectName->GetValue(), m_currentObservationsIndex);
 
     // disable project name text field, first setting value in code to ensure it stays
     m_textProjectName->SetValue(m_textProjectName->GetValue());
@@ -453,6 +479,9 @@ void ooControlDialogImpl::UseProject()
 
     // setup observations for the project
     SetupObservationsForProject();
+
+    m_choiceObservations->SetString(m_currentObservationsIndex,
+                                    m_textProjectName->GetValue());
 }
 
 void ooControlDialogImpl::OnButtonClickProjectEditUse(wxCommandEvent& event)
@@ -645,7 +674,7 @@ void ooControlDialogImpl::OnBackupTimer(wxTimerEvent& event)
 {
     if (!m_Observations) return;
 
-    SaveObservations(m_BackupFilename, false);
+    SaveObservations(GetBackupFilename(m_currentObservationsIndex), false);
 }
 
 void ooControlDialogImpl::OnButtonClickObservationsAddMarks( wxCommandEvent& event )
@@ -712,4 +741,24 @@ void ooControlDialogImpl::OnNotebookPageChanged(wxNotebookEvent& event)
     m_buttonSaveObs->Show(bShowButtons);
     m_ObservationsExportObservations->Show(bShowButtons);
     m_ObservationsImportObservations->Show(bShowButtons);
+}
+
+void ooControlDialogImpl::OnChoiceObservationsChanged(wxCommandEvent& event)
+{
+    SaveObservations(GetBackupFilename(m_currentObservationsIndex));
+    m_currentObservationsIndex = m_choiceObservations->GetSelection();
+    wxString filename = GetBackupFilename(m_currentObservationsIndex);
+    if (wxFile::Exists(filename)) {
+        LoadObservations(filename);
+    } else {
+        NewProject();
+        UseProject();
+    }
+}
+
+wxString ooControlDialogImpl::GetBackupFilename(int index)
+{
+  wxFileName backup(*g_pData,
+                    index == -1 ? "observations.xml" : wxString::Format(wxT("observations_%i.xml"), index));
+  return backup.GetFullPath();
 }

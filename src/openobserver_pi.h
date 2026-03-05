@@ -182,7 +182,8 @@ public:
 
     wxString GetProjectFile() const;
     wxString GetProjectName() const;
-    void SetProject(const wxString& projectFile, const wxString& projectName);
+    void SetProject(const wxString& projectFile, const wxString& projectName,
+                    int observationsIndex);
 
     void ToggleToolbarIcon();
     void ToggleWindow();
@@ -209,6 +210,7 @@ private:
     int     m_openobserver_button_id;
     wxString m_projectFile;
     wxString m_projectName;
+    int      m_observationsIndex;
 
     double  m_cursor_lat;
     double  m_cursor_lon;

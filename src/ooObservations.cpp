@@ -663,28 +663,40 @@ wxXmlNode* FindChild(const wxXmlNode* parent, const wxString& name)
     return NULL;
 }
 
-bool ooObservations::ReadFromXML(const wxString& filename, const ooProject& defaultProject)
-{
-    wxXmlDocument xmlDoc;
+bool ooObservations::ReadFromXML(const wxString& filename, int& fileVersion,
+                                 ooProject& project, wxXmlDocument& xmlDoc, wxXmlNode*& root,
+                                 const ooProject& defaultProject) {
     if (filename.IsEmpty() || (!xmlDoc.Load(filename))) {
         return false;
     }
-    wxXmlNode* root = xmlDoc.GetRoot();
-    int fileVersion = -1;
-    if (root->GetName() != "observations" || 
+    root = xmlDoc.GetRoot();
+    fileVersion = -1;
+    if (root->GetName() != "observations" ||
         !root->GetAttribute("file_version").ToInt(&fileVersion) ||
         fileVersion > XML_FILE_VERSION_OBSERVATIONS) {
-          return false;
+        return false;
     }
+    
+    wxXmlNode* xmlProject = FindChild(root, "project");
+    if (!project.ReadFromXML(xmlProject)) project = defaultProject;
 
-    wxXmlNode* project = FindChild(root, "project");
-    if (!m_project.ReadFromXML(project)) m_project = defaultProject;
+    return true;
+}
+
+bool ooObservations::ReadFromXML(const wxString& filename, const ooProject& defaultProject)
+{
+    int fileVersion = 0;
+    wxXmlNode * root = nullptr;
+    wxXmlDocument xmlDoc;
+    if (!ooObservations::ReadFromXML(filename, fileVersion, m_project, xmlDoc, root,
+                                     defaultProject))
+        return false;
 
     SetProject(m_project);
 
     const int C = GetNumberCols();
     wxXmlNode* data = (fileVersion == 1 ? root
-                                        : FindChild(xmlDoc.GetRoot(), "data"));
+                                        : FindChild(root, "data"));
     wxXmlNode* observation = (data ? data->GetChildren() : NULL);
     while (observation)
     {

@@ -39,7 +39,7 @@
 
 class ooProject {
 public:
-  ooProject() {}
+  ooProject() : m_name("Empty") {}
   ooProject(const wxString& name, const wxGridSizesInfo& colSizes,
             const wxArrayString& colFieldTypes, const wxArrayString& colLabels)
       : m_name(name),
@@ -117,6 +117,10 @@ public:
     static bool ReadListingFromXML(const wxString& filename,
                                    wxArrayString& result,
                                    wxArrayString& icons);
+    static bool ReadFromXML(const wxString& filename, int& fileVersion,
+                            ooProject& project,
+                            wxXmlDocument& xmlDoc, wxXmlNode*& root,
+                            const ooProject& defaultProject);
     static void SetIcons(const wxString& listing, const wxArrayString& icons);
     static void ComputeTrueWind(double sog,
                                 double apparentWindSpeed, double apparentWindAngle,

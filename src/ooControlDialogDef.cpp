@@ -245,7 +245,7 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	fgSizer3->Add( m_notebookControl, 0, wxALL|wxEXPAND|wxRIGHT, 5 );
 
 	wxFlexGridSizer* fgSizerBottomBar;
-	fgSizerBottomBar = new wxFlexGridSizer( 1, 1, 0, 0 );
+	fgSizerBottomBar = new wxFlexGridSizer( 1, 3, 0, 0 );
 	fgSizerBottomBar->SetFlexibleDirection( wxBOTH );
 	fgSizerBottomBar->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
@@ -269,6 +269,16 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 
 
 	fgSizerBottomBar->Add( bSizerOKCancel, 1, wxEXPAND, 5 );
+
+
+	fgSizerBottomBar->Add( 500, 0, 1, wxEXPAND, 5 );
+
+	wxArrayString m_choiceObservationsChoices;
+	m_choiceObservations = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_choiceObservationsChoices, 0 );
+	m_choiceObservations->SetSelection( 0 );
+	m_choiceObservations->SetMinSize( wxSize( 300,-1 ) );
+
+	fgSizerBottomBar->Add( m_choiceObservations, 0, wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT|wxFIXED_MINSIZE|wxRIGHT, 5 );
 
 
 	fgSizer3->Add( fgSizerBottomBar, 1, wxEXPAND, 5 );
@@ -301,6 +311,7 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	m_buttonSaveObs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickSaveObservation ), NULL, this );
 	m_ObservationsExportObservations->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickExportObservations ), NULL, this );
 	m_ObservationsImportObservations->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickImportObservations ), NULL, this );
+	m_choiceObservations->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( ooControlDialogDef::OnChoiceObservationsChanged ), NULL, this );
 
 	return true;
 }
@@ -326,5 +337,6 @@ ooControlDialogDef::~ooControlDialogDef()
 	m_buttonSaveObs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickSaveObservation ), NULL, this );
 	m_ObservationsExportObservations->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickExportObservations ), NULL, this );
 	m_ObservationsImportObservations->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickImportObservations ), NULL, this );
+	m_choiceObservations->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( ooControlDialogDef::OnChoiceObservationsChanged ), NULL, this );
 
 }

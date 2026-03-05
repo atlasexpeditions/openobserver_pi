@@ -53,7 +53,7 @@ public:
         void UseProject();
 
         void CreateObservationsTable(ooObservations *observations);
-        void RestoreBackupObservations();
+        bool RestoreBackupObservations(int observationsIndex);
 
         void SetPositionFix(time_t fixTime, double lat, double lon);
 
@@ -83,19 +83,22 @@ public:
         void ooControlDialogDefOnClose(wxCloseEvent& event);
 
         void OnNotebookPageChanged(wxNotebookEvent& event);
+        void OnChoiceObservationsChanged(wxCommandEvent& event);
 
-private:
+      private:
         void OnBackupTimer(wxTimerEvent& event);
         bool LoadProject(const ooProject& project);
 
         ooMiniPanel *m_MiniPanel;
 
-        wxString m_BackupFilename;
         wxTimer m_BackupTimer;
         ooProject m_CurrentProject;
+        int m_currentObservationsIndex;
 
         ooObservations * m_Observations;
         wxGrid* m_ObservationsTable;
         void ApplyModernGridStyle(wxGrid* grid);
         void RefreshGridAppearance(wxGrid* grid);
+
+        static wxString GetBackupFilename(int index);
 };
