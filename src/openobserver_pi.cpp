@@ -255,11 +255,7 @@ int openobserver_pi::Init(void)
     m_ooControlDialogImpl = new ooControlDialogImpl(m_parent_window);
     m_ooControlDialogImpl->CreateObservationsTable(m_ooObservations);
 
-    if (m_projectFile.IsEmpty()) 
-        m_ooControlDialogImpl->NewProject();
-    else   
-        m_ooControlDialogImpl->LoadProject(m_projectFile);
-
+    m_ooControlDialogImpl->NewProject();
     const int observationsIndex = m_observationsIndex;
     m_ooControlDialogImpl->UseProject();
 
@@ -442,19 +438,13 @@ wxBitmap *openobserver_pi::GetPlugInBitmap()
     return &m_ptpicons->m_bm_openobserver_pi;
 }
 
-wxString openobserver_pi::GetProjectFile() const
-{
-    return m_projectFile;
-}
-
 wxString openobserver_pi::GetProjectName() const
 {
     return m_projectName;
 }
 
-void openobserver_pi::SetProject(const wxString& projectFile, const wxString& projectName, int observationsIndex)
+void openobserver_pi::SetProject(const wxString& projectName, int observationsIndex)
 {
-    m_projectFile = projectFile;
     m_projectName = projectName;
     m_observationsIndex = observationsIndex;
     
@@ -514,7 +504,7 @@ void openobserver_pi::SaveConfig()
 
     // section in the main OpenCPN setting file (Mac ~/Library/preferences/opencpn/opencpn.ini)
     m_pConfig->SetPath("/Settings/openobserver_pi");
-    m_pConfig->Write("ProjectFile", m_projectFile);
+    m_pConfig->DeleteEntry("ProjectFile");
     m_pConfig->Write("ObservationsIndex", m_observationsIndex);
 }
 
@@ -532,6 +522,5 @@ void openobserver_pi::LoadConfig()
     if (!m_pConfig) return;
 
     m_pConfig->SetPath("/Settings/openobserver_pi");
-    m_pConfig->Read("ProjectFile", &m_projectFile, wxEmptyString);
     m_pConfig->Read("ObservationsIndex", &m_observationsIndex, -1);
 }

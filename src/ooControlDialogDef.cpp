@@ -58,21 +58,6 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	m_ProjectEditUse->SetDefault();
 	fgSizerProjectButtons->Add( m_ProjectEditUse, 0, wxALL, 5 );
 
-	m_ProjectNew = new wxButton( m_panelProject, wxID_ANY, _("New"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_ProjectNew->Enable( false );
-
-	fgSizerProjectButtons->Add( m_ProjectNew, 0, wxALL, 5 );
-
-	m_ProjectLoad = new wxButton( m_panelProject, wxID_ANY, _("Load"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_ProjectLoad->Enable( false );
-
-	fgSizerProjectButtons->Add( m_ProjectLoad, 0, wxALL, 5 );
-
-	m_ProjectSave = new wxButton( m_panelProject, wxID_ANY, _("Save"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_ProjectSave->Enable( false );
-
-	fgSizerProjectButtons->Add( m_ProjectSave, 0, wxALL, 5 );
-
 	m_ProjectNewColumn = new wxButton( m_panelProject, wxID_ANY, _("Insert Column"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_ProjectNewColumn->Enable( false );
 
@@ -82,6 +67,11 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	m_ProjectDeleteColumn->Enable( false );
 
 	fgSizerProjectButtons->Add( m_ProjectDeleteColumn, 0, wxALL, 5 );
+
+	m_ProjectNew = new wxButton( m_panelProject, wxID_ANY, _("Delete All"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_ProjectNew->Enable( false );
+
+	fgSizerProjectButtons->Add( m_ProjectNew, 0, wxALL, 5 );
 
 
 	fgSizerProject->Add( fgSizerProjectButtons, 1, 0, 5 );
@@ -94,16 +84,7 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	fgSizer8->SetFlexibleDirection( wxBOTH );
 	fgSizer8->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
-	m_staticText61 = new wxStaticText( m_panelProject, wxID_ANY, _("File"), wxDefaultPosition, wxSize( 100,-1 ), 0 );
-	m_staticText61->Wrap( -1 );
-	fgSizer8->Add( m_staticText61, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
-
-	m_textProjectFile = new wxTextCtrl( m_panelProject, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 600,-1 ), wxTE_NO_VSCROLL|wxTE_READONLY );
-	m_textProjectFile->Enable( false );
-
-	fgSizer8->Add( m_textProjectFile, 0, wxALL, 5 );
-
-	m_staticText6 = new wxStaticText( m_panelProject, wxID_ANY, _("Project Name"), wxDefaultPosition, wxSize( 100,-1 ), 0 );
+	m_staticText6 = new wxStaticText( m_panelProject, wxID_ANY, _("Name"), wxDefaultPosition, wxSize( 100,-1 ), 0 );
 	m_staticText6->Wrap( -1 );
 	fgSizer8->Add( m_staticText6, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
@@ -296,11 +277,9 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	this->Connect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( ooControlDialogDef::ooControlDialogDefOnClose ) );
 	m_notebookControl->Connect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( ooControlDialogDef::OnNotebookPageChanged ), NULL, this );
 	m_ProjectEditUse->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectEditUse ), NULL, this );
-	m_ProjectNew->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectNew ), NULL, this );
-	m_ProjectLoad->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectLoad ), NULL, this );
-	m_ProjectSave->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectSave ), NULL, this );
 	m_ProjectNewColumn->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectNewColumn ), NULL, this );
 	m_ProjectDeleteColumn->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectDeleteColumn ), NULL, this );
+	m_ProjectNew->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectNew ), NULL, this );
 	m_ObservationsNew->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickNewObservation ), NULL, this );
 	m_ObservationsDelete->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickDeleteObservation ), NULL, this );
 	m_ObservationsDeleteAll->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickDeleteAllObservations ), NULL, this );
@@ -322,11 +301,9 @@ ooControlDialogDef::~ooControlDialogDef()
 	this->Disconnect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( ooControlDialogDef::ooControlDialogDefOnClose ) );
 	m_notebookControl->Disconnect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( ooControlDialogDef::OnNotebookPageChanged ), NULL, this );
 	m_ProjectEditUse->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectEditUse ), NULL, this );
-	m_ProjectNew->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectNew ), NULL, this );
-	m_ProjectLoad->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectLoad ), NULL, this );
-	m_ProjectSave->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectSave ), NULL, this );
 	m_ProjectNewColumn->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectNewColumn ), NULL, this );
 	m_ProjectDeleteColumn->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectDeleteColumn ), NULL, this );
+	m_ProjectNew->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectNew ), NULL, this );
 	m_ObservationsNew->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickNewObservation ), NULL, this );
 	m_ObservationsDelete->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickDeleteObservation ), NULL, this );
 	m_ObservationsDeleteAll->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickDeleteAllObservations ), NULL, this );

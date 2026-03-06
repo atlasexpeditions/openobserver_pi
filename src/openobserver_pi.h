@@ -179,10 +179,8 @@ public:
     void SetPositionFix(PlugIn_Position_Fix &pfix);
     void SetNMEASentence(wxString& sentence);
 
-
-    wxString GetProjectFile() const;
     wxString GetProjectName() const;
-    void SetProject(const wxString& projectFile, const wxString& projectName,
+    void SetProject(const wxString& projectName,
                     int observationsIndex);
 
     void ToggleToolbarIcon();
@@ -208,7 +206,6 @@ private:
     int     m_iCallerId;
     bool    m_bShowMainDialog;
     int     m_openobserver_button_id;
-    wxString m_projectFile;
     wxString m_projectName;
     int      m_observationsIndex;
 
