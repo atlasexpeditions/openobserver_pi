@@ -445,7 +445,9 @@ void ooControlDialogImpl::OnButtonClickProjectEditUse(wxCommandEvent& event)
         // exit edit mode and use project
 
         // first, prompt user to export observations
-        if (m_Observations && m_Observations->GetRowsCount() > 0)
+        if (m_Observations &&
+            m_Observations->GetRowsCount() > 0 &&
+            !m_Observations->GetProject().IsUpdatable(GenerateProject()))
         {
             const int response = wxMessageBox("Warning: your current observations will be cleared. Do you want to save them first?", "Export your observations?", wxYES_NO, this);
             if (response == wxYES)

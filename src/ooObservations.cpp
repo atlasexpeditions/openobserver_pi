@@ -92,6 +92,13 @@ wxXmlNode* ooProject::SaveToXML(wxXmlNode* parent)
     return project;
 }
 
+bool ooProject::IsUpdatable(const ooProject& other) const
+{
+  return (this->GetColCount() == other.GetColCount() &&
+          this->GetColFieldTypes() == other.GetColFieldTypes()
+         );
+}
+
 std::unordered_map<wxString, wxArrayString> ooObservations::m_listings;
 wxArrayString ooObservations::m_icons;
 wxString ooObservations::m_iconsListing;
@@ -741,26 +748,26 @@ bool ooObservations::ReadFromXML(const wxString& filename, const ooProject& defa
 
 void ooObservations::SetProject(const ooProject& project)
 {
-    // TODO Remove this function once we can create various observations
-    //      Project will be set at ooObservation creation
-    //      with constructor ooObservations(const ooProject& p)
+    bool bMustReset = !m_project.IsUpdatable(project);
 
     m_project = project;
-
-    // stop any observation, if one is running
-    StopObservation();
-    
-    // delete table
-    if (GetNumberRows() > 0)
-        DeleteRows(0, GetNumberRows());
-    
-    if (GetNumberCols() > 0)
-        DeleteCols(0, GetNumberCols());
-    
     const int C = m_project.GetColCount();
-    // add columns
-    InsertCols(0, C);
-    
+
+    if (bMustReset) {
+        // stop any observation, if one is running
+        StopObservation();
+        
+        // delete table
+        if (GetNumberRows() > 0)
+            DeleteRows(0, GetNumberRows());
+        
+        if (GetNumberCols() > 0)
+            DeleteCols(0, GetNumberCols());
+        
+        // add columns
+        InsertCols(0, C);
+    }
+
     // set the column labels
     for (int c = 0; c < C; ++c) {
         SetColLabelValue(c, m_project.GetColLabels()[c]);

@@ -66,6 +66,8 @@ public:
   const wxArrayString& GetColLabels() const { return m_col_labels; }
   void SetColLabels(const wxArrayString& colLabels) { m_col_labels = colLabels; }
 
+  bool IsUpdatable(const ooProject& other) const;
+
 protected:
   wxString m_name;
   wxGridSizesInfo m_col_sizes;
