@@ -233,9 +233,6 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	wxBoxSizer* bSizerOKCancel;
 	bSizerOKCancel = new wxBoxSizer( wxHORIZONTAL );
 
-	m_buttonClose = new wxButton( this, wxID_ANY, _("&Close"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizerOKCancel->Add( m_buttonClose, 0, wxALL, 5 );
-
 	m_buttonLoadObs = new wxButton( this, wxID_ANY, _("Load..."), wxDefaultPosition, wxDefaultSize, 0 );
 	bSizerOKCancel->Add( m_buttonLoadObs, 0, wxALL, 5 );
 
@@ -285,7 +282,6 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	m_ObservationsDeleteAll->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickDeleteAllObservations ), NULL, this );
 	m_ObservationsAddMarks->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickObservationsAddMarks ), NULL, this );
 	m_ObservationsDeleteMarks->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickObservationsDeleteMarks ), NULL, this );
-	m_buttonClose->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::ooControlCloseClick ), NULL, this );
 	m_buttonLoadObs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickLoadObservation ), NULL, this );
 	m_buttonSaveObs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickSaveObservation ), NULL, this );
 	m_ObservationsExportObservations->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickExportObservations ), NULL, this );
@@ -309,7 +305,6 @@ ooControlDialogDef::~ooControlDialogDef()
 	m_ObservationsDeleteAll->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickDeleteAllObservations ), NULL, this );
 	m_ObservationsAddMarks->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickObservationsAddMarks ), NULL, this );
 	m_ObservationsDeleteMarks->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickObservationsDeleteMarks ), NULL, this );
-	m_buttonClose->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::ooControlCloseClick ), NULL, this );
 	m_buttonLoadObs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickLoadObservation ), NULL, this );
 	m_buttonSaveObs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickSaveObservation ), NULL, this );
 	m_ObservationsExportObservations->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickExportObservations ), NULL, this );
