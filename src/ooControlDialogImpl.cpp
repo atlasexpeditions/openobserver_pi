@@ -359,13 +359,13 @@ bool ooControlDialogImpl::LoadObservations(const wxString& filename)
     g_openobserver_pi->SetProject(m_textProjectFile->GetValue(),
                                   m_textProjectName->GetValue(),
                                   m_currentObservationsIndex);
-
+    m_choiceObservations->SetString(m_currentObservationsIndex,
+                                    m_Observations->GetProject().GetName());
     return true;
 }
 
 bool ooControlDialogImpl::RestoreBackupObservations(int observationsIndex)
 {
-    bool bOldFormat = (observationsIndex == -1);
     wxString backupFilename = GetBackupFilename(observationsIndex);
     if (observationsIndex < 0 ||
         observationsIndex >= (int)m_choiceObservations->GetCount())
@@ -374,9 +374,7 @@ bool ooControlDialogImpl::RestoreBackupObservations(int observationsIndex)
     m_currentObservationsIndex = observationsIndex;
     m_choiceObservations->SetSelection(observationsIndex);
     bool result = (wxFile::Exists(backupFilename) && // We do not want to show an error if the file does not exists.
-                   LoadObservations(backupFilename));
-    if (bOldFormat)
-      m_choiceObservations->SetString(0, m_Observations->GetProject().GetName());
+                   LoadObservations(backupFilename));      
     return result;
 }
 
