@@ -706,11 +706,12 @@ bool ooObservations::ReadFromXML(const wxString& filename, const ooProject& defa
     int fileVersion = 0;
     wxXmlNode * root = nullptr;
     wxXmlDocument xmlDoc;
-    if (!ooObservations::ReadFromXML(filename, fileVersion, m_project, xmlDoc, root,
+    ooProject project;
+    if (!ooObservations::ReadFromXML(filename, fileVersion, project, xmlDoc, root,
                                      defaultProject))
         return false;
 
-    SetProject(m_project);
+    SetProject(project);
 
     const int C = GetNumberCols();
     wxXmlNode* data = (root->GetName() == "project" ? NULL // Loading old project file without data
