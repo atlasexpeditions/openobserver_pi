@@ -24,6 +24,7 @@
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
 #include <wx/grid.h>
+#include <wx/scrolwin.h>
 #include <wx/panel.h>
 #include <wx/notebook.h>
 #include <wx/choice.h>
@@ -51,6 +52,7 @@ class ooControlDialogDef : public wxDialog
 		wxStaticLine* m_staticline3;
 		wxStaticText* m_staticText6;
 		wxTextCtrl* m_textProjectName;
+		wxScrolledWindow* m_scrolledWindow1;
 		wxGrid* m_gridProject;
 		wxPanel* m_panelObservations;
 		wxFlexGridSizer* m_fgSizerObservations;
@@ -71,10 +73,11 @@ class ooControlDialogDef : public wxDialog
 		wxButton* m_ObservationsDeleteAll;
 		wxButton* m_ObservationsAddMarks;
 		wxButton* m_ObservationsDeleteMarks;
+		wxScrolledWindow* m_scrolledObservations;
 		wxButton* m_buttonLoadObs;
 		wxButton* m_buttonSaveObs;
-		wxButton* m_ObservationsExportObservations;
 		wxButton* m_ObservationsImportObservations;
+		wxButton* m_ObservationsExportObservations;
 		wxChoice* m_choiceObservations;
 
 		// Virtual event handlers, override them in your derived class
@@ -91,16 +94,16 @@ class ooControlDialogDef : public wxDialog
 		virtual void OnButtonClickObservationsDeleteMarks( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickLoadObservation( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickSaveObservation( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnButtonClickExportObservations( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickImportObservations( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickExportObservations( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnChoiceObservationsChanged( wxCommandEvent& event ) { event.Skip(); }
 
 
 	public:
 
 		ooControlDialogDef();
-		ooControlDialogDef( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Open Observer"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 1925,716 ), long style = wxCAPTION|wxCLOSE_BOX|wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX|wxRESIZE_BORDER );
-		bool Create( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Open Observer"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 1925,716 ), long style = wxCAPTION|wxCLOSE_BOX|wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX|wxRESIZE_BORDER );
+		ooControlDialogDef( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Open Observer"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 584,314 ), long style = wxCAPTION|wxCLOSE_BOX|wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX|wxRESIZE_BORDER );
+		bool Create( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Open Observer"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 584,314 ), long style = wxCAPTION|wxCLOSE_BOX|wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX|wxRESIZE_BORDER );
 
 		~ooControlDialogDef();
 
