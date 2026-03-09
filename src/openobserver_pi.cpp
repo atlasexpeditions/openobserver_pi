@@ -45,6 +45,7 @@
 #include <wx/txtstrm.h>
 
 #include <wx/aui/aui.h>
+#include <wx/gdicmn.h>
 
 #include "openobserver_pi.h"
 #include "version.h"
@@ -251,6 +252,9 @@ int openobserver_pi::Init(void)
     m_ooMiniDialogImpl->Fit();
     m_ooMiniDialogImpl->Layout();
     m_ooMiniDialogImpl->Hide();
+    m_ooMiniDialogImpl->Move(m_miniDialogPosition.x, m_miniDialogPosition.y);
+    m_ooMiniDialogImpl->SetSize(m_miniDialogPosition.width,
+                                m_miniDialogPosition.height);
 
     m_ooControlDialogImpl = new ooControlDialogImpl(m_parent_window);
     m_ooControlDialogImpl->CreateObservationsTable(m_ooObservations);
@@ -265,6 +269,9 @@ int openobserver_pi::Init(void)
     m_ooControlDialogImpl->Fit();
     m_ooControlDialogImpl->Layout();
     m_ooControlDialogImpl->Hide();
+    m_ooControlDialogImpl->Move(m_dialogPosition.x, m_dialogPosition.y);
+    m_ooControlDialogImpl->SetSize(m_dialogPosition.width,
+                                   m_dialogPosition.height);
 
     return (
         WANTS_CURSOR_LATLON       |
@@ -296,12 +303,16 @@ bool openobserver_pi::DeInit(void)
 {
     if (m_ooControlDialogImpl)
     {
+        m_dialogPosition = m_ooControlDialogImpl->GetRect();
+        
         m_ooControlDialogImpl->Close();
         delete m_ooControlDialogImpl;
         m_ooControlDialogImpl = nullptr;
     }
     if (m_ooMiniDialogImpl)
     {
+        m_miniDialogPosition = m_ooMiniDialogImpl->GetRect();
+
         m_ooMiniDialogImpl->Close();
         delete m_ooMiniDialogImpl;
         m_ooMiniDialogImpl = nullptr;
@@ -506,6 +517,14 @@ void openobserver_pi::SaveConfig()
     m_pConfig->SetPath("/Settings/openobserver_pi");
     m_pConfig->DeleteEntry("ProjectFile");
     m_pConfig->Write("ObservationsIndex", m_observationsIndex);
+    m_pConfig->Write("DialogX", m_dialogPosition.x);
+    m_pConfig->Write("DialogY", m_dialogPosition.y);
+    m_pConfig->Write("DialogWidth", m_dialogPosition.width);
+    m_pConfig->Write("DialogHeight", m_dialogPosition.height);
+    m_pConfig->Write("MiniDialogX", m_miniDialogPosition.x);
+    m_pConfig->Write("MiniDialogY", m_miniDialogPosition.y);
+    m_pConfig->Write("MiniDialogWidth", m_miniDialogPosition.width);
+    m_pConfig->Write("MiniDialogHeight", m_miniDialogPosition.height);
 }
 
 void openobserver_pi::LoadConfig()
@@ -523,4 +542,14 @@ void openobserver_pi::LoadConfig()
 
     m_pConfig->SetPath("/Settings/openobserver_pi");
     m_pConfig->Read("ObservationsIndex", &m_observationsIndex, -1);
+    m_pConfig->Read("DialogX", &m_dialogPosition.x, -1);
+    m_pConfig->Read("DialogY", &m_dialogPosition.y, -1);
+    m_pConfig->Read("DialogWidth", &m_dialogPosition.width, -1);
+    m_pConfig->Read("DialogHeight", &m_dialogPosition.height, -1);
+    m_pConfig->Read("MiniDialogX", &m_miniDialogPosition.x, -1);
+    m_pConfig->Read("MiniDialogY", &m_miniDialogPosition.y, -1);
+    m_pConfig->Read("MiniDialogWidth", &m_miniDialogPosition.width, -1);
+    m_pConfig->Read("MiniDialogHeight", &m_miniDialogPosition.height, -1);
+}
+
 }

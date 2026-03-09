@@ -208,6 +208,7 @@ private:
     int     m_openobserver_button_id;
     wxString m_projectName;
     int      m_observationsIndex;
+    wxRect  m_dialogPosition, m_miniDialogPosition;
 
     double  m_cursor_lat;
     double  m_cursor_lon;
