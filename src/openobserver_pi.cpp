@@ -179,6 +179,9 @@ openobserver_pi::openobserver_pi(void *ppimgr)
             if (icons.GetCount() > 0) ooObservations::SetIcons(filename, icons);
         }
     }
+
+    ooObservations::SetNMEAFields(ReadNmeaXML());
+
     m_ptpicons = new tpicons();
 
     delete l_pDir;
@@ -441,7 +444,10 @@ void openobserver_pi::SetPositionFix(PlugIn_Position_Fix &pfix)
 
 void openobserver_pi::SetNMEASentence(wxString& sentence)
 {
-    m_ooObservations->SetNmeaSentFix(sentence);
+    if (m_ooObservations)
+        m_ooObservations->SetNmeaSentFix(sentence);
+    if (m_ooControlDialogImpl)
+        m_ooControlDialogImpl->SetNmeaSentence(sentence);
 }
 
 wxBitmap *openobserver_pi::GetPlugInBitmap()
@@ -552,4 +558,88 @@ void openobserver_pi::LoadConfig()
     m_pConfig->Read("MiniDialogHeight", &m_miniDialogPosition.height, -1);
 }
 
+void openobserver_pi::WriteNmeaXML(const std::unordered_map<wxString, std::set<int>>& scannedNmeaFields)
+{
+    const wxString filePath =
+      wxFileName(*g_PrivateDataDir, "NMEAFields.xml").GetFullPath();
+    
+    wxXmlDocument xmlDoc;
+    
+    wxXmlNode* root = new wxXmlNode(NULL, wxXML_ELEMENT_NODE, "nmea_export");
+    root->AddAttribute("creator", "Open Observer for OpenCPN");
+    xmlDoc.SetRoot(root);
+
+    // Sentence IDs
+    for (const auto& sentencePair : scannedNmeaFields) {
+        wxString sentenceId = sentencePair.first;
+        if (sentenceId.IsEmpty()) continue;
+        
+        wxXmlNode* sentenceNode = new wxXmlNode(NULL, wxXML_ELEMENT_NODE, "sentence");
+        sentenceNode->AddAttribute("id", sentenceId);
+
+        // Field indexes
+        for (int index : sentencePair.second) {
+            wxXmlNode* fieldNode = new wxXmlNode(NULL, wxXML_ELEMENT_NODE, "field");
+            fieldNode->AddAttribute("index", wxString::Format("%d", index));
+            
+            wxXmlNode* textNode =new wxXmlNode(
+                wxXML_TEXT_NODE,
+                "",
+                wxString::Format(wxT("%s:%i"), sentenceId, index)
+            );
+            
+            fieldNode->AddChild(textNode);
+            sentenceNode->AddChild(fieldNode);
+        }
+        
+        root->AddChild(sentenceNode);
+    }
+    
+    xmlDoc.Save(filePath);
+}
+
+// Read NMEA XML file and return list of NMEA Fields
+std::vector<NMEAField> openobserver_pi::ReadNmeaXML()
+{
+    const wxString filePath =
+      wxFileName(*g_PrivateDataDir, "NMEAFields.xml").GetFullPath();
+
+    std::vector<NMEAField> res;
+
+    wxXmlDocument xmlDoc;
+    if (!xmlDoc.Load(filePath)) {
+        wxLogError("Cannont read NMEA XML : %s", filePath);
+        return res;
+    }
+
+    wxXmlNode* root = xmlDoc.GetRoot();
+    if (!root || root->GetName() != "nmea_export") {
+        wxLogError("Invalid NMEA XML file : %s", filePath);
+        return res;
+    }
+
+    for (wxXmlNode* sentenceNode = root->GetChildren(); sentenceNode != NULL; sentenceNode = sentenceNode->GetNext()) {
+        if (sentenceNode->GetName() != "sentence") continue;
+
+        wxString sentenceId = sentenceNode->GetAttribute("id", "");
+        if (sentenceId.IsEmpty()) continue;
+
+        for (wxXmlNode* fieldNode = sentenceNode->GetChildren(); fieldNode != NULL; fieldNode = fieldNode->GetNext()) {
+            if (fieldNode->GetName() != "field") continue;
+
+            wxString indexStr = fieldNode->GetAttribute("index", "");
+            long fieldIndex = 0;
+            if (!indexStr.ToLong(&fieldIndex)) continue;
+
+            wxString description;
+            if (fieldNode->GetChildren()) {
+                description = fieldNode->GetChildren()->GetContent();
+            }
+            if (description.IsEmpty()) description = wxString::Format(wxT("%s:%i"), sentenceId, fieldIndex);
+
+            res.push_back({sentenceId, (int)fieldIndex, description, ""});
+        }
+    }
+
+    return res;
 }

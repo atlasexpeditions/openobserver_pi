@@ -37,6 +37,13 @@
 #define XML_FILE_VERSION_OBSERVATIONS 2
 #define XML_FILE_VERSION_LISTING      1
 
+typedef struct _NMEAField {
+    wxString m_sentenceId;
+    int m_fieldIndex;
+    wxString m_description;
+    wxString m_value;
+} NMEAField;
+
 class ooProject {
 public:
   ooProject() : m_name("Empty") {}
@@ -124,6 +131,10 @@ public:
                             wxXmlDocument& xmlDoc, wxXmlNode*& root,
                             const ooProject& defaultProject);
     static void SetIcons(const wxString& listing, const wxArrayString& icons);
+    static void SetNMEAFields(const std::vector<NMEAField>& fields);
+    static const std::vector<NMEAField>& GetNMEAFields();
+
+    // TODO: those should not be static, should not be in this class
     static void ComputeTrueWind(double sog,
                                 double apparentWindSpeed, double apparentWindAngle,
                                 double& trueWindSpeed, double& trueWindAngle);
@@ -136,6 +147,7 @@ private:
     static std::unordered_map<wxString, wxArrayString> m_listings;
     static wxArrayString m_icons;
     static wxString m_iconsListing;
+    static std::vector<NMEAField> m_nmeaFields;
 
     time_t m_position_fix_time;
     double m_position_fix_lat;

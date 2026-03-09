@@ -55,7 +55,11 @@ extern openobserver_pi *g_openobserver_pi;
 extern wxString *g_pData;
 
 ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent) 
-    : ooControlDialogDef(parent), m_MiniPanel(nullptr), m_Observations(nullptr), m_ObservationsTable(nullptr)
+    : ooControlDialogDef(parent),
+      m_MiniPanel(nullptr),
+      m_Observations(nullptr),
+      m_ObservationsTable(nullptr),
+      m_isScanningNmea(false)
 {
 #if wxCHECK_VERSION(3,0,0)
     SetLayoutAdaptationMode(wxDIALOG_ADAPTATION_MODE_ENABLED);
@@ -80,11 +84,8 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
     // Initialize on 'Observations' tab
     m_notebookControl->SetSelection(1);
 
-    for (int c=0; c<m_gridProject->GetNumberCols(); ++c)
-    {
-        wxGridCellChoiceEditor *observationFieldTypeEditor = new wxGridCellChoiceEditor(ooObservations::GetObservationFieldTypes());
-        m_gridProject->SetCellEditor(1, c, observationFieldTypeEditor);
-    }
+    UpdateProjectCellEditors();
+    OnNmeaFieldUpdate();
 
     m_currentObservationsIndex = 0;
     wxArrayString choices = {};
@@ -145,10 +146,8 @@ void ooControlDialogImpl::NewProject()
     for (int c=0; c<m_gridProject->GetNumberCols(); ++c)
     {
         m_gridProject->SetColLabelValue(c, "");
-
-        wxGridCellChoiceEditor *observationFieldTypeEditor = new wxGridCellChoiceEditor(ooObservations::GetObservationFieldTypes());
-        m_gridProject->SetCellEditor(1, c, observationFieldTypeEditor);
     }
+    UpdateProjectCellEditors();
 
     // fill the table
     m_gridProject->SetCellValue(0, 0, "Date");
@@ -169,6 +168,15 @@ void ooControlDialogImpl::NewProject()
     m_gridProject->SetCellValue(1, 7, "Mark GUID");
 
     m_textProjectName->SetValue(wxString::Format(wxT("Default Project %i"), m_currentObservationsIndex + 1));
+}
+
+void ooControlDialogImpl::UpdateProjectCellEditors()
+{
+    for (int c = 0; c < m_gridProject->GetNumberCols(); ++c) {
+      wxGridCellChoiceEditor* observationFieldTypeEditor =
+          new wxGridCellChoiceEditor(ooObservations::GetObservationFieldTypes());
+      m_gridProject->SetCellEditor(1, c, observationFieldTypeEditor);
+    }
 }
 
 bool ooControlDialogImpl::LoadProject(const ooProject& project)
@@ -194,12 +202,8 @@ bool ooControlDialogImpl::LoadProject(const ooProject& project)
     // set the column labels and cell editors
     for (int c = 0; c < m_gridProject->GetNumberCols(); ++c) {
         m_gridProject->SetColLabelValue(c, "");
-        
-        wxGridCellChoiceEditor* observationFieldTypeEditor =
-            new wxGridCellChoiceEditor(
-                ooObservations::GetObservationFieldTypes());
-        m_gridProject->SetCellEditor(1, c, observationFieldTypeEditor);
     }
+    UpdateProjectCellEditors();
 
     m_CurrentProject = project;
 
@@ -414,6 +418,61 @@ void ooControlDialogImpl::SetPositionFix(time_t fixTime, double lat, double lon)
     m_ObservationsTime->SetValue(timeString);
     m_ObservationsLat->SetValue(toSDMM_PlugIn(1, lat));
     m_ObservationsLon->SetValue(toSDMM_PlugIn(2, lon));
+}
+
+void ooControlDialogImpl::SetNmeaSentence(const wxString& sentence)
+{
+    if (!m_isScanningNmea) return;
+
+    if (sentence.Length() < 6 || sentence[0] != '$') return;
+
+    wxArrayString fields = wxSplit(sentence, ',');
+    if (fields.GetCount() == 0) return;
+
+    // Sentence ID is in first split, skipping 3 chars ($GP).
+    wxString id = fields[0].Mid(3);
+    if (id.IsEmpty()) return;
+    
+    // Skip first split (sentence ID), and count all remaining splits.
+    for (size_t i = 1; i < fields.GetCount(); i++) {
+        m_scannedNmeaFields[id].insert(static_cast<int>(i));
+    }
+    OnNmeaFieldUpdate();
+}
+
+int ooControlDialogImpl::GetNmeaFieldCount() const
+{
+    int count = 0;
+    if (m_isScanningNmea) {
+        for (auto it : m_scannedNmeaFields) {
+            count += it.second.size();
+        }
+    } else {
+        count = ooObservations::GetNMEAFields().size();
+    }
+    return count;
+}
+
+void ooControlDialogImpl::OnNmeaFieldUpdate()
+{
+    m_staticTextNMEA->SetLabel(
+      wxString::Format(wxT("%i fields"), GetNmeaFieldCount()));
+}
+
+void ooControlDialogImpl::OnButtonClickScanNmea(wxCommandEvent& event)
+{
+    if (m_isScanningNmea) {
+        // Stop scan
+        g_openobserver_pi->WriteNmeaXML(m_scannedNmeaFields);
+        ooObservations::SetNMEAFields(g_openobserver_pi->ReadNmeaXML());
+        UpdateProjectCellEditors();
+    } else {
+        // Start scan
+        m_scannedNmeaFields.clear();
+    }
+    m_isScanningNmea = !m_isScanningNmea;
+    m_buttonScanNmea->SetLabel(m_isScanningNmea ? "Stop NMEA Scan" : "Start NMEA Scan");
+    OnNmeaFieldUpdate();
 }
 
 void ooControlDialogImpl::UseProject()

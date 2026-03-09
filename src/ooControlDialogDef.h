@@ -54,6 +54,9 @@ class ooControlDialogDef : public wxDialog
 		wxTextCtrl* m_textProjectName;
 		wxScrolledWindow* m_scrolledWindow1;
 		wxGrid* m_gridProject;
+		wxStaticText* m_staticText7;
+		wxStaticText* m_staticTextNMEA;
+		wxButton* m_buttonScanNmea;
 		wxPanel* m_panelObservations;
 		wxFlexGridSizer* m_fgSizerObservations;
 		wxBoxSizer* bSizerTopButtons;
@@ -87,6 +90,7 @@ class ooControlDialogDef : public wxDialog
 		virtual void OnButtonClickProjectNewColumn( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickProjectDeleteColumn( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickProjectNew( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickScanNmea( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickNewObservation( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickDeleteObservation( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickDeleteAllObservations( wxCommandEvent& event ) { event.Skip(); }

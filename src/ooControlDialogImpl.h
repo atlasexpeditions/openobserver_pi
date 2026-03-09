@@ -38,6 +38,9 @@
 #include "ooMiniPanel.h"
 #include "ooObservations.h"
 
+#include <set>
+#include <unordered_map>
+
 ///////////////////////////////////////////////////////////////////////////////
 /// Class ooControlDialogImpl
 ///////////////////////////////////////////////////////////////////////////////
@@ -54,6 +57,7 @@ public:
         bool RestoreBackupObservations(int observationsIndex);
 
         void SetPositionFix(time_t fixTime, double lat, double lon);
+        void SetNmeaSentence(const wxString& sentence);
 
       protected:
         void SetupObservationsForProject();
@@ -77,6 +81,7 @@ public:
         void OnButtonClickLoadObservation(wxCommandEvent& event);
         void ooControlCloseClick(wxCommandEvent& event);
         void ooControlDialogDefOnClose(wxCloseEvent& event);
+        void OnButtonClickScanNmea(wxCommandEvent& event);
 
         void OnNotebookPageChanged(wxNotebookEvent& event);
         void OnChoiceObservationsChanged(wxCommandEvent& event);
@@ -84,6 +89,7 @@ public:
       private:
         void OnBackupTimer(wxTimerEvent& event);
         bool LoadProject(const ooProject& project);
+        void OnNmeaFieldUpdate();
 
         ooMiniPanel *m_MiniPanel;
 
@@ -91,10 +97,15 @@ public:
         ooProject m_CurrentProject;
         int m_currentObservationsIndex;
 
+        bool m_isScanningNmea;
+        std::unordered_map<wxString, std::set<int>> m_scannedNmeaFields;
+
         ooObservations * m_Observations;
         wxGrid* m_ObservationsTable;
         void ApplyModernGridStyle(wxGrid* grid);
         void RefreshGridAppearance(wxGrid* grid);
+        void UpdateProjectCellEditors();
+        int  GetNmeaFieldCount() const;
 
         static wxString GetBackupFilename(int index);
 };

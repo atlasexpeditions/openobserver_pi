@@ -137,7 +137,10 @@ std::cout << x  << std::endl ; } while (0)
 #include <wx/splitter.h>
 #include <wx/fileconf.h>
 #include <wx/dynarray.h>
+#include <set>
+#include <unordered_map>
 
+#include "ooObservations.h"
 #include "globals.h"
 
 //----------------------------------------------------------------------------------------------------------
@@ -188,7 +191,9 @@ public:
 
     ooObservations *m_ooObservations;
 
-private:
+    static void WriteNmeaXML(const std::unordered_map<wxString, std::set<int>>& scannedNmeaFields);
+    static std::vector<NMEAField> ReadNmeaXML();
+  private:
     void    SaveConfig();
     void    LoadConfig();
 

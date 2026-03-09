@@ -35,6 +35,9 @@
 
 #include "tpUtils.h"
 #include "ocpn_plugin.h"
+#include <openobserver_pi.h>
+
+std::vector<NMEAField> ooObservations::m_nmeaFields;
 
 bool ooProject::ReadFromXML(const wxXmlNode* project)
 {
@@ -133,7 +136,6 @@ void ooObservations::SetPositionFix(time_t fixTime, double lat, double lon)
     m_position_fix_lon = lon;
 }
 
-////////////VPE NMEA//////////////
 void ooObservations::SetNmeaSentFix(wxString sentenceNmea)
 {
     m_sentenceNMEA = sentenceNmea;
@@ -151,14 +153,28 @@ void ooObservations::SetNmeaSentFix(wxString sentenceNmea)
             }
         }
         if (nmea.LastSentenceIDParsed == "RMC") {
+
+            if (nmea.Rmc.TrackMadeGoodDegreesTrue >= 0 && nmea.Rmc.TrackMadeGoodDegreesTrue <= 360)
+            {
+                m_COG = nmea.Rmc.TrackMadeGoodDegreesTrue;
+            }
              m_SOG = nmea.Rmc.SpeedOverGroundKnots;
-             m_COG = nmea.Rmc.TrackMadeGoodDegreesTrue;
+             
              //wxLogMessage("SOG: %.2f kn  COG: %.2f°", m_SOG, m_COG);
 
              wxString sog = GetNMEAField(m_sentenceNMEA, "RMC", 7);  // SOG
              wxString cog = GetNMEAField(m_sentenceNMEA, "RMC", 8);  // COG
              //wxLogMessage("SOG=%s COG=%s", sog, cog);
         }
+        for (auto& item : ooObservations::m_nmeaFields) {
+            if (nmea.LastSentenceIDParsed.IsSameAs(item.m_sentenceId)) {
+                item.m_value = GetNMEAField(m_sentenceNMEA,
+                                            item.m_sentenceId,
+                                            item.m_fieldIndex);
+            }
+        }
+
+
     }
 }
 
@@ -265,6 +281,14 @@ void ooObservations::StartObservation()
                 SetValue(0, c, wxString::Format("%.1f", m_SOG));
             else if (field_type.IsSameAs("Distance"))
               SetValue(0, c, "...");
+            else {
+                for (const auto& item : ooObservations::m_nmeaFields) {
+                    if (field_type.IsSameAs(item.m_description)) {
+                        SetValue(0, c, item.m_value);
+                        break;
+                    }
+                }
+            }
         }
     } else {
         wxLogError("m_col_field_types.GetCount() does not match number of observation columns");
@@ -820,7 +844,9 @@ wxArrayString ooObservations::GetObservationFieldTypes()
     {
       observationFieldTypes.Add(it.first);
     }
-
+    for (auto it : ooObservations::m_nmeaFields) {
+        observationFieldTypes.Add(it.m_description);
+    }
     return observationFieldTypes;
 }
 
@@ -841,4 +867,14 @@ void ooObservations::SetIcons(const wxString& listing, const wxArrayString& icon
 {
     m_icons = icons;
     m_iconsListing = listing;
+}
+
+void ooObservations::SetNMEAFields(const std::vector<NMEAField>& fields)
+{
+    m_nmeaFields = fields;
+}
+
+const std::vector<NMEAField>& ooObservations::GetNMEAFields()
+{
+    return m_nmeaFields;
 }
