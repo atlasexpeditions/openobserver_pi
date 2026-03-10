@@ -59,7 +59,6 @@ bool ooMiniPanel::Create(wxWindow* parent, wxWindowID id, const wxString& msg,
       new wxButton(this, wxID_ANY, _("Start Observation"), wxDefaultPosition,
                    wxDefaultSize, 0);
 
-  m_StartStopObservation->SetDefault();
   bSizerTopButtons->Add(m_StartStopObservation, 0,
                         wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
