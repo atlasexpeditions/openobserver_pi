@@ -174,7 +174,7 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	bSizerTopButtons = new wxBoxSizer( wxHORIZONTAL );
 
 
-	m_fgSizerObservations->Add( bSizerTopButtons, 1, wxEXPAND, 5 );
+	m_fgSizerObservations->Add( bSizerTopButtons, 0, wxEXPAND, 5 );
 
 	m_staticline1 = new wxStaticLine( m_panelObservations, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
 	m_fgSizerObservations->Add( m_staticline1, 0, wxEXPAND | wxALL, 5 );
@@ -223,7 +223,7 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	bSizer6->Add( fgSizerObservationsLabels, 1, wxEXPAND, 5 );
 
 
-	m_fgSizerObservations->Add( bSizer6, 1, wxEXPAND, 5 );
+	m_fgSizerObservations->Add( bSizer6, 0, wxEXPAND, 5 );
 
 	m_staticline11 = new wxStaticLine( m_panelObservations, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
 	m_fgSizerObservations->Add( m_staticline11, 0, wxEXPAND | wxALL, 5 );
@@ -249,18 +249,7 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	fgSizerObservationsButtons->Add( m_ObservationsDeleteMarks, 0, wxALL, 5 );
 
 
-	m_fgSizerObservations->Add( fgSizerObservationsButtons, 1, wxEXPAND, 5 );
-
-	m_scrolledObservations = new wxScrolledWindow( m_panelObservations, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL|wxVSCROLL );
-	m_scrolledObservations->SetScrollRate( 5, 5 );
-	wxBoxSizer* m_bSizerObservationsTable;
-	m_bSizerObservationsTable = new wxBoxSizer( wxVERTICAL );
-
-
-	m_scrolledObservations->SetSizer( m_bSizerObservationsTable );
-	m_scrolledObservations->Layout();
-	m_bSizerObservationsTable->Fit( m_scrolledObservations );
-	m_fgSizerObservations->Add( m_scrolledObservations, 1, wxEXPAND, 5 );
+	m_fgSizerObservations->Add( fgSizerObservationsButtons, 0, wxEXPAND, 5 );
 
 
 	m_panelObservations->SetSizer( m_fgSizerObservations );

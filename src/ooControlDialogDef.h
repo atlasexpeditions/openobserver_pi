@@ -76,7 +76,6 @@ class ooControlDialogDef : public wxDialog
 		wxButton* m_ObservationsDeleteAll;
 		wxButton* m_ObservationsAddMarks;
 		wxButton* m_ObservationsDeleteMarks;
-		wxScrolledWindow* m_scrolledObservations;
 		wxButton* m_buttonLoadObs;
 		wxButton* m_buttonSaveObs;
 		wxButton* m_ObservationsImportObservations;

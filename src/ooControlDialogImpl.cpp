@@ -232,8 +232,10 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
 {
     m_Observations = observations;
 
-    m_ObservationsTable = new wxGrid(m_scrolledObservations, wxID_ANY,
+    m_ObservationsTable = new wxGrid(m_panelObservations, wxID_ANY,
                                      wxDefaultPosition, wxDefaultSize, 0);
+    m_ObservationsTable->SetMinSize(wxSize(1, 1));
+
     m_ObservationsTable->AssignTable(m_Observations);
     m_ObservationsTable->SetColSizes(m_Observations->GetColSizes());
 
@@ -268,7 +270,7 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
     m_ObservationsTable->SetDefaultRenderer(renderer);
 
     // m_ObservationsTable is a wxGrid, ultimately derived from wxWindow
-    m_scrolledObservations->GetSizer()->Add(m_ObservationsTable, 1, wxALL|wxEXPAND, 5);
+    m_fgSizerObservations->Add(m_ObservationsTable, 1, wxALL|wxEXPAND, 5);
 
     m_ObservationsTable->EnableDragColSize(true);
     ApplyModernGridStyle(m_ObservationsTable);
@@ -364,8 +366,6 @@ void ooControlDialogImpl::RefreshGridAppearance(wxGrid* grid) {
 
   grid->EndBatch();
   grid->ForceRefresh();
-
-  m_scrolledObservations->GetParent()->Layout();
 }
 
 void ooControlDialogImpl::ApplyModernGridStyle(wxGrid* grid) {
