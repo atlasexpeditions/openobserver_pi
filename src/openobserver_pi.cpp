@@ -167,6 +167,24 @@ openobserver_pi::openobserver_pi(void *ppimgr)
     if (!wxDir::Exists(*g_pListingDir))
         wxMkdir(*g_pListingDir);
 
+    // Copy packaged listings
+    const wxString exePath = GetOCPN_ExePath();
+    const wxUniChar sep = wxFileName::GetPathSeparator();
+    const wxString packagedListingsPath =
+        wxString::Format(wxT("%s%c%s%c%s%c%s%c%s"),
+            wxFileName(exePath).GetPath(),
+            sep, "plugins", sep, "openobserver_pi", sep, "data", sep, "Listings");
+    
+    wxArrayString allPackagedListings;
+    wxDir::GetAllFiles(packagedListingsPath, &allPackagedListings);
+    for (auto f : allPackagedListings) {
+        wxString filename = wxFileName(f).GetFullName();
+        wxString targetPath = wxString::Format(wxT("%s%s"), *g_pListingDir, filename);
+        if (!wxFile::Exists(targetPath)) {
+            wxCopyFile(f, targetPath);
+        }
+    }
+
     wxArrayString allListings;
     wxDir::GetAllFiles(*g_pListingDir, &allListings);
     for (auto f : allListings)
