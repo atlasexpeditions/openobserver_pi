@@ -2549,12 +2549,12 @@
                   <object class="spacer" expanded="true">
                     <property name="height">0</property>
                     <property name="permission">protected</property>
-                    <property name="width">50</property>
+                    <property name="width">0</property>
                   </object>
                 </object>
                 <object class="sizeritem" expanded="false">
-                  <property name="border">5</property>
-                  <property name="flag">wxALL|wxEXPAND</property>
+                  <property name="border">20</property>
+                  <property name="flag">wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT|wxRIGHT</property>
                   <property name="proportion">0</property>
                   <object class="wxChoice" expanded="false">
                     <property name="BottomDockable">1</property>

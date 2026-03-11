@@ -102,6 +102,7 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
         choices.Add(name);
     }
     m_choiceObservations->Append(choices);
+    m_choiceObservations->GetParent()->Layout();
 
     // bind backup timer (started in RestoreBackupObservations)
     m_BackupTimer.Bind(wxEVT_TIMER, &ooControlDialogImpl::OnBackupTimer, this, m_BackupTimer.GetId());
@@ -326,6 +327,7 @@ bool ooControlDialogImpl::LoadObservations(const wxString& filename)
                                   m_currentObservationsIndex);
     m_choiceObservations->SetString(m_currentObservationsIndex,
                                     m_Observations->GetProject().GetName());
+    m_choiceObservations->GetParent()->Layout();
     return true;
 }
 
@@ -499,6 +501,7 @@ void ooControlDialogImpl::UseProject()
 
     m_choiceObservations->SetString(m_currentObservationsIndex,
                                     m_textProjectName->GetValue());
+    m_choiceObservations->GetParent()->Layout();
 }
 
 void ooControlDialogImpl::OnButtonClickProjectEditUse(wxCommandEvent& event)

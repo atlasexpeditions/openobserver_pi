@@ -268,12 +268,12 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	fgSizerBottomBar->Add( m_ObservationsExportObservations, 0, wxALL, 5 );
 
 
-	fgSizerBottomBar->Add( 50, 0, 1, wxEXPAND, 5 );
+	fgSizerBottomBar->Add( 0, 0, 1, wxEXPAND, 5 );
 
 	wxArrayString m_choiceObservationsChoices;
 	m_choiceObservations = new wxChoice( this, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_choiceObservationsChoices, 0 );
 	m_choiceObservations->SetSelection( 0 );
-	fgSizerBottomBar->Add( m_choiceObservations, 0, wxALL|wxEXPAND, 5 );
+	fgSizerBottomBar->Add( m_choiceObservations, 0, wxALIGN_CENTER_VERTICAL|wxALIGN_RIGHT|wxRIGHT, 20 );
 
 
 	fgSizer3->Add( fgSizerBottomBar, 1, wxEXPAND, 5 );
