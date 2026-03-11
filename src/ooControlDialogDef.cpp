@@ -99,12 +99,7 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 
 	fgSizerProject->Add( fgSizer8, 0, wxEXPAND, 5 );
 
-	m_scrolledWindow1 = new wxScrolledWindow( m_panelProject, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxHSCROLL|wxVSCROLL );
-	m_scrolledWindow1->SetScrollRate( 5, 5 );
-	wxBoxSizer* bSizer5;
-	bSizer5 = new wxBoxSizer( wxVERTICAL );
-
-	m_gridProject = new wxGrid( m_scrolledWindow1, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), 0 );
+	m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), 0 );
 
 	// Grid
 	m_gridProject->CreateGrid( 2, 0 );
@@ -131,14 +126,9 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	// Cell Defaults
 	m_gridProject->SetDefaultCellAlignment( wxALIGN_LEFT, wxALIGN_TOP );
 	m_gridProject->Enable( false );
+	m_gridProject->SetMinSize( wxSize( 1,1 ) );
 
-	bSizer5->Add( m_gridProject, 0, wxEXPAND, 5 );
-
-
-	m_scrolledWindow1->SetSizer( bSizer5 );
-	m_scrolledWindow1->Layout();
-	bSizer5->Fit( m_scrolledWindow1 );
-	fgSizerProject->Add( m_scrolledWindow1, 1, wxALL|wxEXPAND, 5 );
+	fgSizerProject->Add( m_gridProject, 1, wxEXPAND, 5 );
 
 	wxBoxSizer* bSizer61;
 	bSizer61 = new wxBoxSizer( wxHORIZONTAL );
@@ -157,7 +147,7 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	bSizer61->Add( m_buttonScanNmea, 0, wxALL, 5 );
 
 
-	fgSizerProject->Add( bSizer61, 1, wxEXPAND, 5 );
+	fgSizerProject->Add( bSizer61, 0, wxEXPAND, 5 );
 
 
 	m_panelProject->SetSizer( fgSizerProject );

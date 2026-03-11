@@ -24,7 +24,6 @@
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
 #include <wx/grid.h>
-#include <wx/scrolwin.h>
 #include <wx/panel.h>
 #include <wx/notebook.h>
 #include <wx/choice.h>
@@ -52,7 +51,6 @@ class ooControlDialogDef : public wxDialog
 		wxStaticLine* m_staticline3;
 		wxStaticText* m_staticText6;
 		wxTextCtrl* m_textProjectName;
-		wxScrolledWindow* m_scrolledWindow1;
 		wxGrid* m_gridProject;
 		wxStaticText* m_staticText7;
 		wxStaticText* m_staticTextNMEA;
