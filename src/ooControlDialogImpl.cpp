@@ -112,6 +112,12 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
 
 ooControlDialogImpl::~ooControlDialogImpl()
 {
+    if (m_ObservationsTable) {
+        m_ObservationsTable->Disconnect(
+            wxEVT_GRID_SELECT_CELL,
+            wxGridEventHandler(ooControlDialogImpl::OnObservationsGridCellSelect),
+            NULL, this);
+    }
     this->Disconnect(wxEVT_SHOW, wxShowEventHandler(ooMiniPanel::OnShow), NULL, m_MiniPanel);
 
     m_BackupTimer.Stop();
@@ -235,6 +241,10 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
 
     m_ObservationsTable = new wxGrid(m_panelObservations, wxID_ANY,
                                      wxDefaultPosition, wxDefaultSize, 0);
+    m_ObservationsTable->Connect(wxEVT_GRID_SELECT_CELL,
+                           wxGridEventHandler(ooControlDialogImpl::OnObservationsGridCellSelect), NULL,
+                           this);
+
     m_ObservationsTable->SetMinSize(wxSize(1, 1));
 
     m_ObservationsTable->AssignTable(m_Observations);
@@ -736,6 +746,23 @@ void ooControlDialogImpl::OnChoiceObservationsChanged(wxCommandEvent& event)
     } else {
         NewProject();
         UseProject();
+    }
+}
+
+void ooControlDialogImpl::OnObservationsGridCellSelect(wxGridEvent& event)
+{
+    int lat_col = m_Observations->GetProject().GetLatCol();
+    int lon_col = m_Observations->GetProject().GetLonCol();
+    int col = event.GetCol();
+    int row = event.GetRow();
+    bool isOnMark = (m_Observations->GetProject().GetColFieldTypes()[col].IsSameAs("Mark GUID") &&
+        !m_Observations->GetValue(row, col).IsEmpty());
+    if (isOnMark || col == lat_col || col == lon_col) {
+        if (lat_col != wxNOT_FOUND && lon_col != wxNOT_FOUND) {
+            const double lat = fromDMM_Plugin(m_Observations->GetValue(row, lat_col));
+            const double lon = fromDMM_Plugin(m_Observations->GetValue(row, lon_col));
+            JumpToPosition(lat, lon, 1);
+        }
     }
 }
 

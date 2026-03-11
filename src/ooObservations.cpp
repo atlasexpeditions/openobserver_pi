@@ -73,6 +73,8 @@ bool ooProject::ReadFromXML(const wxXmlNode* project)
         }
     }
 
+    OnFieldTypeChanged();
+
     return true;
 }
 
@@ -100,6 +102,18 @@ bool ooProject::IsUpdatable(const ooProject& other) const
   return (this->GetColCount() == other.GetColCount() &&
           this->GetColFieldTypes() == other.GetColFieldTypes()
          );
+}
+
+int ooProject::FindFieldTypeColumn(const wxString& field_type) const
+{
+    const int C = m_col_field_types.size();
+    return m_col_field_types.Index(field_type);
+}
+
+void ooProject::OnFieldTypeChanged()
+{
+    m_lat_col = FindFieldTypeColumn("Start Latitude");
+    m_lon_col = FindFieldTypeColumn("Start Longitude");
 }
 
 std::unordered_map<wxString, wxArrayString> ooObservations::m_listings;
@@ -807,20 +821,6 @@ const ooProject& ooObservations::GetProject() const
 {
     return m_project;
 }
-
-/*
-
-  // set the column field types
-  wxArrayString colFieldTypes;
-  for (int c = 0; c < m_gridProject->GetNumberCols(); ++c) {
-    wxString fieldType = m_gridProject->GetCellValue(1, c);
-    if (fieldType.IsEmpty()) fieldType = wxString("Text");
-
-    colFieldTypes.Add(fieldType);
-  }
-  m_Observations->SetColFieldTypes(colFieldTypes);
-
-*/
 
 wxArrayString ooObservations::GetObservationFieldTypes()
 {

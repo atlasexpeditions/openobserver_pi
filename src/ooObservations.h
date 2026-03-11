@@ -52,7 +52,9 @@ public:
       : m_name(name),
         m_col_sizes(colSizes),
         m_col_field_types(colFieldTypes),
-        m_col_labels(colLabels) {}
+        m_col_labels(colLabels) {
+    OnFieldTypeChanged();
+  }
 
   bool ReadFromXML(const wxXmlNode* node);
   wxXmlNode* SaveToXML(wxXmlNode* parent = NULL);
@@ -68,6 +70,7 @@ public:
   const wxArrayString& GetColFieldTypes() const { return m_col_field_types; }
   void SetColFieldTypes(const wxArrayString& colFieldTypes) {
     m_col_field_types = colFieldTypes;
+    OnFieldTypeChanged();
   }
 
   const wxArrayString& GetColLabels() const { return m_col_labels; }
@@ -75,11 +78,17 @@ public:
 
   bool IsUpdatable(const ooProject& other) const;
 
+  int FindFieldTypeColumn(const wxString& field_type) const;
+  int GetLatCol() const { return m_lat_col; }
+  int GetLonCol() const { return m_lon_col; }
+
 protected:
+  void OnFieldTypeChanged();
   wxString m_name;
   wxGridSizesInfo m_col_sizes;
   wxArrayString m_col_field_types;
   wxArrayString m_col_labels;
+  int m_lat_col, m_lon_col;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
