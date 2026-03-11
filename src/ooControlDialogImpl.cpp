@@ -515,7 +515,11 @@ void ooControlDialogImpl::OnButtonClickProjectEditUse(wxCommandEvent& event)
             m_Observations->GetRowsCount() > 0 &&
             !m_Observations->GetProject().IsUpdatable(GenerateProject()))
         {
-            const int response = wxMessageBox("Warning: your current observations will be cleared. Do you want to save them first?", "Export your observations?", wxYES_NO, this);
+            const int response = wxMessageBox(
+              "Warning: your current observations will be cleared. Do you want "
+              "to save them first?",
+              "Export your observations?", wxYES | wxNO | wxCANCEL, this);
+            if (response == wxCANCEL) return;
             if (response == wxYES)
             {
                 if (!SaveObservations())
