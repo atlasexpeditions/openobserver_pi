@@ -409,7 +409,11 @@ wxString ooObservations::GetRowDescription(int row)
             continue;
         const wxString cell = GetValue(row, c);
         if (cell.Length() == 0) continue;
-        res += wxString::Format(wxT("%s: %s\n"), field_type, cell);
+        res += wxString::Format(
+            wxT("%s: %s\n"),
+            m_project.GetColLabels()[c],
+            cell
+        );
     }
 
     return res;
