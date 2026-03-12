@@ -127,6 +127,9 @@ public:
 
     wxString GetRowDescription(int row);
 
+    enum {UTC_TIME_DATE, UTC_TIME_TIME, UTC_TIMESTAMP};
+    wxString GetUtcTimeFromNMEA(int dateFormat) const;
+
     double HaversineDistance(double lat1, double lon1, double lat2,double lon2);
     double DegToRad(double deg);
     static wxArrayString GetObservationFieldTypes();
@@ -170,6 +173,7 @@ private:
 
     double m_SOG = 0;
     double m_COG = 0;
+    wxDateTime m_utcTime;
 
     double StartLongSave;
     double StartLatSave;

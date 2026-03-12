@@ -166,8 +166,11 @@ void ooObservations::SetNmeaSentFix(wxString sentenceNmea)
                                 m_trueWindAngle);
             }
         }
-        if (nmea.LastSentenceIDParsed == "RMC") {
-
+        else if (nmea.LastSentenceIDParsed == "RMC") {
+            if (nmea.Rmc.IsDataValid == NTrue) {
+                wxString dt = nmea.Rmc.Date + nmea.Rmc.UTCTime;
+                m_utcTime.ParseFormat(dt.c_str(), _T("%d%m%y%H%M%S"));
+            }
             if (nmea.Rmc.TrackMadeGoodDegreesTrue >= 0 && nmea.Rmc.TrackMadeGoodDegreesTrue <= 360)
             {
                 m_COG = nmea.Rmc.TrackMadeGoodDegreesTrue;
@@ -179,6 +182,13 @@ void ooObservations::SetNmeaSentFix(wxString sentenceNmea)
              wxString sog = GetNMEAField(m_sentenceNMEA, "RMC", 7);  // SOG
              wxString cog = GetNMEAField(m_sentenceNMEA, "RMC", 8);  // COG
              //wxLogMessage("SOG=%s COG=%s", sog, cog);
+        }
+        else if (nmea.LastSentenceIDReceived == _T("ZDA")) {
+            wxString dt;
+            dt.Printf(_T("%4d%02d%02d"), nmea.Zda.Year, nmea.Zda.Month,
+                      nmea.Zda.Day);
+            dt.Append(nmea.Zda.UTCTime);
+            m_utcTime.ParseFormat(dt.c_str(), _T("%d%m%y%H%M%S"));
         }
         for (auto& item : ooObservations::m_nmeaFields) {
             if (nmea.LastSentenceIDParsed.IsSameAs(item.m_sentenceId)) {
@@ -245,6 +255,29 @@ wxString ooObservations::GetNMEAField(const wxString& sentence,
 
 ////////////VPE NMEA//////////////
 
+wxString ooObservations::GetUtcTimeFromNMEA(int dateFormat) const
+{
+  wxDateTime::Tm tm = m_utcTime.GetTm();
+  wxString res;
+  switch (dateFormat) {
+    case UTC_TIME_DATE:
+      res = wxString::Format("%04d/%02d/%02d", (int)tm.year,
+                             (int)tm.mon + 1, (int)tm.mday);
+      break;
+    case UTC_TIME_TIME:
+      res = wxString::Format("%02d:%02d:%02d",
+                             (int)tm.hour, (int)tm.min, (int)tm.sec);
+      break;
+    case UTC_TIMESTAMP:
+      res = wxString::Format("%04d-%02d-%02dT%02d:%02d:%02dZ", (int)tm.year,
+                             (int)tm.mon + 1, (int)tm.mday, (int)tm.hour,
+                             (int)tm.min, (int)tm.sec);
+      break;
+  }
+
+  return res;
+}
+
 void ooObservations::StartObservation()
 {
     if (m_IsObserving) return;
@@ -253,13 +286,16 @@ void ooObservations::StartObservation()
     m_ObservationDurationStopWatch.Start(0);
 
     // get date and time
-    char dateString[16];
-    strftime(dateString, 16, "%F", gmtime(&m_position_fix_time));
-    char timeString[16];
-    strftime(timeString, 16, "%T", gmtime(&m_position_fix_time));
-    char utcTimestampString[64];
-    strftime(utcTimestampString, 64, "%FT%TZ", gmtime(&m_position_fix_time));
-
+    //char dateString[16];
+    //strftime(dateString, 16, "%F", gmtime(&m_position_fix_time));
+    //char timeString[16];
+    //strftime(timeString, 16, "%T", gmtime(&m_position_fix_time));
+    //char utcTimestampString[64];
+    //strftime(utcTimestampString, 64, "%FT%TZ", gmtime(&m_position_fix_time));
+    wxString dateString         = GetUtcTimeFromNMEA(UTC_TIME_DATE);
+    wxString timeString         = GetUtcTimeFromNMEA(UTC_TIME_TIME);
+    wxString utcTimestampString = GetUtcTimeFromNMEA(UTC_TIMESTAMP);
+    
     // create new observation in table and fill in fields
     InsertRows(0, 1);
     const int C = GetNumberCols();
@@ -318,13 +354,16 @@ void ooObservations::StopObservation()
     m_ObservationDurationStopWatch.Pause();
 
     // get date and time
-    char dateString[16];
-    strftime(dateString, 16, "%F", gmtime(&m_position_fix_time));
-    char timeString[16];
-    strftime(timeString, 16, "%T", gmtime(&m_position_fix_time));
-    char utcTimestampString[64];
-    strftime(utcTimestampString, 64, "%FT%TZ", gmtime(&m_position_fix_time));
-
+    // char dateString[16];
+    // strftime(dateString, 16, "%F", gmtime(&m_position_fix_time));
+    // char timeString[16];
+    // strftime(timeString, 16, "%T", gmtime(&m_position_fix_time));
+    // char utcTimestampString[64];
+    // strftime(utcTimestampString, 64, "%FT%TZ", gmtime(&m_position_fix_time));
+    wxString dateString = GetUtcTimeFromNMEA(UTC_TIME_DATE);
+    wxString timeString = GetUtcTimeFromNMEA(UTC_TIME_TIME);
+    wxString utcTimestampString = GetUtcTimeFromNMEA(UTC_TIMESTAMP);
+    
     // get duration
     const long duration_ms = GetObservationDuration();
     const unsigned int hours = duration_ms / 3600000;
