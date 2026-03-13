@@ -256,6 +256,10 @@ int openobserver_pi::Init(void)
     //    we need to create a dummy menu to act as a surrogate parent of the created MenuItems
     //    The Items will be re-parented when added to the real context meenu
     wxMenu dummy_menu;
+    wxMenuItem* pmi =
+        new wxMenuItem(&dummy_menu, -1, _("Add OO observation here"));
+    m_addObservationItem = AddCanvasContextMenuItem(pmi, this);
+    SetCanvasContextMenuItemViz(m_addObservationItem, true);
 
     // Get item into font list in options/user interface
     AddPersistentFontKey( wxT("tp_Label") );
@@ -408,6 +412,21 @@ void openobserver_pi::OnToolbarToolUpCallback(int id)
 {
     m_ptpicons->SetScaleFactor();
     return;
+}
+
+void openobserver_pi::OnContextMenuItemCallback(int id)
+{
+    if (id != m_addObservationItem) return;
+    if (m_ooObservations == nullptr) return;
+
+    if (m_ooObservations->IsObserving()) {
+        wxMessageBox("Could not add observation ! An observation is already running.", "Error",
+                   wxOK, wxGetActiveWindow());
+        return;
+    }
+
+    m_ooObservations->AddObservation(m_cursor_lat, m_cursor_lon);
+    m_ooObservations->AddMarks(0);
 }
 
 bool openobserver_pi::KeyboardEventHook( wxKeyEvent &event )

@@ -404,6 +404,20 @@ void ooObservations::StopObservation()
     m_IsObserving = false;
 }
 
+void ooObservations::AddObservation(double lat, double lon)
+{
+    if (m_IsObserving) return;
+    
+    double ex_position_fix_lon = m_position_fix_lon,
+           ex_position_fix_lat = m_position_fix_lat;
+    m_position_fix_lon = lon;
+    m_position_fix_lat = lat;
+    StartObservation();
+    StopObservation();
+    m_position_fix_lon = ex_position_fix_lon,
+    m_position_fix_lat = ex_position_fix_lat;
+}
+
 const double R_EARTH_KM = 6371.0;  // rayon Terre en km
 double ooObservations::DegToRad(double deg) { return deg * M_PI / 180.0; }
 constexpr double KM_TO_NAUTICAL_MILES = 1.0 / 1.8520;
@@ -472,7 +486,7 @@ wxString ooObservations::GetRowDescription(int row)
     return res;
 }
 
-void ooObservations::AddMarks()
+void ooObservations::AddMarks(int targetRow)
 {
     // Get column indices
     int markGUIDCol = -1;
@@ -523,6 +537,8 @@ void ooObservations::AddMarks()
     const int R = GetNumberRows();
     for (int r=0; r<R; ++r)
     {
+        if (targetRow != -1 && targetRow != r) continue;
+
         if (GetValue(r, markGUIDCol).IsEmpty())
         {
             const double lat = fromDMM_Plugin(GetValue(r, latCol));

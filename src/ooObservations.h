@@ -109,12 +109,13 @@ public:
 
     void StartObservation();
     void StopObservation();
+    void AddObservation(double lat, double lon);
 
     bool IsObserving() const;
 
     long GetObservationDuration();
 
-    void AddMarks();
+    void AddMarks(int row = -1); // -1 for all rows
     void DeleteMarks();
 
     void SetProject(const ooProject& project);

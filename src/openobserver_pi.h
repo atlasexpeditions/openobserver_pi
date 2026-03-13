@@ -174,6 +174,7 @@ public:
     void OnToolbarToolCallback(int id);
     void OnToolbarToolDownCallback(int id);
     void OnToolbarToolUpCallback(int id);
+    void OnContextMenuItemCallback(int id);
 
     void LateInit(void);
     bool KeyboardEventHook( wxKeyEvent &event );
@@ -214,6 +215,7 @@ public:
     wxString m_projectName;
     int      m_observationsIndex;
     wxRect  m_dialogPosition, m_miniDialogPosition;
+    int     m_addObservationItem;
 
     double  m_cursor_lat;
     double  m_cursor_lon;
