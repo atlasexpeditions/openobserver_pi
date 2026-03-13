@@ -631,6 +631,7 @@ void ooControlDialogImpl::OnButtonClickDeleteObservation( wxCommandEvent& event 
     if (response != wxYES) return;
 
     for (int i = 0; i < selectedRows.GetCount(); i++) {
+        m_Observations->DeleteMarks(selectedRows[i]);
         m_Observations->DeleteRows(selectedRows[i]);
     }
     RefreshGridAppearance(m_ObservationsTable);

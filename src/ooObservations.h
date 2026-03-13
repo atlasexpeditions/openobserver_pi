@@ -116,7 +116,7 @@ public:
     long GetObservationDuration();
 
     void AddMarks(int row = -1); // -1 for all rows
-    void DeleteMarks();
+    void DeleteMarks(int row = -1); // -1 for all rows
 
     void SetProject(const ooProject& project);
     const ooProject& GetProject() const;

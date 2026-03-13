@@ -574,7 +574,7 @@ void ooObservations::AddMarks(int targetRow)
     }
 }
 
-void ooObservations::DeleteMarks()
+void ooObservations::DeleteMarks(int targetRow)
 {
     // Get column indices
     int markGUIDCol = -1;
@@ -602,6 +602,8 @@ void ooObservations::DeleteMarks()
     const int R = GetNumberRows();
     for (int r=0; r<R; ++r)
     {
+        if (targetRow != -1 && targetRow != r) continue;
+
         wxString guid = GetValue(r, markGUIDCol);
         if (guid.IsEmpty()) continue;
 
