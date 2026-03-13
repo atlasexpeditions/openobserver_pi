@@ -636,21 +636,6 @@ void ooControlDialogImpl::OnButtonClickDeleteObservation( wxCommandEvent& event 
     RefreshGridAppearance(m_ObservationsTable);
 }
 
-void ooControlDialogImpl::OnButtonClickDeleteAllObservations(wxCommandEvent& event)
-{
-    if (!m_Observations) return;
-
-    if (m_Observations->GetNumberRows() <= 0) return;
-
-    const int response = wxMessageBox("Warning: all your current observations will be deleted. Do you want to continue?", "Delete all observations?", wxYES_NO, this);
-
-    if (response == wxYES)
-    {
-        m_Observations->DeleteRows(0, m_Observations->GetNumberRows());
-        RefreshGridAppearance(m_ObservationsTable);
-    }
-}
-
 void ooControlDialogImpl::OnButtonClickExportObservations( wxCommandEvent& event )
 {
     if (!m_Observations) return;
