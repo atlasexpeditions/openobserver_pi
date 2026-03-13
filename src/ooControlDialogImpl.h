@@ -86,6 +86,7 @@ public:
         void OnNotebookPageChanged(wxNotebookEvent& event);
         void OnChoiceObservationsChanged(wxCommandEvent& event);
         void OnObservationsGridCellSelect(wxGridEvent& event);
+        void OnObservationsGridRangeSelect(wxGridRangeSelectEvent& event);
 
       private:
         void OnBackupTimer(wxTimerEvent& event);

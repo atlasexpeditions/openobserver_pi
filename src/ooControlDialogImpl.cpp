@@ -117,6 +117,11 @@ ooControlDialogImpl::~ooControlDialogImpl()
             wxEVT_GRID_SELECT_CELL,
             wxGridEventHandler(ooControlDialogImpl::OnObservationsGridCellSelect),
             NULL, this);
+        m_ObservationsTable->Disconnect(
+            wxEVT_GRID_RANGE_SELECTED,
+            wxGridRangeSelectEventHandler(
+                ooControlDialogImpl::OnObservationsGridRangeSelect),
+            NULL, this);
     }
     this->Disconnect(wxEVT_SHOW, wxShowEventHandler(ooMiniPanel::OnShow), NULL, m_MiniPanel);
 
@@ -244,6 +249,11 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
     m_ObservationsTable->Connect(wxEVT_GRID_SELECT_CELL,
                            wxGridEventHandler(ooControlDialogImpl::OnObservationsGridCellSelect), NULL,
                            this);
+    m_ObservationsTable->Connect(
+        wxEVT_GRID_RANGE_SELECTED,
+        wxGridRangeSelectEventHandler(
+            ooControlDialogImpl::OnObservationsGridRangeSelect),
+        NULL, this);
 
     m_ObservationsTable->SetMinSize(wxSize(1, 1));
 
@@ -608,13 +618,21 @@ void ooControlDialogImpl::OnButtonClickDeleteObservation( wxCommandEvent& event 
     
     if (m_Observations->GetNumberRows() <= 0) return;
 
+    wxArrayInt selectedRows = m_ObservationsTable->GetSelectedRows();
+    selectedRows.Sort([](int * a, int* b) { return *a > *b  ? -1 :
+                                                   *a == *b ? 0  :
+                                                              1; });
+    if (selectedRows.IsEmpty()) return;
+
     const int response = wxMessageBox(
-        "Warning: your last observation will be deleted. Do you want to "
-        "continue?",
-        "Delete last observation?", wxYES_NO, this);
+        wxString::Format(wxT("Warning: %i selected observations will be deleted. Do you want to "
+        "continue?"), selectedRows.GetCount()),
+        "Delete observation(s)?", wxYES_NO, this);
     if (response != wxYES) return;
 
-    m_Observations->DeleteRows(0);
+    for (int i = 0; i < selectedRows.GetCount(); i++) {
+        m_Observations->DeleteRows(selectedRows[i]);
+    }
     RefreshGridAppearance(m_ObservationsTable);
 }
 
@@ -766,6 +784,15 @@ void ooControlDialogImpl::OnObservationsGridCellSelect(wxGridEvent& event)
             JumpToPosition(lat, lon, 1);
         }
     }
+
+    m_ObservationsDelete->Enable(!m_ObservationsTable->GetSelectedRows().IsEmpty());
+}
+
+void ooControlDialogImpl::OnObservationsGridRangeSelect(
+    wxGridRangeSelectEvent& event)
+{
+  m_ObservationsDelete->Enable(
+      !m_ObservationsTable->GetSelectedRows().IsEmpty());
 }
 
 wxString ooControlDialogImpl::GetBackupFilename(int index)

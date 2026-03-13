@@ -71,7 +71,6 @@ class ooControlDialogDef : public wxDialog
 		wxStaticLine* m_staticline11;
 		wxButton* m_ObservationsNew;
 		wxButton* m_ObservationsDelete;
-		wxButton* m_ObservationsDeleteAll;
 		wxButton* m_ObservationsAddMarks;
 		wxButton* m_ObservationsDeleteMarks;
 		wxButton* m_buttonLoadObs;
@@ -90,7 +89,6 @@ class ooControlDialogDef : public wxDialog
 		virtual void OnButtonClickScanNmea( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickNewObservation( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickDeleteObservation( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnButtonClickDeleteAllObservations( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickObservationsAddMarks( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickObservationsDeleteMarks( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickLoadObservation( wxCommandEvent& event ) { event.Skip(); }
