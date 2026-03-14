@@ -760,11 +760,11 @@ void ooControlDialogImpl::OnObservationsGridCellSelect(wxGridEvent& event)
 {
     int lat_col = m_Observations->GetProject().GetLatCol();
     int lon_col = m_Observations->GetProject().GetLonCol();
+    int mark_col = m_Observations->GetProject().GetMarkCol();
     int col = event.GetCol();
     int row = event.GetRow();
-    bool isOnMark = (m_Observations->GetProject().GetColFieldTypes()[col].IsSameAs("Mark GUID") &&
-        !m_Observations->GetValue(row, col).IsEmpty());
-    if (isOnMark || col == lat_col || col == lon_col) {
+    bool hasMark = (!m_Observations->GetValue(row, mark_col).IsEmpty());
+    if (hasMark) {
         if (lat_col != wxNOT_FOUND && lon_col != wxNOT_FOUND) {
             const double lat = fromDMM_Plugin(m_Observations->GetValue(row, lat_col));
             const double lon = fromDMM_Plugin(m_Observations->GetValue(row, lon_col));

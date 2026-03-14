@@ -114,6 +114,7 @@ void ooProject::OnFieldTypeChanged()
 {
     m_lat_col = FindFieldTypeColumn("Start Latitude");
     m_lon_col = FindFieldTypeColumn("Start Longitude");
+    m_mark_col = FindFieldTypeColumn("Mark GUID");
 }
 
 std::unordered_map<wxString, wxArrayString> ooObservations::m_listings;

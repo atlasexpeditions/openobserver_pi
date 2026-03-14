@@ -81,6 +81,7 @@ public:
   int FindFieldTypeColumn(const wxString& field_type) const;
   int GetLatCol() const { return m_lat_col; }
   int GetLonCol() const { return m_lon_col; }
+  int GetMarkCol() const { return m_mark_col; }
 
 protected:
   void OnFieldTypeChanged();
@@ -88,7 +89,7 @@ protected:
   wxGridSizesInfo m_col_sizes;
   wxArrayString m_col_field_types;
   wxArrayString m_col_labels;
-  int m_lat_col, m_lon_col;
+  int m_lat_col, m_lon_col, m_mark_col;
 };
 
 ///////////////////////////////////////////////////////////////////////////////
