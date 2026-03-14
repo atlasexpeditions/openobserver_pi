@@ -502,13 +502,20 @@ void ooControlDialogImpl::OnButtonClickScanNmea(wxCommandEvent& event)
 }
 
 
-void ooControlDialogImpl::ooControlDialogActivate(wxActivateEvent& event) {
-    if (int count = m_Observations->UpdateObservationsFromMarks()) {
-        //wxMessageBox(wxString::Format(wxT("The position of %i observation(s) has been updated !"), count),
-        //             "Position updated", wxOK, this);
-        m_ObservationsTable->ForceRefresh();
+void ooControlDialogImpl::ooControlDialogActivate(wxActivateEvent& event)
+{
+    static bool inActivate = false;
+    if (!inActivate) {
+        inActivate = true;
+        if (int count = m_Observations->UpdateObservationsFromMarks()) {
+            // wxMessageBox(wxString::Format(wxT("The position of %i observation(s)
+            // has been updated !"), count),
+            //              "Position updated", wxOK, this);
+            RefreshGridAppearance(m_ObservationsTable);
+        }
     }
     event.Skip();
+    inActivate = false;
 }
 
 void ooControlDialogImpl::UseProject()
@@ -642,7 +649,7 @@ void ooControlDialogImpl::OnButtonClickDeleteObservation( wxCommandEvent& event 
         "Delete observation(s)?", wxYES_NO, this);
     if (response != wxYES) return;
 
-    for (int i = 0; i < selectedRows.GetCount(); i++) {
+    for (int i = 0; i < (int)selectedRows.GetCount(); i++) {
         m_Observations->DeleteMarks(selectedRows[i]);
         m_Observations->DeleteRows(selectedRows[i]);
     }

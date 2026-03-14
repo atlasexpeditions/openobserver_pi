@@ -32,6 +32,7 @@
 #include <wx/xml/xml.h>
 #include <wx/txtstrm.h>
 #include <wx/wfstream.h>
+#include <wx/msgdlg.h>
 
 #include "tpUtils.h"
 #include "ocpn_plugin.h"
@@ -630,8 +631,8 @@ int ooObservations::UpdateObservationsFromMarks()
         markCol == wxNOT_FOUND)
       return 0;
 
-    for (int r = 0; r < R; r++) {
-        const wxString guid = GetValue(r, markCol);
+    for (int r = R - 1; r >= 0; r--) {
+        wxString guid = GetValue(r, markCol);
         if (guid.IsEmpty()) continue;
         const wxString latStr = GetValue(r, latCol);
         const wxString lonStr = GetValue(r, lonCol);
@@ -656,7 +657,16 @@ int ooObservations::UpdateObservationsFromMarks()
             }
         } else {
             // The waypoint has been deleted
-            SetValue(r, markCol, wxEmptyString);
+            const int response = wxMessageBox(
+              wxString::Format(wxT("Warning: mark of observation #%i has been deleted. Do you want "
+              "to delete the corresponding observation?"), r + 1),
+                "Delete observation?", wxYES | wxNO, GetOCPNCanvasWindow());
+            if (response == wxYES) {
+                res++;
+                DeleteRows(r);
+            } else {
+                SetValue(r, markCol, wxEmptyString);
+            }
         }
     }
     return res;
