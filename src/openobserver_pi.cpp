@@ -284,12 +284,11 @@ int openobserver_pi::Init(void)
     m_ooControlDialogImpl = new ooControlDialogImpl(m_parent_window);
     m_ooControlDialogImpl->CreateObservationsTable(m_ooObservations);
 
-    m_ooControlDialogImpl->NewProject();
-    const int observationsIndex = m_observationsIndex;
-    m_ooControlDialogImpl->UseProject();
-
     // restore backup observations and start backing up on a timer
-    m_ooControlDialogImpl->RestoreBackupObservations(observationsIndex);
+    if (!m_ooControlDialogImpl->RestoreBackupObservations(m_observationsIndex)) {
+        m_ooControlDialogImpl->NewProject();
+        m_ooControlDialogImpl->UseProject();
+    }
 
     m_ooControlDialogImpl->Fit();
     m_ooControlDialogImpl->Layout();
