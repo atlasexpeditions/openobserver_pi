@@ -309,7 +309,7 @@ int openobserver_pi::Init(void)
         WANTS_NMEA_SENTENCES        |
         //    USES_AUI_MANAGER            |
 //        WANTS_PREFERENCES         |
-        //    WANTS_ONPAINT_VIEWPORT      |
+        WANTS_ONPAINT_VIEWPORT      |
         WANTS_PLUGIN_MESSAGING    |
         WANTS_LATE_INIT           |
         WANTS_MOUSE_EVENTS        |
@@ -485,6 +485,12 @@ void openobserver_pi::SetNMEASentence(wxString& sentence)
         m_ooObservations->SetNmeaSentFix(sentence);
     if (m_ooControlDialogImpl)
         m_ooControlDialogImpl->SetNmeaSentence(sentence);
+}
+
+void openobserver_pi::SetCurrentViewPort(PlugIn_ViewPort& vp)
+{
+    if (m_ooControlDialogImpl)
+        m_ooControlDialogImpl->SetViewScale(vp.view_scale_ppm);
 }
 
 wxBitmap *openobserver_pi::GetPlugInBitmap()

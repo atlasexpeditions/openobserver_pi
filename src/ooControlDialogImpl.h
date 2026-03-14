@@ -58,7 +58,7 @@ public:
 
         void SetPositionFix(time_t fixTime, double lat, double lon);
         void SetNmeaSentence(const wxString& sentence);
-
+        void SetViewScale(double viewScale);
       protected:
         void SetupObservationsForProject();
         bool LoadObservations(const wxString& filename);
@@ -97,6 +97,7 @@ public:
         wxTimer m_BackupTimer;
         ooProject m_CurrentProject;
         int m_currentObservationsIndex;
+        double m_viewScale;
 
         bool m_isScanningNmea;
         std::unordered_map<wxString, std::set<int>> m_scannedNmeaFields;

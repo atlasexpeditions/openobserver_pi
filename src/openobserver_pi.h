@@ -182,7 +182,8 @@ public:
     void SetCursorLatLon(double lat, double lon);
     void SetPositionFix(PlugIn_Position_Fix &pfix);
     void SetNMEASentence(wxString& sentence);
-
+    void SetCurrentViewPort(PlugIn_ViewPort& vp);
+    
     wxString GetProjectName() const;
     void SetProject(const wxString& projectName,
                     int observationsIndex);

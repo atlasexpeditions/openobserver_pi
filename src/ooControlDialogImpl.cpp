@@ -59,7 +59,8 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
       m_MiniPanel(nullptr),
       m_Observations(nullptr),
       m_ObservationsTable(nullptr),
-      m_isScanningNmea(false)
+      m_isScanningNmea(false),
+      m_viewScale(1.0)
 {
 #if wxCHECK_VERSION(3,0,0)
     SetLayoutAdaptationMode(wxDIALOG_ADAPTATION_MODE_ENABLED);
@@ -767,11 +768,16 @@ void ooControlDialogImpl::OnObservationsGridCellSelect(wxGridEvent& event)
         if (lat_col != wxNOT_FOUND && lon_col != wxNOT_FOUND) {
             const double lat = fromDMM_Plugin(m_Observations->GetValue(row, lat_col));
             const double lon = fromDMM_Plugin(m_Observations->GetValue(row, lon_col));
-            JumpToPosition(lat, lon, 1);
+            JumpToPosition(lat, lon, m_viewScale);
         }
     }
 
     m_ObservationsDelete->Enable(!m_ObservationsTable->GetSelectedRows().IsEmpty());
+}
+
+void ooControlDialogImpl::SetViewScale(double viewScale)
+{
+    m_viewScale = viewScale;
 }
 
 void ooControlDialogImpl::OnObservationsGridRangeSelect(
