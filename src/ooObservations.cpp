@@ -319,7 +319,7 @@ void ooObservations::StartObservation()
               }
             else if (field_type.IsSameAs("Start Longitude"))
               {
-                 SetValue(0, c, toSDMM_PlugIn(1, m_position_fix_lon));
+                 SetValue(0, c, toSDMM_PlugIn(2, m_position_fix_lon));
                  StartLongSave = m_position_fix_lon;
               }
             else if (field_type.IsSameAs("NMEA TWS"))
