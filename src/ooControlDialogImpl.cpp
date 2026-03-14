@@ -741,6 +741,7 @@ void ooControlDialogImpl::ooControlDialogDefOnClose(wxCloseEvent& event)
 
 void ooControlDialogImpl::OnNotebookPageChanged(wxNotebookEvent& event)
 {
+    event.Skip();
 }
 
 void ooControlDialogImpl::OnChoiceObservationsChanged(wxCommandEvent& event)
@@ -754,6 +755,8 @@ void ooControlDialogImpl::OnChoiceObservationsChanged(wxCommandEvent& event)
         NewProject();
         UseProject();
     }
+
+    event.Skip();
 }
 
 void ooControlDialogImpl::OnObservationsGridCellSelect(wxGridEvent& event)
@@ -773,6 +776,8 @@ void ooControlDialogImpl::OnObservationsGridCellSelect(wxGridEvent& event)
     }
 
     m_ObservationsDelete->Enable(!m_ObservationsTable->GetSelectedRows().IsEmpty());
+
+    event.Skip();
 }
 
 void ooControlDialogImpl::SetViewScale(double viewScale)
@@ -785,6 +790,8 @@ void ooControlDialogImpl::OnObservationsGridRangeSelect(
 {
   m_ObservationsDelete->Enable(
       !m_ObservationsTable->GetSelectedRows().IsEmpty());
+
+  event.Skip();
 }
 
 wxString ooControlDialogImpl::GetBackupFilename(int index)
