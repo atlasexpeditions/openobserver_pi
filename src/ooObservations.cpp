@@ -624,6 +624,12 @@ int ooObservations::UpdateObservationsFromMarks()
     const int markCol = GetProject().GetMarkCol();
     const int latCol = GetProject().GetLatCol();
     const int lonCol = GetProject().GetLonCol();
+
+    if (latCol == wxNOT_FOUND ||
+        lonCol == wxNOT_FOUND ||
+        markCol == wxNOT_FOUND)
+      return 0;
+
     for (int r = 0; r < R; r++) {
         const wxString guid = GetValue(r, markCol);
         if (guid.IsEmpty()) continue;
