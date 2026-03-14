@@ -81,6 +81,7 @@ public:
         void ooControlCloseClick(wxCommandEvent& event);
         void ooControlDialogDefOnClose(wxCloseEvent& event);
         void OnButtonClickScanNmea(wxCommandEvent& event);
+        void ooControlDialogActivate(wxActivateEvent& event);
 
         void OnNotebookPageChanged(wxNotebookEvent& event);
         void OnChoiceObservationsChanged(wxCommandEvent& event);

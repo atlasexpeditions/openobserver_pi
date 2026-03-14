@@ -118,6 +118,7 @@ public:
 
     void AddMarks(int row = -1); // -1 for all rows
     void DeleteMarks(int row = -1); // -1 for all rows
+    int UpdateObservationsFromMarks();
 
     void SetProject(const ooProject& project);
     const ooProject& GetProject() const;

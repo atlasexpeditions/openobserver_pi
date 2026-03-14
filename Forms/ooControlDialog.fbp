@@ -59,6 +59,7 @@
       <property name="window_extra_style"></property>
       <property name="window_name"></property>
       <property name="window_style"></property>
+      <event name="OnActivate">ooControlDialogActivate</event>
       <event name="OnClose">ooControlDialogDefOnClose</event>
       <object class="wxBoxSizer" expanded="true">
         <property name="minimum_size"></property>

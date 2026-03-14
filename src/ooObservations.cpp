@@ -617,6 +617,45 @@ void ooObservations::DeleteMarks(int targetRow)
     }
 }
 
+int ooObservations::UpdateObservationsFromMarks()
+{
+    int res = 0;
+    const int R = GetRowsCount();
+    const int markCol = GetProject().GetMarkCol();
+    const int latCol = GetProject().GetLatCol();
+    const int lonCol = GetProject().GetLonCol();
+    for (int r = 0; r < R; r++) {
+        const wxString guid = GetValue(r, markCol);
+        if (guid.IsEmpty()) continue;
+        const wxString latStr = GetValue(r, latCol);
+        const wxString lonStr = GetValue(r, lonCol);
+        
+        const double lat = fromDMM_Plugin(latStr);
+        const double lon = fromDMM_Plugin(lonStr);
+        
+        PlugIn_Waypoint wp;
+        if (GetSingleWaypoint(guid, &wp)) {
+            double aLat = wxRound(wp.m_lat * 1000);
+            double bLat = wxRound(lat * 1000);
+            
+            double aLon = wxRound(wp.m_lon * 1000);
+            double bLon = wxRound(lon * 1000);
+            
+            if (wxRound(wp.m_lat*1000) != wxRound(lat*1000) ||
+                wxRound(wp.m_lon*1000) != wxRound(lon*1000)) {
+                // Update needed
+                SetValue(r, latCol, toSDMM_PlugIn(1, wp.m_lat));
+                SetValue(r, lonCol, toSDMM_PlugIn(2, wp.m_lon));
+                res++;
+            }
+        } else {
+            // The waypoint has been deleted
+            SetValue(r, markCol, wxEmptyString);
+        }
+    }
+    return res;
+}
+
 void ooObservations::SaveToCSV(wxFile *file)
 {
     const int C = GetNumberCols();

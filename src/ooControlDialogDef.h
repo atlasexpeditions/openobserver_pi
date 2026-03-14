@@ -80,6 +80,7 @@ class ooControlDialogDef : public wxDialog
 		wxChoice* m_choiceObservations;
 
 		// Virtual event handlers, override them in your derived class
+		virtual void ooControlDialogActivate( wxActivateEvent& event ) { event.Skip(); }
 		virtual void ooControlDialogDefOnClose( wxCloseEvent& event ) { event.Skip(); }
 		virtual void OnNotebookPageChanged( wxNotebookEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickProjectEditUse( wxCommandEvent& event ) { event.Skip(); }

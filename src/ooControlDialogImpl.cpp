@@ -339,7 +339,8 @@ bool ooControlDialogImpl::LoadObservations(const wxString& filename)
                      "Error", wxOK, this);
         return false;
     }
-    
+
+    m_Observations->UpdateObservationsFromMarks();
     SetupObservationsForProject();
     RefreshGridAppearance(m_ObservationsTable);
 
@@ -498,6 +499,16 @@ void ooControlDialogImpl::OnButtonClickScanNmea(wxCommandEvent& event)
     m_isScanningNmea = !m_isScanningNmea;
     m_buttonScanNmea->SetLabel(m_isScanningNmea ? "Stop NMEA Scan" : "Start NMEA Scan");
     OnNmeaFieldUpdate();
+}
+
+
+void ooControlDialogImpl::ooControlDialogActivate(wxActivateEvent& event) {
+    if (int count = m_Observations->UpdateObservationsFromMarks()) {
+        //wxMessageBox(wxString::Format(wxT("The position of %i observation(s) has been updated !"), count),
+        //             "Position updated", wxOK, this);
+        m_ObservationsTable->ForceRefresh();
+    }
+    event.Skip();
 }
 
 void ooControlDialogImpl::UseProject()
