@@ -352,6 +352,9 @@ bool ooControlDialogImpl::LoadObservations(const wxString& filename)
     m_choiceObservations->SetString(m_currentObservationsIndex,
                                     m_Observations->GetProject().GetName());
     m_choiceObservations->GetParent()->Layout();
+
+    SetProjectEditable(false);
+
     return true;
 }
 
@@ -524,18 +527,11 @@ void ooControlDialogImpl::UseProject()
 {
     // TODO Remove this function once we can create various ooObservations
 
+    g_openobserver_pi->SetProject(m_textProjectName->GetValue(),
+                                  m_currentObservationsIndex);
+
     // update the project tab interface
-    m_ProjectEditUse->SetLabel("Edit");
-    m_gridProject->Disable();
-    m_ProjectNew->Disable();
-    m_ProjectNewColumn->Disable();
-    m_ProjectDeleteColumn->Disable();
-
-    g_openobserver_pi->SetProject(m_textProjectName->GetValue(), m_currentObservationsIndex);
-
-    // disable project name text field, first setting value in code to ensure it stays
-    m_textProjectName->SetValue(m_textProjectName->GetValue());
-    m_textProjectName->Disable();
+    SetProjectEditable(false);
 
     m_Observations->SetProject(GenerateProject());
 
@@ -597,12 +593,30 @@ void ooControlDialogImpl::OnButtonClickProjectEditUse(wxCommandEvent& event)
         
     } else {
         // enter edit mode
+        SetProjectEditable(true);
+    }
+}
+
+void ooControlDialogImpl::SetProjectEditable(bool editable)
+{
+    if (editable) {
         m_ProjectEditUse->SetLabel("Use");
         m_gridProject->Enable();
         m_ProjectNew->Enable();
         m_ProjectNewColumn->Enable();
         m_ProjectDeleteColumn->Enable();
         m_textProjectName->Enable();
+    } else {
+        m_ProjectEditUse->SetLabel("Edit");
+        m_gridProject->Disable();
+        m_ProjectNew->Disable();
+        m_ProjectNewColumn->Disable();
+        m_ProjectDeleteColumn->Disable();
+        
+        // disable project name text field, first setting value in code to ensure it
+        // stays
+        m_textProjectName->SetValue(m_textProjectName->GetValue());
+        m_textProjectName->Disable();
     }
 }
 

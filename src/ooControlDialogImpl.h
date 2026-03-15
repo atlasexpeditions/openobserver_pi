@@ -65,6 +65,7 @@ public:
         bool LoadObservations(const wxString& filename);
         bool SaveObservations(const wxString& filename = wxString(), bool stopObservation = true);
         ooProject GenerateProject() const;
+        void SetProjectEditable(bool editable);
 
         void OnButtonClickProjectEditUse(wxCommandEvent& event);
         void OnButtonClickProjectNew(wxCommandEvent& event);
