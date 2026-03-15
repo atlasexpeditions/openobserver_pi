@@ -184,7 +184,6 @@ public:
     void SetNMEASentence(wxString& sentence);
     void SetCurrentViewPort(PlugIn_ViewPort& vp);
     
-    wxString GetProjectName() const;
     void SetProject(const wxString& projectName,
                     int observationsIndex);
 
@@ -213,7 +212,6 @@ public:
     int     m_iCallerId;
     bool    m_bShowMainDialog;
     int     m_openobserver_button_id;
-    wxString m_projectName;
     int     m_observationsIndex, m_observationsChoiceCount;
     wxRect  m_dialogPosition, m_miniDialogPosition;
     int     m_addObservationItem;

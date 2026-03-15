@@ -499,17 +499,11 @@ wxBitmap *openobserver_pi::GetPlugInBitmap()
     return &m_ptpicons->m_bm_openobserver_pi;
 }
 
-wxString openobserver_pi::GetProjectName() const
-{
-    return m_projectName;
-}
-
 void openobserver_pi::SetProject(const wxString& projectName, int observationsIndex)
 {
-    m_projectName = projectName;
     m_observationsIndex = observationsIndex;
     
-    wxString title = "Open Observer - " + m_projectName;
+    wxString title = "Open Observer - " + projectName;
     m_ooControlDialogImpl->SetTitle(title);
     m_ooMiniDialogImpl->SetTitle(title);
 }
