@@ -54,8 +54,17 @@ bool ooProject::ReadFromXML(const wxXmlNode* project)
     m_col_labels.clear();
     m_col_field_types.clear();
     m_col_sizes = wxGridSizesInfo();
+    m_color = wxColor(50,50,50);
 
     m_name = project->GetAttribute("name");
+    wxArrayString colorStr = wxSplit(project->GetAttribute("color"), ',');
+    int r, g, b;
+    if (colorStr.GetCount() == 3 &&
+        colorStr[0].ToInt(&r) &&
+        colorStr[1].ToInt(&g) &&
+        colorStr[2].ToInt(&b)) {
+        m_color = wxColor(r, g, b);
+    }
 
     for (wxXmlNode* field = project->GetChildren(); field != NULL ; field = field->GetNext()) {
         int c = -1;
@@ -89,6 +98,10 @@ wxXmlNode* ooProject::SaveToXML(wxXmlNode* parent)
 
     wxXmlNode* project = new wxXmlNode(parent, wxXML_ELEMENT_NODE, "project");
     project->AddAttribute("name", m_name);
+    project->AddAttribute(
+        "color",
+        wxString::Format("%i,%i,%i", (int)m_color.Red(), (int)m_color.Green(), (int)m_color.Blue())
+    );
     
     for (int c = 0; c < C; ++c) {
         wxXmlNode* field = new wxXmlNode(project, wxXML_ELEMENT_NODE, "field");

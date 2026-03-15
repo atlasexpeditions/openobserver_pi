@@ -23,6 +23,7 @@
 #include <wx/statline.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
+#include <wx/clrpicker.h>
 #include <wx/grid.h>
 #include <wx/panel.h>
 #include <wx/notebook.h>
@@ -51,6 +52,8 @@ class ooControlDialogDef : public wxDialog
 		wxStaticLine* m_staticline3;
 		wxStaticText* m_staticText6;
 		wxTextCtrl* m_textProjectName;
+		wxStaticText* m_staticText9;
+		wxColourPickerCtrl* m_colourProject;
 		wxGrid* m_gridProject;
 		wxStaticText* m_staticText7;
 		wxStaticText* m_staticTextNMEA;

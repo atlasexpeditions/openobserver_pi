@@ -182,6 +182,7 @@ bool ooControlDialogImpl::LoadProject(const ooProject& project)
         m_gridProject->DeleteCols(0, m_gridProject->GetNumberCols());
 
     m_textProjectName->SetValue(project.GetName());
+    m_colourProject->SetColour(project.GetColor());
 
     const int C = project.GetColCount();
     for (int c = 0; c < C; c++) {
@@ -221,7 +222,8 @@ ooProject ooControlDialogImpl::GenerateProject() const
       m_textProjectName->GetValue(),
       colSizes,
       fieldTypes,
-      labels);
+      labels,
+      m_colourProject->GetColour());
 }
 
 void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
@@ -263,6 +265,8 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
 
 	// Label Appearance
 	m_ObservationsTable->SetLabelFont( wxFont( 11, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD, false, wxEmptyString ) );
+    m_ObservationsTable->SetLabelBackgroundColour(m_Observations->GetProject().GetColor());
+    m_ObservationsTable->SetLabelTextColour(wxColour(255, 255, 255));
 
 	// Cell Defaults
 	m_ObservationsTable->SetDefaultCellFont( wxFont( 11, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
@@ -418,6 +422,11 @@ void ooControlDialogImpl::SetupObservationsForProject()
 {
     if (!m_Observations) return;
     if (!m_ObservationsTable) return;
+
+    // update table color
+    m_ObservationsTable->SetLabelBackgroundColour(
+        m_Observations->GetProject().GetColor()
+    );
 
     // update column sizes of table to match
     m_ObservationsTable->SetColSizes(m_Observations->GetColSizes());
@@ -606,13 +615,15 @@ void ooControlDialogImpl::SetProjectEditable(bool editable)
         m_ProjectNewColumn->Enable();
         m_ProjectDeleteColumn->Enable();
         m_textProjectName->Enable();
+        m_colourProject->Enable();
     } else {
         m_ProjectEditUse->SetLabel("Edit");
         m_gridProject->Disable();
         m_ProjectNew->Disable();
         m_ProjectNewColumn->Disable();
         m_ProjectDeleteColumn->Disable();
-        
+        m_colourProject->Disable();
+
         // disable project name text field, first setting value in code to ensure it
         // stays
         m_textProjectName->SetValue(m_textProjectName->GetValue());

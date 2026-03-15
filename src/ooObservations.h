@@ -46,13 +46,14 @@ typedef struct _NMEAField {
 
 class ooProject {
 public:
-  ooProject() : m_name("Empty") {}
+  ooProject() : m_name("Empty"), m_color(50,50,50) {}
   ooProject(const wxString& name, const wxGridSizesInfo& colSizes,
-            const wxArrayString& colFieldTypes, const wxArrayString& colLabels)
+            const wxArrayString& colFieldTypes, const wxArrayString& colLabels, const wxColor& color)
       : m_name(name),
         m_col_sizes(colSizes),
         m_col_field_types(colFieldTypes),
-        m_col_labels(colLabels) {
+        m_col_labels(colLabels),
+        m_color(color) {
     OnFieldTypeChanged();
   }
 
@@ -76,6 +77,8 @@ public:
   const wxArrayString& GetColLabels() const { return m_col_labels; }
   void SetColLabels(const wxArrayString& colLabels) { m_col_labels = colLabels; }
 
+  const wxColour& GetColor() const { return m_color; }
+
   bool IsUpdatable(const ooProject& other) const;
 
   int FindFieldTypeColumn(const wxString& field_type) const;
@@ -89,6 +92,7 @@ protected:
   wxGridSizesInfo m_col_sizes;
   wxArrayString m_col_field_types;
   wxArrayString m_col_labels;
+  wxColor m_color;
   int m_lat_col, m_lon_col, m_mark_col;
 };
 
