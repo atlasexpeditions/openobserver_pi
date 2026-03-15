@@ -92,6 +92,8 @@ public:
         void OnBackupTimer(wxTimerEvent& event);
         bool LoadProject(const ooProject& project);
         void OnNmeaFieldUpdate();
+        void EnsureProjectHasFieldType(const wxString& field_type,
+                                       const wxString& label);
 
         ooMiniPanel *m_MiniPanel;
 

@@ -140,12 +140,11 @@ void ooControlDialogImpl::NewProject()
         m_gridProject->DeleteCols(0, m_gridProject->GetNumberCols());
 
     // add columns
-    m_gridProject->InsertCols(0, 8);
+    m_gridProject->InsertCols(0, 7);
 
     // set the column sizes
     wxArrayInt allColSizes;
-    allColSizes.Add(70);
-    allColSizes.Add(70);
+    allColSizes.Add(200);
     allColSizes.Add(90);
     allColSizes.Add(90);
     allColSizes.Add(90);
@@ -163,22 +162,20 @@ void ooControlDialogImpl::NewProject()
     UpdateProjectCellEditors();
 
     // fill the table
-    m_gridProject->SetCellValue(0, 0, "Date");
-    m_gridProject->SetCellValue(1, 0, "Start Date");
-    m_gridProject->SetCellValue(0, 1, "Time");
-    m_gridProject->SetCellValue(1, 1, "Start Time");
-    m_gridProject->SetCellValue(0, 2, "Lat");
-    m_gridProject->SetCellValue(1, 2, "Start Latitude");
-    m_gridProject->SetCellValue(0, 3, "Lon");
-    m_gridProject->SetCellValue(1, 3, "Start Longitude");
-    m_gridProject->SetCellValue(0, 4, "Duration");
-    m_gridProject->SetCellValue(1, 4, "Observation Duration");
-    m_gridProject->SetCellValue(0, 5, "Species");
+    m_gridProject->SetCellValue(0, 0, "Start timestamp");
+    m_gridProject->SetCellValue(1, 0, "Start Timestamp UTC");
+    m_gridProject->SetCellValue(0, 1, "Lat");
+    m_gridProject->SetCellValue(1, 1, "Start Latitude");
+    m_gridProject->SetCellValue(0, 2, "Lon");
+    m_gridProject->SetCellValue(1, 2, "Start Longitude");
+    m_gridProject->SetCellValue(0, 3, "Duration");
+    m_gridProject->SetCellValue(1, 3, "Observation Duration");
+    m_gridProject->SetCellValue(0, 4, "Species");
+    m_gridProject->SetCellValue(1, 4, "Text");
+    m_gridProject->SetCellValue(0, 5, "Notes");
     m_gridProject->SetCellValue(1, 5, "Text");
-    m_gridProject->SetCellValue(0, 6, "Notes");
-    m_gridProject->SetCellValue(1, 6, "Text");
-    m_gridProject->SetCellValue(0, 7, "Mark GUID");
-    m_gridProject->SetCellValue(1, 7, "Mark GUID");
+    m_gridProject->SetCellValue(0, 6, "Mark GUID");
+    m_gridProject->SetCellValue(1, 6, "Mark GUID");
 
     m_textProjectName->SetValue(wxString::Format(wxT("Default Project %i"), m_currentObservationsIndex + 1));
 }
@@ -545,6 +542,23 @@ void ooControlDialogImpl::UseProject()
     m_choiceObservations->GetParent()->Layout();
 }
 
+void ooControlDialogImpl::EnsureProjectHasFieldType(const wxString& field_type, const wxString& label)
+{
+  bool has_field_type_col = false;
+  for (int c = 0; c < m_gridProject->GetNumberCols(); ++c) {
+    if (m_gridProject->GetCellValue(1, c).IsSameAs(field_type)) {
+      has_field_type_col = true;
+      break;
+    }
+  }
+  if (!has_field_type_col) {
+    m_gridProject->AppendCols();
+    m_gridProject->SetColLabelValue(m_gridProject->GetNumberCols() - 1, "");
+    m_gridProject->SetCellValue(0, m_gridProject->GetNumberCols() - 1, label);
+    m_gridProject->SetCellValue(1, m_gridProject->GetNumberCols() - 1, field_type);
+  }
+}
+
 void ooControlDialogImpl::OnButtonClickProjectEditUse(wxCommandEvent& event)
 {
     if (m_gridProject->IsEnabled()) 
@@ -568,22 +582,11 @@ void ooControlDialogImpl::OnButtonClickProjectEditUse(wxCommandEvent& event)
             }
         }
 
-        // second, ensure that there is a Mark GUID column and, if not, add one as the last column
-        bool has_mark_guid_col = false;
-        for (int c=0; c<m_gridProject->GetNumberCols(); ++c)
-        {
-            if(m_gridProject->GetCellValue(1, c).IsSameAs("Mark GUID"))
-            {
-                has_mark_guid_col = true;
-                break;
-            }
-        }
-        if (!has_mark_guid_col)
-        {
-            m_gridProject->AppendCols();
-            m_gridProject->SetColLabelValue(m_gridProject->GetNumberCols()-1, "");
-            m_gridProject->SetCellValue(1, m_gridProject->GetNumberCols()-1, "Mark GUID");
-        }
+        // second, ensure that there is a Mark GUID column and, if not, add one as the last column        
+        EnsureProjectHasFieldType("Start Timestamp UTC", "Start Timestamp UTC");
+        EnsureProjectHasFieldType("Start Longitude", "Lon");
+        EnsureProjectHasFieldType("Start Latitude", "Lat");
+        EnsureProjectHasFieldType("Mark GUID", "Mark GUID");
 
         UseProject();
         
