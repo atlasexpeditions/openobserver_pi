@@ -216,7 +216,7 @@ void ooObservations::ComputeTrueWind(double sog,
     double Vx = apparentWindSpeed * cos(awa_rad);
     double Vy = apparentWindSpeed * sin(awa_rad);
     
-    double Vtx = Vx + sog;
+    double Vtx = Vx - sog;
     double Vty = Vy;
     
     trueWindSpeed = sqrt(Vtx * Vtx + Vty * Vty);
