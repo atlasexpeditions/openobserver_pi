@@ -60,7 +60,8 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
       m_Observations(nullptr),
       m_ObservationsTable(nullptr),
       m_isScanningNmea(false),
-      m_viewScale(1.0)
+      m_viewScale(1.0),
+      m_observationsChoiceCount(1)
 {
 #if wxCHECK_VERSION(3,0,0)
     SetLayoutAdaptationMode(wxDIALOG_ADAPTATION_MODE_ENABLED);
@@ -89,21 +90,6 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
     OnNmeaFieldUpdate();
 
     m_currentObservationsIndex = 0;
-    wxArrayString choices = {};
-    for (int i = 0; i < 3; i++) {
-        wxXmlDocument xmlDoc;
-        wxXmlNode * root;
-        int fileVersion;
-        ooProject project;
-        wxString name = wxString::Format(wxT("Empty (%i)"), i+1);
-        if (ooObservations::ReadFromXML(GetBackupFilename(i), fileVersion,
-                                        project, xmlDoc, root, ooProject()) &&
-            !project.GetName().IsEmpty())
-          name = project.GetName();
-        choices.Add(name);
-    }
-    m_choiceObservations->Append(choices);
-    m_choiceObservations->GetParent()->Layout();
 
     // bind backup timer (started in RestoreBackupObservations)
     m_BackupTimer.Bind(wxEVT_TIMER, &ooControlDialogImpl::OnBackupTimer, this, m_BackupTimer.GetId());
@@ -293,6 +279,25 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
 
     m_ObservationsTable->EnableDragColSize(true);
     ApplyModernGridStyle(m_ObservationsTable);
+}
+
+void ooControlDialogImpl::SetObservationsChoiceCount(int observationsChoiceCount)
+{
+  wxArrayString choices = {};
+  for (int i = 0; i < observationsChoiceCount; i++) {
+    wxXmlDocument xmlDoc;
+    wxXmlNode* root;
+    int fileVersion;
+    ooProject project;
+    wxString name = wxString::Format(wxT("Empty (%i)"), i + 1);
+    if (ooObservations::ReadFromXML(GetBackupFilename(i), fileVersion, project,
+                                    xmlDoc, root, ooProject()) &&
+        !project.GetName().IsEmpty())
+      name = project.GetName();
+    choices.Add(name);
+  }
+  m_choiceObservations->Append(choices);
+  m_choiceObservations->GetParent()->Layout();
 }
 
 bool ooControlDialogImpl::SaveObservations(const wxString& filename, bool stopObservation)

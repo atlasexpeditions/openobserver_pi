@@ -235,6 +235,7 @@ int openobserver_pi::Init(void)
     m_click_lat = 0.0;
     m_click_lon = 0.0;
     m_observationsIndex = -1;
+    m_observationsChoiceCount = -1;
 
     // Adds local language support for the plugin to OCPN
     AddLocaleCatalog(PLUGIN_CATALOG_NAME);
@@ -282,6 +283,7 @@ int openobserver_pi::Init(void)
                                 m_miniDialogPosition.height);
 
     m_ooControlDialogImpl = new ooControlDialogImpl(m_parent_window);
+    m_ooControlDialogImpl->SetObservationsChoiceCount(m_observationsChoiceCount);
     m_ooControlDialogImpl->CreateObservationsTable(m_ooObservations);
 
     // restore backup observations and start backing up on a timer
@@ -565,6 +567,7 @@ void openobserver_pi::SaveConfig()
     m_pConfig->SetPath("/Settings/openobserver_pi");
     m_pConfig->DeleteEntry("ProjectFile");
     m_pConfig->Write("ObservationsIndex", m_observationsIndex);
+    m_pConfig->Write("ObservationsChoiceCount", m_observationsChoiceCount);
     m_pConfig->Write("DialogX", m_dialogPosition.x);
     m_pConfig->Write("DialogY", m_dialogPosition.y);
     m_pConfig->Write("DialogWidth", m_dialogPosition.width);
@@ -590,6 +593,7 @@ void openobserver_pi::LoadConfig()
 
     m_pConfig->SetPath("/Settings/openobserver_pi");
     m_pConfig->Read("ObservationsIndex", &m_observationsIndex, -1);
+    m_pConfig->Read("ObservationsChoiceCount", &m_observationsChoiceCount, 3);
     m_pConfig->Read("DialogX", &m_dialogPosition.x, -1);
     m_pConfig->Read("DialogY", &m_dialogPosition.y, -1);
     m_pConfig->Read("DialogWidth", &m_dialogPosition.width, -1);

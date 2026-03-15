@@ -214,7 +214,7 @@ public:
     bool    m_bShowMainDialog;
     int     m_openobserver_button_id;
     wxString m_projectName;
-    int      m_observationsIndex;
+    int     m_observationsIndex, m_observationsChoiceCount;
     wxRect  m_dialogPosition, m_miniDialogPosition;
     int     m_addObservationItem;
 

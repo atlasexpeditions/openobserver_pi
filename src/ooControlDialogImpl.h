@@ -55,6 +55,7 @@ public:
 
         void CreateObservationsTable(ooObservations *observations);
         bool RestoreBackupObservations(int observationsIndex);
+        void SetObservationsChoiceCount(int observationsChoiceCount);
 
         void SetPositionFix(time_t fixTime, double lat, double lon);
         void SetNmeaSentence(const wxString& sentence);
@@ -99,7 +100,7 @@ public:
 
         wxTimer m_BackupTimer;
         ooProject m_CurrentProject;
-        int m_currentObservationsIndex;
+        int m_currentObservationsIndex, m_observationsChoiceCount;
         double m_viewScale;
 
         bool m_isScanningNmea;
