@@ -150,9 +150,6 @@ public:
     static const std::vector<NMEAField>& GetNMEAFields();
 
     // TODO: those should not be static, should not be in this class
-    static void ComputeTrueWind(double sog,
-                                double apparentWindSpeed, double apparentWindAngle,
-                                double& trueWindSpeed, double& trueWindAngle);
     static wxString GetNMEAField(const wxString& sentence, const wxString& sentenceID,
                                  int fieldIndex);
     static std::vector<wxString> SplitNMEAFields(const wxString& sentence, wxChar sep = ',');
@@ -172,7 +169,7 @@ private:
     double m_apparentWindSpeed = 0;
     double m_apparentWindAngle = 0;
     double m_trueWindSpeed = 0;
-    double m_trueWindAngle = 0;
+    double m_trueWindDirection = 0;
 
     double m_SOG = 0;
     double m_COG = 0;

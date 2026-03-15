@@ -38,7 +38,11 @@
 #include "ocpn_plugin.h"
 #include <openobserver_pi.h>
 
-std::vector<NMEAField> ooObservations::m_nmeaFields;
+void ComputeTrueWind(double sog, double cog, double apparentWindSpeed,
+                     double apparentWindAngle, double& trueWindSpeed,
+                     double& trueWindDirection);
+
+    std::vector<NMEAField> ooObservations::m_nmeaFields;
 
 bool ooProject::ReadFromXML(const wxXmlNode* project)
 {
@@ -164,8 +168,8 @@ void ooObservations::SetNmeaSentFix(wxString sentenceNmea)
             m_apparentWindSpeed = nmea.Mwv.WindSpeed;
             m_apparentWindAngle = nmea.Mwv.WindAngle;
             if (m_SOG != 0 && m_COG != 0) {
-                ComputeTrueWind(m_SOG, m_apparentWindSpeed, m_apparentWindAngle, m_trueWindSpeed,
-                                m_trueWindAngle);
+                ComputeTrueWind(m_SOG, m_COG, m_apparentWindSpeed, m_apparentWindAngle, m_trueWindSpeed,
+                                m_trueWindDirection);
             }
         }
         else if (nmea.LastSentenceIDParsed == "RMC") {
@@ -205,11 +209,11 @@ void ooObservations::SetNmeaSentFix(wxString sentenceNmea)
 }
 
 // Computes TrueWindSpeed and TrueWindAngle using the Apparent Wind and the GPS SOG.
-void ooObservations::ComputeTrueWind(double sog,
+static void ComputeTrueWind(double sog, double cog,
                                      double apparentWindSpeed,
                                      double apparentWindAngle,
                                      double& trueWindSpeed,
-                                     double& trueWindAngle)
+                                     double& trueWindDirection)
 {
     double awa_rad = apparentWindAngle * M_PI / 180.0;
     
@@ -220,8 +224,8 @@ void ooObservations::ComputeTrueWind(double sog,
     double Vty = Vy;
     
     trueWindSpeed = sqrt(Vtx * Vtx + Vty * Vty);
-    trueWindAngle = atan2(Vty, Vtx) * 180.0 / M_PI;
-    if (trueWindAngle < 0) trueWindAngle += 360.0;
+    trueWindDirection = (int)(cog + atan2(Vty, Vtx) * 180.0 / M_PI) % 360;
+    if (trueWindDirection < 0) trueWindDirection += 360.0;
 }
 
 std::vector<wxString> ooObservations::SplitNMEAFields(const wxString& sentence,
@@ -323,10 +327,14 @@ void ooObservations::StartObservation()
                  SetValue(0, c, toSDMM_PlugIn(2, m_position_fix_lon));
                  StartLongSave = m_position_fix_lon;
               }
+            else if (field_type.IsSameAs("NMEA AWS"))
+                SetValue(0, c, wxString::Format("%d", (int)round(m_apparentWindSpeed)));
+            else if (field_type.IsSameAs("NMEA AWA"))
+                SetValue(0, c, wxString::Format("%d", (int)round(m_apparentWindAngle)));
             else if (field_type.IsSameAs("NMEA TWS"))
                 SetValue(0, c, wxString::Format("%d", (int)round(m_trueWindSpeed)));
-            else if (field_type.IsSameAs("NMEA TWA"))
-                SetValue(0, c, wxString::Format("%d", (int)round(m_trueWindAngle)));
+            else if (field_type.IsSameAs("NMEA TWD"))
+                SetValue(0, c, wxString::Format("%d", (int)round(m_trueWindDirection)));
             else if (field_type.IsSameAs("NMEA COG"))
                 SetValue(0, c, wxString::Format("%d", (int)round(m_COG)));
             else if (field_type.IsSameAs("NMEA SOG"))
@@ -952,8 +960,10 @@ wxArrayString ooObservations::GetObservationFieldTypes()
     observationFieldTypes.Add("Observation Duration");
     observationFieldTypes.Add("Mark GUID");
     observationFieldTypes.Add("Text");
+    observationFieldTypes.Add("NMEA AWS");
+    observationFieldTypes.Add("NMEA AWA");
     observationFieldTypes.Add("NMEA TWS");
-    observationFieldTypes.Add("NMEA TWA");
+    observationFieldTypes.Add("NMEA TWD");
     observationFieldTypes.Add("NMEA COG");
     observationFieldTypes.Add("NMEA SOG");
 
