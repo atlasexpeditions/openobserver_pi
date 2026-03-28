@@ -82,8 +82,9 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	fgSizerProject->Add( m_staticline3, 0, wxALL|wxEXPAND, 5 );
 
 	wxFlexGridSizer* fgSizer8;
-	fgSizer8 = new wxFlexGridSizer( 1, 4, 0, 0 );
+	fgSizer8 = new wxFlexGridSizer( 2, 4, 0, 0 );
 	fgSizer8->AddGrowableCol( 1 );
+	fgSizer8->AddGrowableCol( 3 );
 	fgSizer8->SetFlexibleDirection( wxBOTH );
 	fgSizer8->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
@@ -92,16 +93,29 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	fgSizer8->Add( m_staticText6, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	m_textProjectName = new wxTextCtrl( m_panelProject, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,-1 ), 0 );
-	m_textProjectName->Enable( false );
-
 	fgSizer8->Add( m_textProjectName, 1, wxALL|wxEXPAND, 5 );
+
+
+	fgSizer8->Add( 0, 0, 1, wxEXPAND, 5 );
+
+
+	fgSizer8->Add( 0, 0, 1, wxEXPAND, 5 );
 
 	m_staticText9 = new wxStaticText( m_panelProject, wxID_ANY, _("Color"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText9->Wrap( -1 );
 	fgSizer8->Add( m_staticText9, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	m_colourProject = new wxColourPickerCtrl( m_panelProject, wxID_ANY, *wxBLACK, wxDefaultPosition, wxDefaultSize, wxCLRP_DEFAULT_STYLE );
-	fgSizer8->Add( m_colourProject, 0, wxALL, 5 );
+	fgSizer8->Add( m_colourProject, 0, wxALL|wxEXPAND, 5 );
+
+	m_staticText10 = new wxStaticText( m_panelProject, wxID_ANY, _("Mark icon"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText10->Wrap( -1 );
+	fgSizer8->Add( m_staticText10, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+
+	wxArrayString m_listMarkIconsChoices;
+	m_listMarkIcons = new wxChoice( m_panelProject, wxID_ANY, wxDefaultPosition, wxDefaultSize, m_listMarkIconsChoices, 0 );
+	m_listMarkIcons->SetSelection( 0 );
+	fgSizer8->Add( m_listMarkIcons, 0, wxALL|wxEXPAND, 5 );
 
 
 	fgSizerProject->Add( fgSizer8, 0, wxEXPAND, 5 );

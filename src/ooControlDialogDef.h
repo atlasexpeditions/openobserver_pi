@@ -24,10 +24,10 @@
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
 #include <wx/clrpicker.h>
+#include <wx/choice.h>
 #include <wx/grid.h>
 #include <wx/panel.h>
 #include <wx/notebook.h>
-#include <wx/choice.h>
 #include <wx/dialog.h>
 
 #include "wxWTranslateCatalog.h"
@@ -54,6 +54,8 @@ class ooControlDialogDef : public wxDialog
 		wxTextCtrl* m_textProjectName;
 		wxStaticText* m_staticText9;
 		wxColourPickerCtrl* m_colourProject;
+		wxStaticText* m_staticText10;
+		wxChoice* m_listMarkIcons;
 		wxGrid* m_gridProject;
 		wxStaticText* m_staticText7;
 		wxStaticText* m_staticTextNMEA;

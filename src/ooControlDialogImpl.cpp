@@ -89,6 +89,7 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
     UpdateProjectCellEditors();
     OnNmeaFieldUpdate();
 
+    m_listMarkIcons->Append(GetIconNameArray());
     m_currentObservationsIndex = 0;
 
     // bind backup timer (started in RestoreBackupObservations)
@@ -183,6 +184,9 @@ bool ooControlDialogImpl::LoadProject(const ooProject& project)
 
     m_textProjectName->SetValue(project.GetName());
     m_colourProject->SetColour(project.GetColor());
+    m_listMarkIcons->SetSelection(
+        m_listMarkIcons->FindString(project.GetMarkIcon())
+    );
 
     const int C = project.GetColCount();
     for (int c = 0; c < C; c++) {
@@ -223,7 +227,8 @@ ooProject ooControlDialogImpl::GenerateProject() const
       colSizes,
       fieldTypes,
       labels,
-      m_colourProject->GetColour());
+      m_colourProject->GetColour(),
+      m_listMarkIcons->GetStringSelection());
 }
 
 void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
@@ -616,6 +621,7 @@ void ooControlDialogImpl::SetProjectEditable(bool editable)
         m_ProjectDeleteColumn->Enable();
         m_textProjectName->Enable();
         m_colourProject->Enable();
+        m_listMarkIcons->Enable();
     } else {
         m_ProjectEditUse->SetLabel("Edit");
         m_gridProject->Disable();
@@ -623,6 +629,7 @@ void ooControlDialogImpl::SetProjectEditable(bool editable)
         m_ProjectNewColumn->Disable();
         m_ProjectDeleteColumn->Disable();
         m_colourProject->Disable();
+        m_listMarkIcons->Disable();
 
         // disable project name text field, first setting value in code to ensure it
         // stays

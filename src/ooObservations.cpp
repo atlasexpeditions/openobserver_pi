@@ -65,6 +65,7 @@ bool ooProject::ReadFromXML(const wxXmlNode* project)
         colorStr[2].ToInt(&b)) {
         m_color = wxColor(r, g, b);
     }
+    m_mark_icon = project->GetAttribute("mark_icon", "Info-Fish-Whale");
 
     for (wxXmlNode* field = project->GetChildren(); field != NULL ; field = field->GetNext()) {
         int c = -1;
@@ -102,6 +103,7 @@ wxXmlNode* ooProject::SaveToXML(wxXmlNode* parent)
         "color",
         wxString::Format("%i,%i,%i", (int)m_color.Red(), (int)m_color.Green(), (int)m_color.Blue())
     );
+    project->AddAttribute("mark_icon", m_mark_icon);
     
     for (int c = 0; c < C; ++c) {
         wxXmlNode* field = new wxXmlNode(project, wxXML_ELEMENT_NODE, "field");
@@ -583,8 +585,8 @@ void ooObservations::AddMarks(int targetRow)
                 int iconIndex = m_listings[m_iconsListing].Index(iconValue);
                 if (iconIndex != wxNOT_FOUND) icon = m_icons[iconIndex];
             }
-            if (icon.IsEmpty()) icon = "Info-Fish-Whale";
-
+            if (icon.IsEmpty()) icon = m_project.GetMarkIcon();
+            
             // add waypoint
             PlugIn_Waypoint wp(lat, lon, icon, name, guid);
             wp.m_MarkDescription = description;

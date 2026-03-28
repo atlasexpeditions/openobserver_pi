@@ -48,12 +48,14 @@ class ooProject {
 public:
   ooProject() : m_name("Empty"), m_color(50,50,50) {}
   ooProject(const wxString& name, const wxGridSizesInfo& colSizes,
-            const wxArrayString& colFieldTypes, const wxArrayString& colLabels, const wxColor& color)
+            const wxArrayString& colFieldTypes, const wxArrayString& colLabels, const wxColor& color, const wxString& markIcon)
       : m_name(name),
         m_col_sizes(colSizes),
         m_col_field_types(colFieldTypes),
         m_col_labels(colLabels),
-        m_color(color) {
+        m_color(color),
+        m_mark_icon(markIcon)
+  {
     OnFieldTypeChanged();
   }
 
@@ -78,6 +80,7 @@ public:
   void SetColLabels(const wxArrayString& colLabels) { m_col_labels = colLabels; }
 
   const wxColour& GetColor() const { return m_color; }
+  const wxString& GetMarkIcon() const { return m_mark_icon; }
 
   bool IsUpdatable(const ooProject& other) const;
 
@@ -93,6 +96,7 @@ protected:
   wxArrayString m_col_field_types;
   wxArrayString m_col_labels;
   wxColor m_color;
+  wxString m_mark_icon;
   int m_lat_col, m_lon_col, m_mark_col;
 };
 
