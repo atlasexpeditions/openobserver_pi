@@ -576,8 +576,6 @@ void ooControlDialogImpl::RefreshListings()
 
 void ooControlDialogImpl::UseProject()
 {
-    // TODO Remove this function once we can create various ooObservations
-
     g_openobserver_pi->SetProject(m_textProjectName->GetValue(),
                                   m_currentObservationsIndex);
 
