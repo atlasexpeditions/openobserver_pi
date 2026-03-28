@@ -925,6 +925,55 @@ bool ooObservations::ReadFromXML(const wxString& filename, const ooProject& defa
     return true;
 }
 
+#include <wx/jsonwriter.h>
+bool ooObservations::SaveToGeoJSON(wxOutputStream& out)
+{
+    const int R = GetRowsCount();
+    const int C = GetColsCount();
+    const int latCol = m_project.GetLatCol();
+    const int lonCol = m_project.GetLonCol();
+
+    wxJSONValue root;
+    root["type"] = wxString("FeatureCollection");
+    
+    wxJSONValue features;
+    for (int r = 0; r < R; r++) {
+        const double lat = fromDMM_Plugin(GetValue(r, latCol));
+        const double lon = fromDMM_Plugin(GetValue(r, lonCol));
+        const wxString des = GetRowDescription(r);
+
+        features[r]["type"] = wxString("Feature");
+        features[r]["geometry"]["type"] = wxString("Point");
+        features[r]["geometry"]["coordinates"][0] = lon;
+        features[r]["geometry"]["coordinates"][1] = lat;
+
+        for (int c = 0; c < C; c++) {
+            const wxString field_type = m_project.GetColFieldTypes()[c];
+            if (field_type.IsSameAs("Mark GUID") ||
+                field_type.IsSameAs("End Date") ||
+                field_type.IsSameAs("End Time") ||
+                field_type.IsSameAs("End Timestamp UTC") ||
+                field_type.IsSameAs("Start Latitude") ||
+                field_type.IsSameAs("Start Longitude") ||
+                field_type.IsSameAs("End Latitude") ||
+                field_type.IsSameAs("End Longitude") ||
+                field_type.IsSameAs("Observation Duration") ||
+                field_type.IsSameAs("Distance"))
+                continue;
+            const wxString field_label = m_project.GetColLabels()[c];
+
+            features[r]["properties"][field_label] =
+                  wxString(GetValue(r,c));
+        }
+    }
+    
+    root["features"] = features;
+
+    wxJSONWriter().Write(root, out);
+
+    return true;
+}
+
 void ooObservations::SetProject(const ooProject& project)
 {
     bool bMustReset = !m_project.IsUpdatable(project);

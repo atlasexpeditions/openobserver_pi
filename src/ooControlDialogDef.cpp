@@ -65,7 +65,7 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 
 	fgSizerProjectButtons->Add( m_ProjectNewColumn, 0, wxALL, 5 );
 
-	m_ProjectDeleteColumn = new wxButton( m_panelProject, wxID_ANY, _("Delete First Column"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_ProjectDeleteColumn = new wxButton( m_panelProject, wxID_ANY, _("Delete Column(s)"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_ProjectDeleteColumn->Enable( false );
 
 	fgSizerProjectButtons->Add( m_ProjectDeleteColumn, 0, wxALL, 5 );
@@ -301,7 +301,7 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	m_ObservationsImportObservations = new wxButton( this, wxID_ANY, _("Import CSV..."), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizerBottomBar->Add( m_ObservationsImportObservations, 0, wxALL, 5 );
 
-	m_ObservationsExportObservations = new wxButton( this, wxID_ANY, _("Export CSV..."), wxDefaultPosition, wxDefaultSize, 0 );
+	m_ObservationsExportObservations = new wxButton( this, wxID_ANY, _("Export..."), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizerBottomBar->Add( m_ObservationsExportObservations, 0, wxALL, 5 );
 
 

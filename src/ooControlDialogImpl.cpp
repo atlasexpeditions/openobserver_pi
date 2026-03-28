@@ -757,11 +757,21 @@ void ooControlDialogImpl::OnButtonClickDeleteObservation( wxCommandEvent& event 
     RefreshGridAppearance(m_ObservationsTable);
 }
 
+#include <wx/sysopt.h>
+
 void ooControlDialogImpl::OnButtonClickExportObservations( wxCommandEvent& event )
 {
     if (!m_Observations) return;
 
-    wxFileDialog exportFileDialog(this, _("Export observations to CSV file"), "", m_ObservationsDate->GetValue(), "CSV file (*.csv)|*.csv", wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
+#ifdef __WXMAC__
+    wxSystemOptions::SetOption(wxOSX_FILEDIALOG_ALWAYS_SHOW_TYPES, 1); // From wxFileDialog documentation about multiple file filters.
+#endif
+    wxFileDialog exportFileDialog(
+        this,
+        _("Export observations"), "",
+        m_Observations->GetProject().GetName(),
+        "CSV file (*.csv)|*.csv|GeoJSON file (*.geojson)|*.geojson",
+        wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
  
     if (exportFileDialog.ShowModal() == wxID_CANCEL)
         return;
@@ -773,7 +783,8 @@ void ooControlDialogImpl::OnButtonClickExportObservations( wxCommandEvent& event
         return;
     }
 
-    m_Observations->SaveToCSV(output_stream.GetFile());
+    if (exportFileDialog.GetPath().EndsWith("geojson")) m_Observations->SaveToGeoJSON(output_stream);
+    else                                                m_Observations->SaveToCSV(output_stream.GetFile());
 }
 
 void ooControlDialogImpl::OnButtonClickImportObservations(wxCommandEvent& event)

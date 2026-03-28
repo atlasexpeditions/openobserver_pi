@@ -141,6 +141,7 @@ public:
     bool ReadFromCSV(const wxString& filename, wxString& err);
     void SaveToXML(wxFile *file);
     bool ReadFromXML(const wxString& filename, const ooProject& defaultProject);
+    bool SaveToGeoJSON(wxOutputStream& out);
 
     wxString GetRowDescription(int row);
 
