@@ -309,7 +309,7 @@ bool ooControlDialogImpl::SaveObservations(const wxString& filename, bool stopOb
     wxString savePath = filename;
     if (savePath.IsEmpty()) {
         wxFileDialog saveFileDialog(this, _("Save observations to XML file"), "",
-                                    m_ObservationsDate->GetValue(),
+                                    m_Observations->GetProject().GetName(),
                                     "XML file (*.xml)|*.xml",
                                     wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
         
