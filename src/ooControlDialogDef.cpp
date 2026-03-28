@@ -70,7 +70,7 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 
 	fgSizerProjectButtons->Add( m_ProjectDeleteColumn, 0, wxALL, 5 );
 
-	m_ProjectNew = new wxButton( m_panelProject, wxID_ANY, _("Delete All"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_ProjectNew = new wxButton( m_panelProject, wxID_ANY, _("New project"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_ProjectNew->Enable( false );
 
 	fgSizerProjectButtons->Add( m_ProjectNew, 0, wxALL, 5 );
