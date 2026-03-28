@@ -122,6 +122,11 @@ ooControlDialogImpl::~ooControlDialogImpl()
 
 void ooControlDialogImpl::NewProject()
 {
+    // TODO: it would be nicer,
+    //       > instead of having this function that initializes UI components with default values,
+    //       > to have a function that initializes a default Project and then calls the standard LoadProject function.
+    // It would avoid some code duplication.
+
     // delete columns
     if (m_gridProject->GetNumberCols() > 0)
         m_gridProject->DeleteCols(0, m_gridProject->GetNumberCols());
@@ -165,6 +170,9 @@ void ooControlDialogImpl::NewProject()
     m_gridProject->SetCellValue(1, 6, "Mark GUID");
 
     m_textProjectName->SetValue(wxString::Format(wxT("Default Project %i"), m_currentObservationsIndex + 1));
+    m_colourProject->SetColour(DEFAULT_PROJECT_COLOUR);
+    m_listMarkIcons->SetSelection(
+        m_listMarkIcons->FindString(DEFAULT_PROJECT_ICON));
 }
 
 void ooControlDialogImpl::UpdateProjectCellEditors()

@@ -54,7 +54,7 @@ bool ooProject::ReadFromXML(const wxXmlNode* project)
     m_col_labels.clear();
     m_col_field_types.clear();
     m_col_sizes = wxGridSizesInfo();
-    m_color = wxColor(50,50,50);
+    m_color = DEFAULT_PROJECT_COLOUR;
 
     m_name = project->GetAttribute("name");
     wxArrayString colorStr = wxSplit(project->GetAttribute("color"), ',');
@@ -65,7 +65,7 @@ bool ooProject::ReadFromXML(const wxXmlNode* project)
         colorStr[2].ToInt(&b)) {
         m_color = wxColor(r, g, b);
     }
-    m_mark_icon = project->GetAttribute("mark_icon", "Info-Fish-Whale");
+    m_mark_icon = project->GetAttribute("mark_icon", DEFAULT_PROJECT_ICON);
 
     for (wxXmlNode* field = project->GetChildren(); field != NULL ; field = field->GetNext()) {
         int c = -1;

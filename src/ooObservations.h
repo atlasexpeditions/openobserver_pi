@@ -37,6 +37,9 @@
 #define XML_FILE_VERSION_OBSERVATIONS 2
 #define XML_FILE_VERSION_LISTING      1
 
+#define DEFAULT_PROJECT_ICON          "Info-Fish-Whale"
+#define DEFAULT_PROJECT_COLOUR        wxColor(50,50,50)
+
 typedef struct _NMEAField {
     wxString m_sentenceId;
     int m_fieldIndex;
@@ -46,7 +49,10 @@ typedef struct _NMEAField {
 
 class ooProject {
 public:
-  ooProject() : m_name("Empty"), m_color(50,50,50) {}
+  ooProject()
+      : m_name("Empty"),
+        m_color(DEFAULT_PROJECT_COLOUR),
+        m_mark_icon(DEFAULT_PROJECT_ICON) {}
   ooProject(const wxString& name, const wxGridSizesInfo& colSizes,
             const wxArrayString& colFieldTypes, const wxArrayString& colLabels, const wxColor& color, const wxString& markIcon)
       : m_name(name),
