@@ -607,6 +607,12 @@ void ooControlDialogImpl::EnsureProjectHasFieldType(const wxString& field_type, 
     m_gridProject->SetColLabelValue(m_gridProject->GetNumberCols() - 1, "");
     m_gridProject->SetCellValue(0, m_gridProject->GetNumberCols() - 1, label);
     m_gridProject->SetCellValue(1, m_gridProject->GetNumberCols() - 1, field_type);
+
+    wxMessageBox(
+        wxString::Format(
+            wxT("Column \"%s: %s\" has been automatically added to the project."),
+            label, field_type),
+        "Added column", wxOK_DEFAULT, this);
   }
 }
 
