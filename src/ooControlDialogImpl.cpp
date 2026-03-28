@@ -646,6 +646,17 @@ void ooControlDialogImpl::OnButtonClickProjectEditUse(wxCommandEvent& event)
         EnsureProjectHasFieldType("Start Latitude", "Lat");
         EnsureProjectHasFieldType("Mark GUID", "Mark GUID");
 
+        for (int c = m_gridProject->GetNumberCols() - 1; c >= 0; --c) {
+            if (m_gridProject->GetCellValue(0, c).IsSameAs("")  ||
+                m_gridProject->GetCellValue(1, c).IsSameAs("")) {
+                m_gridProject->DeleteCols(c);
+                wxMessageBox(wxString::Format(
+                             wxT("Empty column %i has been automatically "
+                                   "removed from the project."),
+                             c + 1), "Removed column", wxOK_DEFAULT, this);
+            }
+        }
+
         UseProject();
         
     } else {
