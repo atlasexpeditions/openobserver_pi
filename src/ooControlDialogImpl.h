@@ -84,7 +84,8 @@ public:
         void ooControlDialogDefOnClose(wxCloseEvent& event);
         void OnButtonClickScanNmea(wxCommandEvent& event);
         void ooControlDialogActivate(wxActivateEvent& event);
-
+        void OnButtonClickEditListings(wxCommandEvent& event);
+        void OnButtonClickRefreshListings(wxCommandEvent& event);
         void OnNotebookPageChanged(wxNotebookEvent& event);
         void OnChoiceObservationsChanged(wxCommandEvent& event);
         void OnObservationsGridCellSelect(wxGridEvent& event);
@@ -96,6 +97,8 @@ public:
         void OnNmeaFieldUpdate();
         void EnsureProjectHasFieldType(const wxString& field_type,
                                        const wxString& label);
+        void SetupListingEditors();
+        void RefreshListings();
 
         ooMiniPanel *m_MiniPanel;
 

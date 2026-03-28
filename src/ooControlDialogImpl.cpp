@@ -86,8 +86,8 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
     // Initialize on 'Observations' tab
     m_notebookControl->SetSelection(1);
 
-    UpdateProjectCellEditors();
     OnNmeaFieldUpdate();
+    RefreshListings();
 
     m_listMarkIcons->Append(GetIconNameArray());
     m_currentObservationsIndex = 0;
@@ -444,9 +444,17 @@ void ooControlDialogImpl::SetupObservationsForProject()
     // update column sizes of table to match
     m_ObservationsTable->SetColSizes(m_Observations->GetColSizes());
 
+    SetupListingEditors();
+}
+
+void ooControlDialogImpl::SetupListingEditors()
+{
+    if (m_Observations == NULL) return;
+    if (m_ObservationsTable == NULL) return;
+
     // Setup listings editors
     const int C = m_Observations->GetColsCount();
-
+    
     for (int c = 0; c < C; ++c) {
         const wxString field_type = m_Observations->GetColFieldTypes()[c];
         wxArrayString items;
@@ -528,21 +536,41 @@ void ooControlDialogImpl::OnButtonClickScanNmea(wxCommandEvent& event)
     OnNmeaFieldUpdate();
 }
 
-
 void ooControlDialogImpl::ooControlDialogActivate(wxActivateEvent& event)
 {
     static bool inActivate = false;
     if (!inActivate) {
         inActivate = true;
         if (int count = m_Observations->UpdateObservationsFromMarks()) {
-            // wxMessageBox(wxString::Format(wxT("The position of %i observation(s)
-            // has been updated !"), count),
-            //              "Position updated", wxOK, this);
-            RefreshGridAppearance(m_ObservationsTable);
+          // wxMessageBox(wxString::Format(wxT("The position of %i observation(s)
+          // has been updated !"), count),
+          //              "Position updated", wxOK, this);
+          RefreshGridAppearance(m_ObservationsTable);
         }
     }
     event.Skip();
     inActivate = false;
+}
+
+extern wxString* g_pListingDir;
+void ooControlDialogImpl::OnButtonClickEditListings(wxCommandEvent& event)
+{
+    wxLaunchDefaultApplication(*g_pListingDir);
+}
+
+void ooControlDialogImpl::OnButtonClickRefreshListings(wxCommandEvent& event)
+{
+    RefreshListings();
+}
+
+void ooControlDialogImpl::RefreshListings()
+{
+    openobserver_pi::RefreshListings();
+    int count = ooObservations::GetListings().size();
+    m_staticTextListings->SetLabel(wxString::Format(wxT("%i fields"), count));
+  
+    SetupListingEditors();
+    UpdateProjectCellEditors();
 }
 
 void ooControlDialogImpl::UseProject()

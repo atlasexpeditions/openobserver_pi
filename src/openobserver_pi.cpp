@@ -185,19 +185,6 @@ openobserver_pi::openobserver_pi(void *ppimgr)
         }
     }
 
-    wxArrayString allListings;
-    wxDir::GetAllFiles(*g_pListingDir, &allListings);
-    for (auto f : allListings)
-    {
-        wxArrayString items, icons;
-        if (ooObservations::ReadListingFromXML(f, items, icons))
-        {
-            wxString filename = wxFileName(f).GetName();
-            ooObservations::AddListing(filename, items);
-            if (icons.GetCount() > 0) ooObservations::SetIcons(filename, icons);
-        }
-    }
-
     ooObservations::SetNMEAFields(ReadNmeaXML());
 
     m_ptpicons = new tpicons();
@@ -682,4 +669,19 @@ std::vector<NMEAField> openobserver_pi::ReadNmeaXML()
     }
 
     return res;
+}
+
+void openobserver_pi::RefreshListings()
+{
+    ooObservations::ClearListings();
+    wxArrayString allListings;
+    wxDir::GetAllFiles(*g_pListingDir, &allListings);
+    for (auto f : allListings) {
+        wxArrayString items, icons;
+        if (ooObservations::ReadListingFromXML(f, items, icons)) {
+            wxString filename = wxFileName(f).GetName();
+            ooObservations::AddListing(filename, items);
+            if (icons.GetCount() > 0) ooObservations::SetIcons(filename, icons);
+        }
+    }
 }

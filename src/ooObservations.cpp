@@ -992,6 +992,13 @@ wxArrayString ooObservations::GetObservationFieldTypes()
     return observationFieldTypes;
 }
 
+void ooObservations::ClearListings()
+{
+    m_listings.clear();
+    m_icons.clear();
+    m_iconsListing.clear();
+}
+
 void ooObservations::AddListing(const wxString& listing, const wxArrayString& items)
 {
     m_listings[listing] = items;
@@ -1003,6 +1010,11 @@ bool ooObservations::GetListing(const wxString& listing, wxArrayString& items)
 
     items = m_listings.at(listing);
     return true;
+}
+
+const std::unordered_map<wxString, wxArrayString>& ooObservations::GetListings()
+{
+    return m_listings;
 }
 
 void ooObservations::SetIcons(const wxString& listing, const wxArrayString& icons)

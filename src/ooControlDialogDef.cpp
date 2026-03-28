@@ -149,26 +149,45 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	m_gridProject->Enable( false );
 	m_gridProject->SetMinSize( wxSize( 1,1 ) );
 
-	fgSizerProject->Add( m_gridProject, 1, wxEXPAND, 5 );
+	fgSizerProject->Add( m_gridProject, 1, wxALL|wxEXPAND, 5 );
 
-	wxBoxSizer* bSizer61;
-	bSizer61 = new wxBoxSizer( wxHORIZONTAL );
+	wxFlexGridSizer* fgSizer9;
+	fgSizer9 = new wxFlexGridSizer( 0, 4, 0, 0 );
+	fgSizer9->SetFlexibleDirection( wxBOTH );
+	fgSizer9->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
 	m_staticText7 = new wxStaticText( m_panelProject, wxID_ANY, _("NMEA :"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText7->Wrap( -1 );
-	bSizer61->Add( m_staticText7, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	fgSizer9->Add( m_staticText7, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	m_staticTextNMEA = new wxStaticText( m_panelProject, wxID_ANY, _("0 fields"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticTextNMEA->Wrap( -1 );
 	m_staticTextNMEA->SetMinSize( wxSize( 100,-1 ) );
 
-	bSizer61->Add( m_staticTextNMEA, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+	fgSizer9->Add( m_staticTextNMEA, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	m_buttonScanNmea = new wxButton( m_panelProject, wxID_ANY, _("Start NMEA Scan"), wxDefaultPosition, wxDefaultSize, 0 );
-	bSizer61->Add( m_buttonScanNmea, 0, wxALL, 5 );
+	fgSizer9->Add( m_buttonScanNmea, 0, wxALL, 5 );
 
 
-	fgSizerProject->Add( bSizer61, 0, wxEXPAND, 5 );
+	fgSizer9->Add( 0, 0, 1, wxEXPAND, 5 );
+
+	m_staticText11 = new wxStaticText( m_panelProject, wxID_ANY, _("Listings :"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticText11->Wrap( -1 );
+	fgSizer9->Add( m_staticText11, 0, wxALL, 5 );
+
+	m_staticTextListings = new wxStaticText( m_panelProject, wxID_ANY, _("0 fields"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticTextListings->Wrap( -1 );
+	fgSizer9->Add( m_staticTextListings, 0, wxALL, 5 );
+
+	m_buttonEditListings = new wxButton( m_panelProject, wxID_ANY, _("Edit listings"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer9->Add( m_buttonEditListings, 0, wxALL|wxEXPAND, 5 );
+
+	m_buttonRefreshListings = new wxButton( m_panelProject, wxID_ANY, _("Refresh"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer9->Add( m_buttonRefreshListings, 0, wxALL, 5 );
+
+
+	fgSizerProject->Add( fgSizer9, 1, wxEXPAND, 5 );
 
 
 	m_panelProject->SetSizer( fgSizerProject );
@@ -314,6 +333,8 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	m_ProjectDeleteColumn->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectDeleteColumn ), NULL, this );
 	m_ProjectNew->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectNew ), NULL, this );
 	m_buttonScanNmea->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickScanNmea ), NULL, this );
+	m_buttonEditListings->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickEditListings ), NULL, this );
+	m_buttonRefreshListings->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickRefreshListings ), NULL, this );
 	m_ObservationsNew->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickNewObservation ), NULL, this );
 	m_ObservationsDelete->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickDeleteObservation ), NULL, this );
 	m_ObservationsAddMarks->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickObservationsAddMarks ), NULL, this );
@@ -338,6 +359,8 @@ ooControlDialogDef::~ooControlDialogDef()
 	m_ProjectDeleteColumn->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectDeleteColumn ), NULL, this );
 	m_ProjectNew->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectNew ), NULL, this );
 	m_buttonScanNmea->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickScanNmea ), NULL, this );
+	m_buttonEditListings->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickEditListings ), NULL, this );
+	m_buttonRefreshListings->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickRefreshListings ), NULL, this );
 	m_ObservationsNew->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickNewObservation ), NULL, this );
 	m_ObservationsDelete->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickDeleteObservation ), NULL, this );
 	m_ObservationsAddMarks->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickObservationsAddMarks ), NULL, this );

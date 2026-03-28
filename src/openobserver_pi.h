@@ -194,6 +194,7 @@ public:
 
     static void WriteNmeaXML(const std::unordered_map<wxString, std::set<int>>& scannedNmeaFields);
     static std::vector<NMEAField> ReadNmeaXML();
+    static void RefreshListings();
   private:
     void    SaveConfig();
     void    LoadConfig();
