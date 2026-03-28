@@ -90,6 +90,8 @@ public:
         void OnChoiceObservationsChanged(wxCommandEvent& event);
         void OnObservationsGridCellSelect(wxGridEvent& event);
         void OnObservationsGridRangeSelect(wxGridRangeSelectEvent& event);
+        void OnProjectGridCellSelect(wxGridEvent& event);
+        void OnProjectGridRangeSelect(wxGridRangeSelectEvent& event);
 
       private:
         void OnBackupTimer(wxTimerEvent& event);
@@ -99,6 +101,7 @@ public:
                                        const wxString& label);
         void SetupListingEditors();
         void RefreshListings();
+        void OnProjectGridSelectionChange();
 
         ooMiniPanel *m_MiniPanel;
 

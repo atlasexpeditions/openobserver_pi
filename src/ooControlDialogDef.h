@@ -96,6 +96,8 @@ class ooControlDialogDef : public wxDialog
 		virtual void OnButtonClickProjectNewColumn( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickProjectDeleteColumn( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickProjectNew( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnProjectGridSelect( wxGridEvent& event ) { event.Skip(); }
+		virtual void OnProjectGridRangeSelect( wxGridRangeSelectEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickScanNmea( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickEditListings( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickRefreshListings( wxCommandEvent& event ) { event.Skip(); }

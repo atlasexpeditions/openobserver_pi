@@ -88,6 +88,7 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
 
     OnNmeaFieldUpdate();
     RefreshListings();
+    OnProjectGridSelectionChange();
 
     m_listMarkIcons->Append(GetIconNameArray());
     m_currentObservationsIndex = 0;
@@ -690,17 +691,26 @@ void ooControlDialogImpl::OnButtonClickProjectNew(wxCommandEvent& event)
 
 void ooControlDialogImpl::OnButtonClickProjectNewColumn(wxCommandEvent& event)
 {
-    m_gridProject->InsertCols(0, 1);
-    m_gridProject->SetColLabelValue(0, "");
+    wxArrayInt selection = m_gridProject->GetSelectedCols();
+    int pos = (selection.IsEmpty() ? 0 : selection[0]);
+
+    m_gridProject->InsertCols(pos, 1);
+    m_gridProject->SetColLabelValue(pos, "");
 
     wxGridCellChoiceEditor *observationFieldTypeEditor = new wxGridCellChoiceEditor(ooObservations::GetObservationFieldTypes());
-    m_gridProject->SetCellEditor(1, 0, observationFieldTypeEditor);
+    m_gridProject->SetCellEditor(1, pos, observationFieldTypeEditor);
 }
 
 void ooControlDialogImpl::OnButtonClickProjectDeleteColumn(wxCommandEvent& event)
 {
-    if (m_gridProject->GetNumberCols() > 0)
-        m_gridProject->DeleteCols(0);
+    if (m_gridProject->GetNumberCols() == 0) return;
+
+    wxArrayInt selection = m_gridProject->GetSelectedCols();
+    int pos = (selection.IsEmpty() ? 0 : selection[0]);
+
+    for (auto it = selection.rbegin(); it != selection.rend(); it++) {
+        m_gridProject->DeleteCols(*it);
+    }
 }
 
 void ooControlDialogImpl::OnButtonClickNewObservation( wxCommandEvent& event )
@@ -894,6 +904,26 @@ void ooControlDialogImpl::OnObservationsGridRangeSelect(
       !m_ObservationsTable->GetSelectedRows().IsEmpty());
 
   event.Skip();
+}
+
+void ooControlDialogImpl::OnProjectGridSelectionChange()
+{
+    const wxArrayInt selectedCols = m_gridProject->GetSelectedCols();
+    m_ProjectDeleteColumn->Enable(!selectedCols.IsEmpty());
+    m_ProjectDeleteColumn->SetLabel(
+        selectedCols.GetCount() == 1 ? "Delete column" : "Delete columns");
+}
+
+void ooControlDialogImpl::OnProjectGridCellSelect(wxGridEvent& event)
+{
+    OnProjectGridSelectionChange();
+    event.Skip();
+}
+
+void ooControlDialogImpl::OnProjectGridRangeSelect(wxGridRangeSelectEvent& event)
+{
+    OnProjectGridSelectionChange();
+    event.Skip();
 }
 
 wxString ooControlDialogImpl::GetBackupFilename(int index)
