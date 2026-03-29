@@ -111,6 +111,9 @@ ooControlDialogImpl::~ooControlDialogImpl()
             wxGridRangeSelectEventHandler(
                 ooControlDialogImpl::OnObservationsGridRangeSelect),
             NULL, this);
+        m_ObservationsTable->Disconnect(wxEVT_GRID_CELL_CHANGED,
+                               wxGridEventHandler(ooControlDialogImpl::OnObservationsGridCellChange),
+                               NULL, this);
     }
     this->Disconnect(wxEVT_SHOW, wxShowEventHandler(ooMiniPanel::OnShow), NULL, m_MiniPanel);
 
@@ -254,6 +257,10 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
         wxGridRangeSelectEventHandler(
             ooControlDialogImpl::OnObservationsGridRangeSelect),
         NULL, this);
+    m_ObservationsTable->Connect(wxEVT_GRID_CELL_CHANGED,
+                                 wxGridEventHandler(ooControlDialogImpl::OnObservationsGridCellChange),
+                                 NULL,
+                           this);
 
     m_ObservationsTable->SetMinSize(wxSize(1, 1));
 
@@ -943,6 +950,19 @@ void ooControlDialogImpl::OnProjectGridCellSelect(wxGridEvent& event)
 void ooControlDialogImpl::OnProjectGridRangeSelect(wxGridRangeSelectEvent& event)
 {
     OnProjectGridSelectionChange();
+    event.Skip();
+}
+
+void ooControlDialogImpl::OnObservationsGridCellChange(wxGridEvent& event)
+{
+    const int r = event.GetRow();
+    const int markCol = m_Observations->GetProject().GetMarkCol();
+    const bool hasMark = (!m_Observations->GetValue(r, markCol).IsEmpty());
+    if (hasMark) {
+        m_Observations->DeleteMarks(r);
+        m_Observations->AddMarks(r);
+    }
+
     event.Skip();
 }
 

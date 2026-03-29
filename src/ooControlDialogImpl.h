@@ -92,6 +92,7 @@ public:
         void OnObservationsGridRangeSelect(wxGridRangeSelectEvent& event);
         void OnProjectGridCellSelect(wxGridEvent& event);
         void OnProjectGridRangeSelect(wxGridRangeSelectEvent& event);
+        void OnObservationsGridCellChange(wxGridEvent& event);
 
       private:
         void OnBackupTimer(wxTimerEvent& event);
