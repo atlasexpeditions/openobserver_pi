@@ -770,7 +770,7 @@ void ooControlDialogImpl::OnButtonClickExportObservations( wxCommandEvent& event
         this,
         _("Export observations"), "",
         m_Observations->GetProject().GetName(),
-        "CSV file (*.csv)|*.csv|GeoJSON file (*.geojson)|*.geojson",
+        "GeoJSON file (*.geojson)|*.geojson|CSV file (*.csv)|*.csv",
         wxFD_SAVE|wxFD_OVERWRITE_PROMPT);
  
     if (exportFileDialog.ShowModal() == wxID_CANCEL)
