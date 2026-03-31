@@ -136,17 +136,19 @@ void ooControlDialogImpl::NewProject()
         m_gridProject->DeleteCols(0, m_gridProject->GetNumberCols());
 
     // add columns
-    m_gridProject->InsertCols(0, 7);
+    m_gridProject->InsertCols(0, 9);
 
     // set the column sizes
     wxArrayInt allColSizes;
     allColSizes.Add(200);
     allColSizes.Add(90);
     allColSizes.Add(90);
-    allColSizes.Add(90);
-    allColSizes.Add(100);
     allColSizes.Add(200);
+    allColSizes.Add(150);
+    allColSizes.Add(140);
+    allColSizes.Add(120);
     allColSizes.Add(70);
+    allColSizes.Add(120);
     wxGridSizesInfo colSizes = wxGridSizesInfo(70, allColSizes);
     m_gridProject->SetColSizes(colSizes);
 
@@ -164,14 +166,18 @@ void ooControlDialogImpl::NewProject()
     m_gridProject->SetCellValue(1, 1, "Start Latitude");
     m_gridProject->SetCellValue(0, 2, "Lon");
     m_gridProject->SetCellValue(1, 2, "Start Longitude");
-    m_gridProject->SetCellValue(0, 3, "Duration");
-    m_gridProject->SetCellValue(1, 3, "Observation Duration");
-    m_gridProject->SetCellValue(0, 4, "Species");
-    m_gridProject->SetCellValue(1, 4, "Text");
-    m_gridProject->SetCellValue(0, 5, "Notes");
-    m_gridProject->SetCellValue(1, 5, "Text");
-    m_gridProject->SetCellValue(0, 6, "Mark GUID");
-    m_gridProject->SetCellValue(1, 6, "Mark GUID");
+    m_gridProject->SetCellValue(0, 3, "Species");
+    m_gridProject->SetCellValue(1, 3, "Ocean species");
+    m_gridProject->SetCellValue(0, 4, "Animal count");
+    m_gridProject->SetCellValue(1, 4, "Animal count");
+    m_gridProject->SetCellValue(0, 5, "Behaviour");
+    m_gridProject->SetCellValue(1, 5, "Animal behaviour");
+    m_gridProject->SetCellValue(0, 6, "Image Ref");
+    m_gridProject->SetCellValue(1, 6, "Text");
+    m_gridProject->SetCellValue(0, 7, "Notes");
+    m_gridProject->SetCellValue(1, 7, "Text");
+    m_gridProject->SetCellValue(0, 8, "Mark GUID");
+    m_gridProject->SetCellValue(1, 8, "Mark GUID");
 
     m_textProjectName->SetValue(wxString::Format(wxT("Default Project %i"), m_currentObservationsIndex + 1));
     m_colourProject->SetColour(DEFAULT_PROJECT_COLOUR);
