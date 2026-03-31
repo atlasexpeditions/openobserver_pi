@@ -154,6 +154,7 @@ public:
     static void AddListing(const wxString& listing, const wxArrayString& items);
     static bool GetListing(const wxString& listing, wxArrayString& items);
     static const std::unordered_map<wxString, wxArrayString>& GetListings();
+    static wxArrayString GetListingKeys();
     static void ClearListings();
     static bool ReadListingFromXML(const wxString& filename,
                                    wxArrayString& result,

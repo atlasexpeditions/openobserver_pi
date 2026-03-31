@@ -466,11 +466,13 @@ void ooControlDialogImpl::SetupListingEditors()
     for (int c = 0; c < C; ++c) {
         const wxString field_type = m_Observations->GetColFieldTypes()[c];
         wxArrayString items;
+        wxGridCellAttr* attr = new wxGridCellAttr();
         if (ooObservations::GetListing(field_type, items)) {
-            wxGridCellAttr* attr = new wxGridCellAttr();
             attr->SetEditor(new wxGridCellChoiceEditor(items, true));
-            m_ObservationsTable->SetColAttr(c, attr);
+        } else {
+            attr->SetEditor(NULL);
         }
+        m_ObservationsTable->SetColAttr(c, attr);
     }
 }
 
@@ -627,8 +629,15 @@ void ooControlDialogImpl::OnButtonClickProjectEditUse(wxCommandEvent& event)
     if (m_gridProject->IsEnabled()) 
     {
         // exit edit mode and use project
+         
+        // first, ensure that there is a Mark GUID column and, if not, add one as
+        // the last column
+        EnsureProjectHasFieldType("Start Timestamp UTC", "Start Timestamp UTC");
+        EnsureProjectHasFieldType("Start Longitude", "Lon");
+        EnsureProjectHasFieldType("Start Latitude", "Lat");
+        EnsureProjectHasFieldType("Mark GUID", "Mark GUID");
 
-        // first, prompt user to export observations
+        // second, prompt user to export observations
         if (m_Observations &&
             m_Observations->GetRowsCount() > 0 &&
             !m_Observations->GetProject().IsUpdatable(GenerateProject()))
@@ -644,12 +653,6 @@ void ooControlDialogImpl::OnButtonClickProjectEditUse(wxCommandEvent& event)
                     return;
             }
         }
-
-        // second, ensure that there is a Mark GUID column and, if not, add one as the last column        
-        EnsureProjectHasFieldType("Start Timestamp UTC", "Start Timestamp UTC");
-        EnsureProjectHasFieldType("Start Longitude", "Lon");
-        EnsureProjectHasFieldType("Start Latitude", "Lat");
-        EnsureProjectHasFieldType("Mark GUID", "Mark GUID");
 
         for (int c = m_gridProject->GetNumberCols() - 1; c >= 0; --c) {
             if (m_gridProject->GetCellValue(0, c).IsSameAs("")  ||

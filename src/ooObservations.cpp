@@ -117,11 +117,34 @@ wxXmlNode* ooProject::SaveToXML(wxXmlNode* parent)
     return project;
 }
 
+bool IsTextOrListing(const wxString& fieldType, const wxArrayString& listings)
+{
+    if (fieldType.IsSameAs("Text"))               return true;
+    if (listings.Index(fieldType) != wxNOT_FOUND) return true;
+    return false;
+}
+
 bool ooProject::IsUpdatable(const ooProject& other) const
 {
-  return (this->GetColCount() == other.GetColCount() &&
-          this->GetColFieldTypes() == other.GetColFieldTypes()
-         );
+    bool res = (this->GetColCount() == other.GetColCount());
+    int c = 0;
+    const int C = GetColCount();
+    const wxArrayString listings = ooObservations::GetListingKeys();
+    while (res && c < C) {
+        const bool otherIsTextOrListing =
+            IsTextOrListing(other.GetColFieldTypes()[c], listings);
+        const bool thisIsTextOrListing =
+            IsTextOrListing(this->GetColFieldTypes()[c], listings);
+    
+        if (otherIsTextOrListing || thisIsTextOrListing) {
+            res = (otherIsTextOrListing && thisIsTextOrListing);
+        } else {
+            res = (other.GetColFieldTypes()[c].IsSameAs(
+                   this->GetColFieldTypes()[c]));
+        }
+        c++;
+    }
+    return res;
 }
 
 int ooProject::FindFieldTypeColumn(const wxString& field_type) const
@@ -1064,6 +1087,15 @@ bool ooObservations::GetListing(const wxString& listing, wxArrayString& items)
 const std::unordered_map<wxString, wxArrayString>& ooObservations::GetListings()
 {
     return m_listings;
+}
+
+wxArrayString ooObservations::GetListingKeys()
+{
+    wxArrayString res;
+    for (auto it : m_listings) {
+        res.Add(it.first);
+    }
+    return res;
 }
 
 void ooObservations::SetIcons(const wxString& listing, const wxArrayString& icons)
