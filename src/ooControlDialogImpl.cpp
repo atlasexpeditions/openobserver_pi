@@ -645,7 +645,7 @@ void ooControlDialogImpl::OnButtonClickProjectEditUse(wxCommandEvent& event)
             const int response = wxMessageBox(
               "Warning: your current observations will be cleared. Do you want "
               "to save them first?",
-              "Export your observations?", wxYES | wxNO | wxCANCEL, this);
+              "Save your observations?", wxYES | wxNO | wxCANCEL, this);
             if (response == wxCANCEL) return;
             if (response == wxYES)
             {
