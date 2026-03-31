@@ -912,6 +912,10 @@ bool ooObservations::ReadFromXML(const wxString& filename, const ooProject& defa
                                      defaultProject))
         return false;
 
+    // Make sure the table is cleared before loading any new data
+    // (loading blank data would let the old data still present)
+    DeleteRows(0, GetNumberRows());
+
     SetProject(project);
 
     const int C = GetNumberCols();
