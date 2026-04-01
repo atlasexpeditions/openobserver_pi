@@ -80,6 +80,19 @@ bool ooMiniPanel::Create(wxWindow* parent, wxWindowID id, const wxString& msg,
   bSizerTopButtons->Add(m_buttonToggleWindow, 0,
                         wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
+  m_ProjectLabel =
+      new wxStaticText(this, wxID_ANY, _("  "),
+                       wxDefaultPosition, wxDefaultSize, 0);
+
+  m_ProjectLabel->SetBackgroundColour(wxColor(20, 20, 20));
+  m_ProjectLabel->SetForegroundColour(wxColor(*wxWHITE));
+  wxFont font = m_ProjectLabel->GetFont();
+  font.SetWeight(wxFONTWEIGHT_EXTRABOLD);
+  m_ProjectLabel->SetFont(font);
+
+  bSizerTopButtons->Add(m_ProjectLabel, 1,
+                        wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT | wxALL, 5);
+
   this->SetSizerAndFit(bSizerTopButtons);
   bSizerTopButtons->SetSizeHints(this);
 
@@ -117,6 +130,14 @@ ooMiniPanel::~ooMiniPanel() {
 void ooMiniPanel::SetToggleWindowButtonLabel(const wxString& label)
 {
   m_buttonToggleWindow->SetLabel(label);
+}
+
+void ooMiniPanel::SetProjectInfo(const wxString& projectName,
+                                 const wxColor& projectColor)
+{
+    m_ProjectLabel->SetLabelText(wxString::Format(" %s ", projectName));
+    m_ProjectLabel->SetBackgroundColour(projectColor);
+    m_ProjectLabel->GetParent()->Layout();
 }
 
 void ooMiniPanel::StartOrStopObservation()

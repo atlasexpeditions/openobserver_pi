@@ -185,6 +185,7 @@ public:
     void SetCurrentViewPort(PlugIn_ViewPort& vp);
     
     void SetProject(const wxString& projectName,
+                    const wxColor& projectColor,
                     int observationsIndex);
 
     void ToggleToolbarIcon();

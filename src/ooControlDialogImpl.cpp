@@ -379,7 +379,10 @@ bool ooControlDialogImpl::LoadObservations(const wxString& filename)
 
     LoadProject(m_Observations->GetProject());
     g_openobserver_pi->SetProject(m_textProjectName->GetValue(),
+                                  m_colourProject->GetColour(),
                                   m_currentObservationsIndex);
+    m_MiniPanel->SetProjectInfo(m_textProjectName->GetValue(),
+                                m_colourProject->GetColour());
     m_choiceObservations->SetString(m_currentObservationsIndex,
                                     m_Observations->GetProject().GetName());
     m_choiceObservations->GetParent()->Layout();
@@ -592,7 +595,10 @@ void ooControlDialogImpl::RefreshListings()
 void ooControlDialogImpl::UseProject()
 {
     g_openobserver_pi->SetProject(m_textProjectName->GetValue(),
+                                  m_colourProject->GetColour(),
                                   m_currentObservationsIndex);
+    m_MiniPanel->SetProjectInfo(m_textProjectName->GetValue(),
+                                m_colourProject->GetColour());
 
     // update the project tab interface
     SetProjectEditable(false);

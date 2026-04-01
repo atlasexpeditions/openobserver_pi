@@ -44,6 +44,9 @@ class ooMiniDialogImpl : public ooMiniDialogDef
         ooMiniDialogImpl(wxWindow *parent);
         ~ooMiniDialogImpl();
 
+        void SetProjectInfo(const wxString& projectName,
+                            const wxColor& projectColor);
+
         protected:
         void ooMiniDialogDefOnClose(wxCloseEvent& event);
 

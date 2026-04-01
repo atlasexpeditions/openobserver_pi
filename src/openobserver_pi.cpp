@@ -486,13 +486,14 @@ wxBitmap *openobserver_pi::GetPlugInBitmap()
     return &m_ptpicons->m_bm_openobserver_pi;
 }
 
-void openobserver_pi::SetProject(const wxString& projectName, int observationsIndex)
+void openobserver_pi::SetProject(const wxString& projectName, const wxColor& projectColor, int observationsIndex)
 {
     m_observationsIndex = observationsIndex;
     
     wxString title = "Open Observer - " + projectName;
     m_ooControlDialogImpl->SetTitle(title);
     m_ooMiniDialogImpl->SetTitle(title);
+    m_ooMiniDialogImpl->SetProjectInfo(projectName, projectColor);
 }
 
 void openobserver_pi::ToggleToolbarIcon()

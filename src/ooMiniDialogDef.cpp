@@ -29,9 +29,8 @@ bool ooMiniDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString& t
 
 	m_boxSizer = new wxBoxSizer( wxVERTICAL );
 
-	m_fgSizer = new wxFlexGridSizer( 2, 0, 0, 0 );
+	m_fgSizer = new wxFlexGridSizer( 0, 1, 0, 0 );
 	m_fgSizer->AddGrowableCol( 0 );
-	m_fgSizer->AddGrowableRow( 0 );
 	m_fgSizer->SetFlexibleDirection( wxBOTH );
 	m_fgSizer->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
