@@ -56,6 +56,10 @@ public:
 
   void SetToggleWindowButtonLabel(const wxString& label);
 
+  void StartOrStopObservation();
+  void SetProjectInfo(const wxString& projectName,
+                      const wxColor& projectColor);
+
   void OnShow(wxShowEvent& event);
 
 protected:
@@ -71,6 +75,7 @@ protected:
   wxStaticText* m_ObservationsDurationLabel;
   wxTextCtrl* m_ObservationDuration;
   wxButton* m_buttonToggleWindow;
+  wxStaticText* m_ProjectLabel;
 
   wxTimer m_ObservationDurationTimer;
 };

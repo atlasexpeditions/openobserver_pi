@@ -45,6 +45,7 @@
 #include <wx/txtstrm.h>
 
 #include <wx/aui/aui.h>
+#include <wx/gdicmn.h>
 
 #include "openobserver_pi.h"
 #include "version.h"
@@ -77,6 +78,7 @@ wxString                *g_PrivateDataDir;
 wxString                *g_pData;
 wxString                *g_SData_Locn;
 wxString                *g_pLayerDir;
+wxString                *g_pListingDir;
 
 wxString                *g_tplocale;
 void                    *g_ppimgr;
@@ -159,6 +161,32 @@ openobserver_pi::openobserver_pi(void *ppimgr)
     if (!wxDir::Exists(*g_pLayerDir))
         wxMkdir(*g_pLayerDir);
 
+    g_pListingDir = new wxString(*g_PrivateDataDir);
+    g_pListingDir->Append(wxT("Listings"));
+    appendOSDirSlash(g_pListingDir);
+    if (!wxDir::Exists(*g_pListingDir))
+        wxMkdir(*g_pListingDir);
+
+    // Copy packaged listings
+    const wxString exePath = GetOCPN_ExePath();
+    const wxUniChar sep = wxFileName::GetPathSeparator();
+    const wxString packagedListingsPath =
+        wxString::Format(wxT("%s%c%s%c%s%c%s%c%s"),
+            wxFileName(exePath).GetPath(),
+            sep, "plugins", sep, "openobserver_pi", sep, "data", sep, "Listings");
+    
+    wxArrayString allPackagedListings;
+    wxDir::GetAllFiles(packagedListingsPath, &allPackagedListings);
+    for (auto f : allPackagedListings) {
+        wxString filename = wxFileName(f).GetFullName();
+        wxString targetPath = wxString::Format(wxT("%s%s"), *g_pListingDir, filename);
+        if (!wxFile::Exists(targetPath)) {
+            wxCopyFile(f, targetPath);
+        }
+    }
+
+    ooObservations::SetNMEAFields(ReadNmeaXML());
+
     m_ptpicons = new tpicons();
 
     delete l_pDir;
@@ -177,6 +205,9 @@ openobserver_pi::~openobserver_pi()
 
     delete g_pLayerDir;
     g_pLayerDir = NULL;
+
+    delete g_pListingDir;
+    g_pListingDir = NULL;
 }
 
 int openobserver_pi::Init(void)
@@ -190,6 +221,8 @@ int openobserver_pi::Init(void)
     m_cursor_lon = 0.0;
     m_click_lat = 0.0;
     m_click_lon = 0.0;
+    m_observationsIndex = -1;
+    m_observationsChoiceCount = -1;
 
     // Adds local language support for the plugin to OCPN
     AddLocaleCatalog(PLUGIN_CATALOG_NAME);
@@ -211,6 +244,10 @@ int openobserver_pi::Init(void)
     //    we need to create a dummy menu to act as a surrogate parent of the created MenuItems
     //    The Items will be re-parented when added to the real context meenu
     wxMenu dummy_menu;
+    wxMenuItem* pmi =
+        new wxMenuItem(&dummy_menu, -1, _("Add OO observation here"));
+    m_addObservationItem = AddCanvasContextMenuItem(pmi, this);
+    SetCanvasContextMenuItemViz(m_addObservationItem, true);
 
     // Get item into font list in options/user interface
     AddPersistentFontKey( wxT("tp_Label") );
@@ -228,23 +265,26 @@ int openobserver_pi::Init(void)
     m_ooMiniDialogImpl->Fit();
     m_ooMiniDialogImpl->Layout();
     m_ooMiniDialogImpl->Hide();
+    m_ooMiniDialogImpl->Move(m_miniDialogPosition.x, m_miniDialogPosition.y);
+    m_ooMiniDialogImpl->SetSize(m_miniDialogPosition.width,
+                                m_miniDialogPosition.height);
 
     m_ooControlDialogImpl = new ooControlDialogImpl(m_parent_window);
+    m_ooControlDialogImpl->SetObservationsChoiceCount(m_observationsChoiceCount);
     m_ooControlDialogImpl->CreateObservationsTable(m_ooObservations);
 
-    if (m_projectFile.IsEmpty()) 
-        m_ooControlDialogImpl->NewProject();
-    else   
-        m_ooControlDialogImpl->LoadProject(m_projectFile);
-
-    m_ooControlDialogImpl->UseProject();
-
     // restore backup observations and start backing up on a timer
-    m_ooControlDialogImpl->RestoreBackupObservations();
+    if (!m_ooControlDialogImpl->RestoreBackupObservations(m_observationsIndex)) {
+        m_ooControlDialogImpl->NewProject();
+        m_ooControlDialogImpl->UseProject();
+    }
 
     m_ooControlDialogImpl->Fit();
     m_ooControlDialogImpl->Layout();
     m_ooControlDialogImpl->Hide();
+    m_ooControlDialogImpl->Move(m_dialogPosition.x, m_dialogPosition.y);
+    m_ooControlDialogImpl->SetSize(m_dialogPosition.width,
+                                   m_dialogPosition.height);
 
     return (
         WANTS_CURSOR_LATLON       |
@@ -254,10 +294,10 @@ int openobserver_pi::Init(void)
         INSTALLS_TOOLBOX_PAGE     |
         INSTALLS_CONTEXTMENU_ITEMS  |
         WANTS_NMEA_EVENTS         |
-//        WANTS_NMEA_SENTENCES        |
+        WANTS_NMEA_SENTENCES        |
         //    USES_AUI_MANAGER            |
 //        WANTS_PREFERENCES         |
-        //    WANTS_ONPAINT_VIEWPORT      |
+        WANTS_ONPAINT_VIEWPORT      |
         WANTS_PLUGIN_MESSAGING    |
         WANTS_LATE_INIT           |
         WANTS_MOUSE_EVENTS        |
@@ -276,12 +316,16 @@ bool openobserver_pi::DeInit(void)
 {
     if (m_ooControlDialogImpl)
     {
+        m_dialogPosition = m_ooControlDialogImpl->GetRect();
+        
         m_ooControlDialogImpl->Close();
         delete m_ooControlDialogImpl;
         m_ooControlDialogImpl = nullptr;
     }
     if (m_ooMiniDialogImpl)
     {
+        m_miniDialogPosition = m_ooMiniDialogImpl->GetRect();
+
         m_ooMiniDialogImpl->Close();
         delete m_ooMiniDialogImpl;
         m_ooMiniDialogImpl = nullptr;
@@ -358,6 +402,21 @@ void openobserver_pi::OnToolbarToolUpCallback(int id)
     return;
 }
 
+void openobserver_pi::OnContextMenuItemCallback(int id)
+{
+    if (id != m_addObservationItem) return;
+    if (m_ooObservations == nullptr) return;
+
+    if (m_ooObservations->IsObserving()) {
+        wxMessageBox("Could not add observation ! An observation is already running.", "Error",
+                   wxOK, wxGetActiveWindow());
+        return;
+    }
+
+    m_ooObservations->AddObservation(m_cursor_lat, m_cursor_lon);
+    m_ooObservations->AddMarks(0);
+}
+
 bool openobserver_pi::KeyboardEventHook( wxKeyEvent &event )
 {
     bool bret = false;
@@ -408,29 +467,33 @@ void openobserver_pi::SetPositionFix(PlugIn_Position_Fix &pfix)
         m_ooControlDialogImpl->SetPositionFix(pfix.FixTime, pfix.Lat, pfix.Lon);
 }
 
+void openobserver_pi::SetNMEASentence(wxString& sentence)
+{
+    if (m_ooObservations)
+        m_ooObservations->SetNmeaSentFix(sentence);
+    if (m_ooControlDialogImpl)
+        m_ooControlDialogImpl->SetNmeaSentence(sentence);
+}
+
+void openobserver_pi::SetCurrentViewPort(PlugIn_ViewPort& vp)
+{
+    if (m_ooControlDialogImpl)
+        m_ooControlDialogImpl->SetViewScale(vp.view_scale_ppm);
+}
+
 wxBitmap *openobserver_pi::GetPlugInBitmap()
 {
     return &m_ptpicons->m_bm_openobserver_pi;
 }
 
-wxString openobserver_pi::GetProjectFile() const
+void openobserver_pi::SetProject(const wxString& projectName, const wxColor& projectColor, int observationsIndex)
 {
-    return m_projectFile;
-}
-
-wxString openobserver_pi::GetProjectName() const
-{
-    return m_projectName;
-}
-
-void openobserver_pi::SetProject(const wxString& projectFile, const wxString& projectName)
-{
-    m_projectFile = projectFile;
-    m_projectName = projectName;
+    m_observationsIndex = observationsIndex;
     
-    wxString title = "Open Observer - " + m_projectName;
+    wxString title = "Open Observer - " + projectName;
     m_ooControlDialogImpl->SetTitle(title);
     m_ooMiniDialogImpl->SetTitle(title);
+    m_ooMiniDialogImpl->SetProjectInfo(projectName, projectColor);
 }
 
 void openobserver_pi::ToggleToolbarIcon()
@@ -484,7 +547,17 @@ void openobserver_pi::SaveConfig()
 
     // section in the main OpenCPN setting file (Mac ~/Library/preferences/opencpn/opencpn.ini)
     m_pConfig->SetPath("/Settings/openobserver_pi");
-    m_pConfig->Write("ProjectFile", m_projectFile);
+    m_pConfig->DeleteEntry("ProjectFile");
+    m_pConfig->Write("ObservationsIndex", m_observationsIndex);
+    m_pConfig->Write("ObservationsChoiceCount", m_observationsChoiceCount);
+    m_pConfig->Write("DialogX", m_dialogPosition.x);
+    m_pConfig->Write("DialogY", m_dialogPosition.y);
+    m_pConfig->Write("DialogWidth", m_dialogPosition.width);
+    m_pConfig->Write("DialogHeight", m_dialogPosition.height);
+    m_pConfig->Write("MiniDialogX", m_miniDialogPosition.x);
+    m_pConfig->Write("MiniDialogY", m_miniDialogPosition.y);
+    m_pConfig->Write("MiniDialogWidth", m_miniDialogPosition.width);
+    m_pConfig->Write("MiniDialogHeight", m_miniDialogPosition.height);
 }
 
 void openobserver_pi::LoadConfig()
@@ -501,5 +574,115 @@ void openobserver_pi::LoadConfig()
     if (!m_pConfig) return;
 
     m_pConfig->SetPath("/Settings/openobserver_pi");
-    m_pConfig->Read("ProjectFile", &m_projectFile, wxEmptyString);
+    m_pConfig->Read("ObservationsIndex", &m_observationsIndex, -1);
+    m_pConfig->Read("ObservationsChoiceCount", &m_observationsChoiceCount, 3);
+    m_pConfig->Read("DialogX", &m_dialogPosition.x, -1);
+    m_pConfig->Read("DialogY", &m_dialogPosition.y, -1);
+    m_pConfig->Read("DialogWidth", &m_dialogPosition.width, -1);
+    m_pConfig->Read("DialogHeight", &m_dialogPosition.height, -1);
+    m_pConfig->Read("MiniDialogX", &m_miniDialogPosition.x, -1);
+    m_pConfig->Read("MiniDialogY", &m_miniDialogPosition.y, -1);
+    m_pConfig->Read("MiniDialogWidth", &m_miniDialogPosition.width, -1);
+    m_pConfig->Read("MiniDialogHeight", &m_miniDialogPosition.height, -1);
+}
+
+void openobserver_pi::WriteNmeaXML(const std::unordered_map<wxString, std::set<int>>& scannedNmeaFields)
+{
+    const wxString filePath =
+      wxFileName(*g_PrivateDataDir, "NMEAFields.xml").GetFullPath();
+    
+    wxXmlDocument xmlDoc;
+    
+    wxXmlNode* root = new wxXmlNode(NULL, wxXML_ELEMENT_NODE, "nmea_export");
+    root->AddAttribute("creator", "Open Observer for OpenCPN");
+    xmlDoc.SetRoot(root);
+
+    // Sentence IDs
+    for (const auto& sentencePair : scannedNmeaFields) {
+        wxString sentenceId = sentencePair.first;
+        if (sentenceId.IsEmpty()) continue;
+        
+        wxXmlNode* sentenceNode = new wxXmlNode(NULL, wxXML_ELEMENT_NODE, "sentence");
+        sentenceNode->AddAttribute("id", sentenceId);
+
+        // Field indexes
+        for (int index : sentencePair.second) {
+            wxXmlNode* fieldNode = new wxXmlNode(NULL, wxXML_ELEMENT_NODE, "field");
+            fieldNode->AddAttribute("index", wxString::Format("%d", index));
+            
+            wxXmlNode* textNode =new wxXmlNode(
+                wxXML_TEXT_NODE,
+                "",
+                wxString::Format(wxT("%s:%i"), sentenceId, index)
+            );
+            
+            fieldNode->AddChild(textNode);
+            sentenceNode->AddChild(fieldNode);
+        }
+        
+        root->AddChild(sentenceNode);
+    }
+    
+    xmlDoc.Save(filePath);
+}
+
+// Read NMEA XML file and return list of NMEA Fields
+std::vector<NMEAField> openobserver_pi::ReadNmeaXML()
+{
+    const wxString filePath =
+      wxFileName(*g_PrivateDataDir, "NMEAFields.xml").GetFullPath();
+
+    std::vector<NMEAField> res;
+
+    wxXmlDocument xmlDoc;
+    if (!xmlDoc.Load(filePath)) {
+        wxLogError("Cannont read NMEA XML : %s", filePath);
+        return res;
+    }
+
+    wxXmlNode* root = xmlDoc.GetRoot();
+    if (!root || root->GetName() != "nmea_export") {
+        wxLogError("Invalid NMEA XML file : %s", filePath);
+        return res;
+    }
+
+    for (wxXmlNode* sentenceNode = root->GetChildren(); sentenceNode != NULL; sentenceNode = sentenceNode->GetNext()) {
+        if (sentenceNode->GetName() != "sentence") continue;
+
+        wxString sentenceId = sentenceNode->GetAttribute("id", "");
+        if (sentenceId.IsEmpty()) continue;
+
+        for (wxXmlNode* fieldNode = sentenceNode->GetChildren(); fieldNode != NULL; fieldNode = fieldNode->GetNext()) {
+            if (fieldNode->GetName() != "field") continue;
+
+            wxString indexStr = fieldNode->GetAttribute("index", "");
+            long fieldIndex = 0;
+            if (!indexStr.ToLong(&fieldIndex)) continue;
+
+            wxString description;
+            if (fieldNode->GetChildren()) {
+                description = fieldNode->GetChildren()->GetContent();
+            }
+            if (description.IsEmpty()) description = wxString::Format(wxT("%s:%i"), sentenceId, fieldIndex);
+
+            res.push_back({sentenceId, (int)fieldIndex, description, ""});
+        }
+    }
+
+    return res;
+}
+
+void openobserver_pi::RefreshListings()
+{
+    ooObservations::ClearListings();
+    wxArrayString allListings;
+    wxDir::GetAllFiles(*g_pListingDir, &allListings);
+    for (auto f : allListings) {
+        wxArrayString items, icons;
+        if (ooObservations::ReadListingFromXML(f, items, icons)) {
+            wxString filename = wxFileName(f).GetName();
+            ooObservations::AddListing(filename, items);
+            if (icons.GetCount() > 0) ooObservations::SetIcons(filename, icons);
+        }
+    }
 }

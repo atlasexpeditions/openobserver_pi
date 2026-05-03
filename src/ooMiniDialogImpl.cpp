@@ -53,6 +53,13 @@ ooMiniDialogImpl::~ooMiniDialogImpl()
     this->Disconnect(wxEVT_SHOW, wxShowEventHandler(ooMiniPanel::OnShow), NULL, m_MiniPanel);
 }
 
+void ooMiniDialogImpl::SetProjectInfo(
+    const wxString& projectName,
+    const wxColor& projectColor)
+{
+    m_MiniPanel->SetProjectInfo(projectName, projectColor);
+}
+
 void ooMiniDialogImpl::ooMiniDialogDefOnClose(wxCloseEvent& event)
 {
     g_openobserver_pi->ToggleToolbarIcon();

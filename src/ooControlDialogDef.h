@@ -23,6 +23,8 @@
 #include <wx/statline.h>
 #include <wx/stattext.h>
 #include <wx/textctrl.h>
+#include <wx/clrpicker.h>
+#include <wx/choice.h>
 #include <wx/grid.h>
 #include <wx/panel.h>
 #include <wx/notebook.h>
@@ -44,17 +46,24 @@ class ooControlDialogDef : public wxDialog
 		wxNotebook* m_notebookControl;
 		wxPanel* m_panelProject;
 		wxButton* m_ProjectEditUse;
-		wxButton* m_ProjectNew;
-		wxButton* m_ProjectLoad;
-		wxButton* m_ProjectSave;
 		wxButton* m_ProjectNewColumn;
 		wxButton* m_ProjectDeleteColumn;
+		wxButton* m_ProjectNew;
 		wxStaticLine* m_staticline3;
-		wxStaticText* m_staticText61;
-		wxTextCtrl* m_textProjectFile;
 		wxStaticText* m_staticText6;
 		wxTextCtrl* m_textProjectName;
+		wxStaticText* m_staticText9;
+		wxColourPickerCtrl* m_colourProject;
+		wxStaticText* m_staticText10;
+		wxChoice* m_listMarkIcons;
 		wxGrid* m_gridProject;
+		wxStaticText* m_staticText7;
+		wxStaticText* m_staticTextNMEA;
+		wxButton* m_buttonScanNmea;
+		wxStaticText* m_staticText11;
+		wxStaticText* m_staticTextListings;
+		wxButton* m_buttonEditListings;
+		wxButton* m_buttonRefreshListings;
 		wxPanel* m_panelObservations;
 		wxFlexGridSizer* m_fgSizerObservations;
 		wxBoxSizer* bSizerTopButtons;
@@ -71,34 +80,43 @@ class ooControlDialogDef : public wxDialog
 		wxStaticLine* m_staticline11;
 		wxButton* m_ObservationsNew;
 		wxButton* m_ObservationsDelete;
-		wxButton* m_ObservationsDeleteAll;
 		wxButton* m_ObservationsAddMarks;
 		wxButton* m_ObservationsDeleteMarks;
+		wxButton* m_buttonLoadObs;
+		wxButton* m_buttonSaveObs;
+		wxButton* m_ObservationsImportObservations;
 		wxButton* m_ObservationsExportObservations;
-		wxButton* m_buttonClose;
+		wxChoice* m_choiceObservations;
 
 		// Virtual event handlers, override them in your derived class
+		virtual void ooControlDialogActivate( wxActivateEvent& event ) { event.Skip(); }
 		virtual void ooControlDialogDefOnClose( wxCloseEvent& event ) { event.Skip(); }
+		virtual void OnNotebookPageChanged( wxNotebookEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickProjectEditUse( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnButtonClickProjectNew( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnButtonClickProjectLoad( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnButtonClickProjectSave( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickProjectNewColumn( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickProjectDeleteColumn( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickProjectNew( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnProjectGridSelect( wxGridEvent& event ) { event.Skip(); }
+		virtual void OnProjectGridRangeSelect( wxGridRangeSelectEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickScanNmea( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickEditListings( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickRefreshListings( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickNewObservation( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickDeleteObservation( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnButtonClickDeleteAllObservations( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickObservationsAddMarks( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickObservationsDeleteMarks( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickLoadObservation( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickSaveObservation( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickImportObservations( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickExportObservations( wxCommandEvent& event ) { event.Skip(); }
-		virtual void ooControlCloseClick( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnChoiceObservationsChanged( wxCommandEvent& event ) { event.Skip(); }
 
 
 	public:
 
 		ooControlDialogDef();
-		ooControlDialogDef( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Open Observer"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 750,716 ), long style = wxCAPTION|wxCLOSE_BOX|wxDEFAULT_DIALOG_STYLE|wxSTAY_ON_TOP );
-		bool Create( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Open Observer"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 750,716 ), long style = wxCAPTION|wxCLOSE_BOX|wxDEFAULT_DIALOG_STYLE|wxSTAY_ON_TOP );
+		ooControlDialogDef( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Open Observer"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 584,314 ), long style = wxCAPTION|wxCLOSE_BOX|wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX|wxRESIZE_BORDER );
+		bool Create( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = _("Open Observer"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 584,314 ), long style = wxCAPTION|wxCLOSE_BOX|wxDEFAULT_DIALOG_STYLE|wxMAXIMIZE_BOX|wxRESIZE_BORDER );
 
 		~ooControlDialogDef();
 

@@ -46,6 +46,13 @@ extern wxString *g_tplocale;
 #define    degs    (180./pi)
 #define    rads    (pi/180.)
 
+int GetXmlAttributeInt(wxXmlNode* node, const wxString& attribute, int defaultValue)
+{
+    int res = defaultValue;
+    if (node == NULL) return defaultValue;
+    if (!node->GetAttribute(attribute).ToInt(&res)) return defaultValue;
+    return res;
+}
 
 // This function parses a string containing a GPX time representation
 // and returns a wxDateTime containing the UTC corresponding to the

@@ -273,6 +273,9 @@ if (NOT OCPN_FLATPAK_CONFIG)
   add_subdirectory(opencpn-libs/plugin_dc)
   target_link_libraries(${PACKAGE_NAME} ocpn::plugin-dc)
 
+  add_subdirectory(opencpn-libs/nmea0183)
+  target_link_libraries(${PACKAGE_NAME} ocpn::nmea0183)
+  
 endif (NOT OCPN_FLATPAK_CONFIG)
 
 add_definitions(-DTIXML_USE_STL)

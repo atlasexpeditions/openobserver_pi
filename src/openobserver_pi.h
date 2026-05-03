@@ -137,7 +137,10 @@ std::cout << x  << std::endl ; } while (0)
 #include <wx/splitter.h>
 #include <wx/fileconf.h>
 #include <wx/dynarray.h>
+#include <set>
+#include <unordered_map>
 
+#include "ooObservations.h"
 #include "globals.h"
 
 //----------------------------------------------------------------------------------------------------------
@@ -171,23 +174,29 @@ public:
     void OnToolbarToolCallback(int id);
     void OnToolbarToolDownCallback(int id);
     void OnToolbarToolUpCallback(int id);
+    void OnContextMenuItemCallback(int id);
 
     void LateInit(void);
     bool KeyboardEventHook( wxKeyEvent &event );
     bool MouseEventHook( wxMouseEvent &event );
     void SetCursorLatLon(double lat, double lon);
     void SetPositionFix(PlugIn_Position_Fix &pfix);
-
-    wxString GetProjectFile() const;
-    wxString GetProjectName() const;
-    void SetProject(const wxString& projectFile, const wxString& projectName);
+    void SetNMEASentence(wxString& sentence);
+    void SetCurrentViewPort(PlugIn_ViewPort& vp);
+    
+    void SetProject(const wxString& projectName,
+                    const wxColor& projectColor,
+                    int observationsIndex);
 
     void ToggleToolbarIcon();
     void ToggleWindow();
 
     ooObservations *m_ooObservations;
 
-private:
+    static void WriteNmeaXML(const std::unordered_map<wxString, std::set<int>>& scannedNmeaFields);
+    static std::vector<NMEAField> ReadNmeaXML();
+    static void RefreshListings();
+  private:
     void    SaveConfig();
     void    LoadConfig();
 
@@ -205,8 +214,9 @@ private:
     int     m_iCallerId;
     bool    m_bShowMainDialog;
     int     m_openobserver_button_id;
-    wxString m_projectFile;
-    wxString m_projectName;
+    int     m_observationsIndex, m_observationsChoiceCount;
+    wxRect  m_dialogPosition, m_miniDialogPosition;
+    int     m_addObservationItem;
 
     double  m_cursor_lat;
     double  m_cursor_lon;

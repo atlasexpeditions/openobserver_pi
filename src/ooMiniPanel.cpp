@@ -59,7 +59,6 @@ bool ooMiniPanel::Create(wxWindow* parent, wxWindowID id, const wxString& msg,
       new wxButton(this, wxID_ANY, _("Start Observation"), wxDefaultPosition,
                    wxDefaultSize, 0);
 
-  m_StartStopObservation->SetDefault();
   bSizerTopButtons->Add(m_StartStopObservation, 0,
                         wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
@@ -80,6 +79,19 @@ bool ooMiniPanel::Create(wxWindow* parent, wxWindowID id, const wxString& msg,
                                         wxDefaultPosition, wxDefaultSize, 0);
   bSizerTopButtons->Add(m_buttonToggleWindow, 0,
                         wxALIGN_CENTER_VERTICAL | wxALL, 5);
+
+  m_ProjectLabel =
+      new wxStaticText(this, wxID_ANY, _("  "),
+                       wxDefaultPosition, wxDefaultSize, 0);
+
+  m_ProjectLabel->SetBackgroundColour(wxColor(20, 20, 20));
+  m_ProjectLabel->SetForegroundColour(wxColor(*wxWHITE));
+  wxFont font = m_ProjectLabel->GetFont();
+  font.SetWeight(wxFONTWEIGHT_EXTRABOLD);
+  m_ProjectLabel->SetFont(font);
+
+  bSizerTopButtons->Add(m_ProjectLabel, 1,
+                        wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT | wxALL, 5);
 
   this->SetSizerAndFit(bSizerTopButtons);
   bSizerTopButtons->SetSizeHints(this);
@@ -120,12 +132,19 @@ void ooMiniPanel::SetToggleWindowButtonLabel(const wxString& label)
   m_buttonToggleWindow->SetLabel(label);
 }
 
-void ooMiniPanel::ooControlStartStopObservationClick(wxCommandEvent& event) 
+void ooMiniPanel::SetProjectInfo(const wxString& projectName,
+                                 const wxColor& projectColor)
+{
+    m_ProjectLabel->SetLabelText(wxString::Format(" %s ", projectName));
+    m_ProjectLabel->SetBackgroundColour(projectColor);
+    m_ProjectLabel->GetParent()->Layout();
+}
+
+void ooMiniPanel::StartOrStopObservation()
 {
   if (!g_openobserver_pi->m_ooObservations) return;
 
-  if (g_openobserver_pi->m_ooObservations->IsObserving())
-  {
+  if (g_openobserver_pi->m_ooObservations->IsObserving()) {
     // stop observation
     g_openobserver_pi->m_ooObservations->StopObservation();
 
@@ -146,6 +165,11 @@ void ooMiniPanel::ooControlStartStopObservationClick(wxCommandEvent& event)
   UpdateObservationStatus();
 }
 
+void ooMiniPanel::ooControlStartStopObservationClick(wxCommandEvent& event) 
+{
+    StartOrStopObservation();
+}
+
 void ooMiniPanel::OnShow(wxShowEvent& event)
 {
   UpdateObservationDuration();
@@ -159,13 +183,19 @@ void ooMiniPanel::UpdateObservationStatus()
   if (g_openobserver_pi->m_ooObservations->IsObserving())
   {
     m_StartStopObservation->SetLabel("Stop Observation");
+    
+    m_ObservationDuration->SetBackgroundColour(*wxRED);
 
     // start timer to update observation duration
     m_ObservationDurationTimer.Start(100);  // 100 ms = 0.1 s
   } else {
+    //VPE color timer 
+    m_ObservationDuration->SetBackgroundColour(*wxWHITE);
+    m_ObservationDuration->Refresh();
     m_StartStopObservation->SetLabel("Start Observation");
-
+ 
     m_ObservationDurationTimer.Stop();
+    
   }
 }
 

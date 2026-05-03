@@ -38,6 +38,9 @@
 #include "ooMiniPanel.h"
 #include "ooObservations.h"
 
+#include <set>
+#include <unordered_map>
+
 ///////////////////////////////////////////////////////////////////////////////
 /// Class ooControlDialogImpl
 ///////////////////////////////////////////////////////////////////////////////
@@ -48,43 +51,75 @@ public:
         ~ooControlDialogImpl();
 
         void NewProject();
-        bool LoadProject(const wxString& filename);
-        void SaveProject(wxFile *file) const;
         void UseProject();
 
         void CreateObservationsTable(ooObservations *observations);
-        void RestoreBackupObservations();
+        bool RestoreBackupObservations(int observationsIndex);
+        void SetObservationsChoiceCount(int observationsChoiceCount);
 
         void SetPositionFix(time_t fixTime, double lat, double lon);
-
-protected:
+        void SetNmeaSentence(const wxString& sentence);
+        void SetViewScale(double viewScale);
+      protected:
         void SetupObservationsForProject();
+        bool LoadObservations(const wxString& filename);
+        bool SaveObservations(const wxString& filename = wxString(), bool stopObservation = true);
+        ooProject GenerateProject() const;
+        void SetProjectEditable(bool editable);
 
         void OnButtonClickProjectEditUse(wxCommandEvent& event);
         void OnButtonClickProjectNew(wxCommandEvent& event);
-        void OnButtonClickProjectLoad(wxCommandEvent& event);
-        void OnButtonClickProjectSave(wxCommandEvent& event);
 	void OnButtonClickProjectNewColumn(wxCommandEvent& event);
         void OnButtonClickProjectDeleteColumn(wxCommandEvent& event);
 
         void OnButtonClickNewObservation( wxCommandEvent& event );
         void OnButtonClickDeleteObservation( wxCommandEvent& event );
-        void OnButtonClickDeleteAllObservations(wxCommandEvent& event);
         void OnButtonClickExportObservations( wxCommandEvent& event );
+        void OnButtonClickImportObservations(wxCommandEvent& event);
         void OnButtonClickObservationsAddMarks( wxCommandEvent& event );
         void OnButtonClickObservationsDeleteMarks( wxCommandEvent& event );
-
+        void OnButtonClickSaveObservation(wxCommandEvent& event);
+        void OnButtonClickLoadObservation(wxCommandEvent& event);
         void ooControlCloseClick(wxCommandEvent& event);
         void ooControlDialogDefOnClose(wxCloseEvent& event);
+        void OnButtonClickScanNmea(wxCommandEvent& event);
+        void ooControlDialogActivate(wxActivateEvent& event);
+        void OnButtonClickEditListings(wxCommandEvent& event);
+        void OnButtonClickRefreshListings(wxCommandEvent& event);
+        void OnNotebookPageChanged(wxNotebookEvent& event);
+        void OnChoiceObservationsChanged(wxCommandEvent& event);
+        void OnObservationsGridCellSelect(wxGridEvent& event);
+        void OnObservationsGridRangeSelect(wxGridRangeSelectEvent& event);
+        void OnProjectGridCellSelect(wxGridEvent& event);
+        void OnProjectGridRangeSelect(wxGridRangeSelectEvent& event);
+        void OnObservationsGridCellChange(wxGridEvent& event);
 
-private:
+      private:
         void OnBackupTimer(wxTimerEvent& event);
+        bool LoadProject(const ooProject& project);
+        void OnNmeaFieldUpdate();
+        void EnsureProjectHasFieldType(const wxString& field_type,
+                                       const wxString& label);
+        void SetupListingEditors();
+        void RefreshListings();
+        void OnProjectGridSelectionChange();
 
         ooMiniPanel *m_MiniPanel;
 
-        wxString m_BackupFilename;
         wxTimer m_BackupTimer;
+        ooProject m_CurrentProject;
+        int m_currentObservationsIndex, m_observationsChoiceCount;
+        double m_viewScale;
+
+        bool m_isScanningNmea;
+        std::unordered_map<wxString, std::set<int>> m_scannedNmeaFields;
 
         ooObservations * m_Observations;
         wxGrid* m_ObservationsTable;
+        void ApplyModernGridStyle(wxGrid* grid);
+        void RefreshGridAppearance(wxGrid* grid);
+        void UpdateProjectCellEditors();
+        int  GetNmeaFieldCount() const;
+
+        static wxString GetBackupFilename(int index);
 };
