@@ -51,16 +51,22 @@ class ooProject {
 public:
   ooProject()
       : m_name("Empty"),
+        m_description(""),
         m_color(DEFAULT_PROJECT_COLOUR),
         m_mark_icon(DEFAULT_PROJECT_ICON) {}
-  ooProject(const wxString& name, const wxGridSizesInfo& colSizes,
-            const wxArrayString& colFieldTypes, const wxArrayString& colLabels, const wxColor& color, const wxString& markIcon)
-      : m_name(name),
-        m_col_sizes(colSizes),
-        m_col_field_types(colFieldTypes),
-        m_col_labels(colLabels),
-        m_color(color),
-        m_mark_icon(markIcon)
+  ooProject(const wxString& name, const wxString& description,
+          const wxGridSizesInfo& colSizes,
+          const wxArrayString& colFieldTypes,
+          const wxArrayString& colLabels,
+          const wxColor& color,
+          const wxString& markIcon)
+    : m_name(name),
+      m_description(description),
+      m_col_sizes(colSizes),
+      m_col_field_types(colFieldTypes),
+      m_col_labels(colLabels),
+      m_color(color),
+      m_mark_icon(markIcon)
   {
     OnFieldTypeChanged();
   }
@@ -72,6 +78,9 @@ public:
 
   const wxString& GetName() const { return m_name; }
   void SetName(const wxString& name) { m_name = name; }
+
+  const wxString& GetDescription() const { return m_description; }
+  void SetDescription(const wxString& description) { m_description = description; }
 
   const wxGridSizesInfo& GetColSizes() const { return m_col_sizes; }
   void SetColSizes(const wxGridSizesInfo& sizeInfo) { m_col_sizes = sizeInfo; }
@@ -98,6 +107,7 @@ public:
 protected:
   void OnFieldTypeChanged();
   wxString m_name;
+  wxString m_description;
   wxGridSizesInfo m_col_sizes;
   wxArrayString m_col_field_types;
   wxArrayString m_col_labels;
@@ -137,9 +147,9 @@ public:
     void SetProject(const ooProject& project);
     const ooProject& GetProject() const;
 
-    void SaveToCSV(wxFile *file);
+   void SaveToCSV(wxFile *file, bool stripMarkGuid = false);
     bool ReadFromCSV(const wxString& filename, wxString& err);
-    void SaveToXML(wxFile *file);
+    void SaveToXML(wxFile *file, bool stripMarkGuid = false);
     bool ReadFromXML(const wxString& filename, const ooProject& defaultProject);
     bool SaveToGeoJSON(wxOutputStream& out);
 
@@ -147,6 +157,8 @@ public:
 
     enum {UTC_TIME_DATE, UTC_TIME_TIME, UTC_TIMESTAMP};
     wxString GetUtcTimeFromNMEA(int dateFormat) const;
+    wxString GetUtcTimeSourceLabel() const;
+    wxString GenerateObservationId(const wxString& dateString);
 
     double HaversineDistance(double lat1, double lon1, double lat2,double lon2);
     double DegToRad(double deg);
@@ -166,6 +178,9 @@ public:
     static void SetIcons(const wxString& listing, const wxArrayString& icons);
     static void SetNMEAFields(const std::vector<NMEAField>& fields);
     static const std::vector<NMEAField>& GetNMEAFields();
+    static void SetShowAdvancedNMEAFields(bool show);
+    static bool GetShowAdvancedNMEAFields();
+    static bool IsSimpleNMEAField(const NMEAField& field);
 
     // TODO: those should not be static, should not be in this class
     static wxString GetNMEAField(const wxString& sentence, const wxString& sentenceID,
@@ -178,6 +193,7 @@ private:
     static wxArrayString m_icons;
     static wxString m_iconsListing;
     static std::vector<NMEAField> m_nmeaFields;
+    static bool m_showAdvancedNMEAFields;
 
     time_t m_position_fix_time;
     double m_position_fix_lat;

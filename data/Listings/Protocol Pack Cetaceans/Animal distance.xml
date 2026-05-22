@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<listing creator="OpenObserver for OpenCPN" file_version="1">
+
+<item label="unknown"/>
+<item label="0-100 m"/>
+<item label="100-1000 m"/>
+<item label="1-5 km"/>
+<item label="5-10 km"/>
+<item label="over 10 km"/>
+
+</listing>
+

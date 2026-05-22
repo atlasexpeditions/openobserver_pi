@@ -58,23 +58,23 @@ endif (COMMAND cmake_policy)
 set(CMAKE_BUILD_WITH_INSTALL_RPATH ON)
 
 # define plugin name, owner and versions
-set(VERBOSE_NAME "OpenObserver")
-set(COMMON_NAME "OpenObserver")
+set(VERBOSE_NAME "Open Observer")
+set(COMMON_NAME "Open Observer")
 set(TITLE_NAME "openobserver")
-set(PACKAGE_CONTACT "Alex Mansfield")
+set(PACKAGE_CONTACT "Alex Mansfield, Angie Gartz, Christophe Daudin, Arnaud Conne and Atlas Expeditions contributors")
 set(PACKAGE "openobserver")
 set(SHORT_DESCRIPTION
-    "Plugin to record marine observations"
+    "Marine observation logging plugin for OpenCPN"
 )
 set(LONG_DESCRIPTION
-    "The Open Observer Plugin can be used to record all kinds of marine observations."
+    "Open Observer is an OpenCPN plugin for logging georeferenced marine observations, including wildlife encounters, samples, environmental context and vessel/navigation data. It supports configurable observation projects, NMEA-derived fields, CSV/XML/GeoJSON workflows and OpenCPN mark creation."
 )
 
 set(VERSION_MAJOR "0")
 set(VERSION_MINOR "0")
 set(VERSION_PATCH "1")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE "07/05/2025") # DD/MM/YYYY format
+set(VERSION_DATE "21/05/2026") # DD/MM/YYYY format
 set(OCPN_MIN_VERSION "ov58")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -102,8 +102,13 @@ set(CLOUDSMITH_BASE_REPOSITORY "openobserver") # without the pi
 set(CLOUDSMITH_USER "aracais")
 
 set(XML_INFO_URL "")
-set(XML_SUMMARY ${SHORT_DESCRIPTION})
-set(XML_DESCRIPTION ${LONG_DESCRIPTION})
+set(XML_SUMMARY
+    "Marine observation logging plugin for OpenCPN"
+)
+
+set(XML_DESCRIPTION
+    "Open Observer is an OpenCPN plugin for logging georeferenced marine observations, including wildlife encounters, samples, environmental context and vessel/navigation data. It supports configurable observation projects, NMEA-derived fields, CSV/XML/GeoJSON workflows and OpenCPN mark creation."
+)
 
 # ----- Modify section above to include all the details for your plugin
 #
@@ -173,6 +178,7 @@ add_definitions(-DUSE_S57)
 set(SRCS 
     src/openobserver_pi.cpp
     src/ooObservations.cpp
+    src/ooScientificPackage.cpp
     src/ooControlDialogDef.cpp 
     src/ooControlDialogImpl.cpp
     src/ooMiniDialogDef.cpp 
@@ -245,6 +251,7 @@ set(SRC ${SRCS} ${HDRS})
 # ==============================================================
 
 target_sources(${PACKAGE_NAME} PUBLIC ${SRC})
+
 
 # ==============================================================
 
@@ -332,6 +339,39 @@ endif (QT_ANDROID)
 
 include("PluginInstall")
 include("PluginLocalization")
+
+# Install packaged default listings and user icons.
+# These files are copied at runtime to the user's OpenObserver/OpenCPN folders
+# if they do not already exist.
+if (APPLE)
+  install(
+    DIRECTORY data/Listings
+    DESTINATION OpenCPN.app/Contents/SharedSupport/plugins/openobserver_pi/data
+  )
+  install(
+    DIRECTORY data/UserIcons
+    DESTINATION OpenCPN.app/Contents/SharedSupport/plugins/openobserver_pi/data
+  )
+elseif (WIN32)
+  install(
+    DIRECTORY data/Listings
+    DESTINATION plugins/openobserver_pi/data
+  )
+  install(
+    DIRECTORY data/UserIcons
+    DESTINATION plugins/openobserver_pi/data
+  )
+else()
+  install(
+    DIRECTORY data/Listings
+    DESTINATION share/opencpn/plugins/openobserver_pi/data
+  )
+  install(
+    DIRECTORY data/UserIcons
+    DESTINATION share/opencpn/plugins/openobserver_pi/data
+  )
+endif()
+
 include("PluginPackage")
 
 # ================================================================

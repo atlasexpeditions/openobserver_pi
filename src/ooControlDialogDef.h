@@ -11,6 +11,7 @@
 #include <wx/xrc/xmlres.h>
 #include <wx/intl.h>
 #include <wx/button.h>
+#include <wx/checkbox.h>
 #include <wx/string.h>
 #include <wx/bitmap.h>
 #include <wx/image.h>
@@ -52,6 +53,8 @@ class ooControlDialogDef : public wxDialog
 		wxStaticLine* m_staticline3;
 		wxStaticText* m_staticText6;
 		wxTextCtrl* m_textProjectName;
+		wxStaticText* m_staticTextProjectDescription;
+		wxTextCtrl* m_textProjectDescription;
 		wxStaticText* m_staticText9;
 		wxColourPickerCtrl* m_colourProject;
 		wxStaticText* m_staticText10;
@@ -60,6 +63,7 @@ class ooControlDialogDef : public wxDialog
 		wxStaticText* m_staticText7;
 		wxStaticText* m_staticTextNMEA;
 		wxButton* m_buttonScanNmea;
+		wxCheckBox* m_checkShowAdvancedNmeaFields;
 		wxStaticText* m_staticText11;
 		wxStaticText* m_staticTextListings;
 		wxButton* m_buttonEditListings;
@@ -86,6 +90,8 @@ class ooControlDialogDef : public wxDialog
 		wxButton* m_buttonSaveObs;
 		wxButton* m_ObservationsImportObservations;
 		wxButton* m_ObservationsExportObservations;
+		wxButton* m_buttonCreateScientificPackage;
+		wxButton* m_buttonUpdateScientificPackage;
 		wxChoice* m_choiceObservations;
 
 		// Virtual event handlers, override them in your derived class
@@ -99,6 +105,7 @@ class ooControlDialogDef : public wxDialog
 		virtual void OnProjectGridSelect( wxGridEvent& event ) { event.Skip(); }
 		virtual void OnProjectGridRangeSelect( wxGridRangeSelectEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickScanNmea( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnCheckBoxShowAdvancedNmeaFields( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickEditListings( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickRefreshListings( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickNewObservation( wxCommandEvent& event ) { event.Skip(); }
@@ -109,6 +116,8 @@ class ooControlDialogDef : public wxDialog
 		virtual void OnButtonClickSaveObservation( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickImportObservations( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickExportObservations( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickCreateScientificPackage( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickUpdateScientificPackage( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnChoiceObservationsChanged( wxCommandEvent& event ) { event.Skip(); }
 
 

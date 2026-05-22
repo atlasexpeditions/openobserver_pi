@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<listing creator="OpenObserver for OpenCPN" file_version="1">
+
+<item label=" "/>
+<item label="Baleen whale (Mysticeti) Mysticète" icon="Whale"/>
+<item label="Common minke whale (Balaenoptera acutorostrata) Baleine de Minke" icon="Whale"/>
+<item label="Sei whale (Balaenoptera borealis) Rorqual boréal" icon="Whale"/>
+<item label="Bryde's whale (Balaenoptera brydei) Rorqual de Bryde" icon="Whale"/>
+<item label="Blue whale (Balaenoptera musculus) Rorqual bleu" icon="Whale"/>
+<item label="Fin whale (Balaenoptera physalus) Rorqual commun" icon="Whale"/> 
+<item label="Humpback whale (Megaptera novaeangliae) Baleine à bosse" icon="Humpback-whale"/>
+
+<item label=" "/>
+<item label="Toothed whale (Odontoceti) Baleine à dent" icon="Sperm-whale"/>
+<item label="Short-finned pilot whale (Globicephala macrorhynchus) Globicéphale" icon="Sperm-whale"/>
+<item label="Long-finned pilot whale (Globicephala melas) Globicéphale noir" icon="Sperm-whale"/>
+<item label="Harbour porpoise (Phocoena phocoena) Marsouin" icon="Sperm-whale"/>
+<item label="Sperm whale (Physeter macrocephalus) Cachalot" icon="Sperm-whale"/>
+<item label="Pygmy sperm whale (Kogia breviceps) Cachalot Pygmée" icon="Sperm-whale"/>
+<item label="Dwarf sperm whale (Kogia sima) Cachalot nain" icon="Sperm-whale"/>
+<item label="Blainville's beaked whale (Mesoplodon densirostris) Baleine à bec de Blainville" icon="Sperm-whale"/>
+<item label="Gervais' beaked whale (Mesoplodon europaeus) Mésoplodon de Gervais" icon="Sperm-whale"/>
+<item label="Cuvier's beaked whale (Ziphius cavirostris) Baleine à bec de Cuvier" icon="Sperm-whale"/>
+<item label="Killer whale (Orcinus orca) Orque" icon="Orca"/>
+<item label="Pygmy killer whale (Feresa attenuata) Orque pygmée" icon="Orca"/>
+<item label="False killer whale (Pseudorca crassidens) Fausse orque" icon="Orca"/>
+
+<item label=" "/>
+<item label="Dolphin sp. (species) Dauphin sp." icon="Dolphin"/>
+<item label="Short-beaked common dolphin (Delphinus delphis) Dauphin commun à bec court" icon="Dolphin"/>
+<item label="Fraser's dolphin (Lagenodelphis hosei) Dauphin de Fraser" icon="Dolphin"/>
+<item label="Pantropical spotted dolphin (Stenella attenuata) Dauphin tacheté pantropical" icon="Dolphin"/>
+<item label="Clymene dolphin (Stenella clymene) Dauphin clymène" icon="Dolphin"/>
+<item label="Striped dolphin (Stenella coeruleoalba) Dauphin bleu et blanc" icon="Dolphin"/>
+<item label="Atlantic spotted dolphin (Stenella frontalis) Dauphin tacheté de l’Atlantique" icon="Dolphin"/>
+<item label="Spinner dolphin (Stenella longirostris) Dauphin à long bec" icon="Dolphin"/>
+<item label="Rough-toothed dolphin (Steno bredanensis) Dauphin à bec étroit" icon="Dolphin"/>
+<item label="Common bottlenose dolphin (Tursiops truncatus) Grand dauphin" icon="Dolphin"/>
+<item label="Risso's dolphin (Grampus griseu) Dauphin de Risso" icon="Dolphin"/>
+<item label="Melon-headed whale (Peponocephala electra) Dauphin d’Électre" icon="Dolphin"/>
+
+<item label=" "/>
+<item label="Turtle sp. (species) Tortue sp." icon="Turtle"/>
+<item label="Leatherback sea turtle (Dermochelys coriacea) Tortue luth" icon="Turtle"/>
+<item label="Loggerhead sea turtle (Caretta caretta) Tortue Caouanne" icon="Turtle"/>
+<item label="Green sea turtle (Chelonia mydas) Tortue verte" icon="Turtle"/>
+
+<item label=" "/>
+<item label="Fish sp. (species) Poisson sp." icon="Fish"/>
+<item label="Ocean sunfish (Mola mola) Poisson-lune" icon="Fish"/>
+<item label="Swordfish (Xiphias gladius) Espadon" icon="Fish"/>
+<item label="Tuna sp. (Thunnus species) Thon sp." icon="Fish"/>
+
+<item label=" "/>
+<item label="Shark sp. (species) Requin sp." icon="Shark"/>
+<item label="Blue shark (Prionace glauca) Requin bleu" icon="Shark"/>
+<item label="Whale shark (Rhincodon typus) Requin-baleine" icon="Shark"/>
+
+<item label=" "/>
+<item label="Ray sp. (species) Raie sp." icon="Ray"/>
+<item label="Manta ray (Mobula birostris) Raie manta océanique" icon="Ray"/>
+<item label="Spotted eagle ray (Aetobatus narinari) Aigle de mer tacheté" icon="Ray"/>
+
+</listing>

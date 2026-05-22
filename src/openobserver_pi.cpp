@@ -46,6 +46,7 @@
 
 #include <wx/aui/aui.h>
 #include <wx/gdicmn.h>
+#include <algorithm>
 
 #include "openobserver_pi.h"
 #include "version.h"
@@ -167,21 +168,181 @@ openobserver_pi::openobserver_pi(void *ppimgr)
     if (!wxDir::Exists(*g_pListingDir))
         wxMkdir(*g_pListingDir);
 
-    // Copy packaged listings
-    const wxString exePath = GetOCPN_ExePath();
+    // Copy packaged listings.
+    // Do not overwrite user-customized listings.
+    //
+    // Packaged listings are installed with the plugin resources.
+    // On macOS imported plugins usually place resources under:
+    // ~/Library/Application Support/OpenCPN/Contents/SharedSupport/plugins/openobserver_pi/data/Listings
     const wxUniChar sep = wxFileName::GetPathSeparator();
-    const wxString packagedListingsPath =
+
+    wxArrayString possiblePackagedListingsPaths;
+   
+    // 1. Standard OpenCPN plugin data directory, when available.
+    // Prefer the package layout installed by CMake:
+    //   openobserver_pi/data/Listings
+    // Keep openobserver_pi/Listings as a compatibility fallback.
+    const wxString pluginDataDir = GetPluginDataDir("openobserver_pi");
+
+    if (!pluginDataDir.IsEmpty()) {
+        possiblePackagedListingsPaths.Add(
+            wxString::Format(wxT("%s%c%s%c%s"),
+                pluginDataDir,
+                sep, wxT("data"),
+                sep, wxT("Listings")));
+
+        possiblePackagedListingsPaths.Add(
+            wxString::Format(wxT("%s%c%s"),
+                pluginDataDir,
+                sep, wxT("Listings")));
+    }
+
+
+#ifdef __WXOSX__
+    // 2. macOS imported plugin location in the user's Application Support folder.
+    const wxString macUserListingsPath =
+        wxString::Format(
+            wxT("%s%cLibrary%cApplication Support%cOpenCPN%cContents%cSharedSupport%cplugins%copenobserver_pi%cdata%cListings"),
+            wxGetHomeDir(),
+            sep, sep, sep, sep, sep, sep, sep, sep, sep);
+
+    possiblePackagedListingsPaths.Add(macUserListingsPath);
+#endif
+
+    // 3. Fallback for layouts where plugin resources are located relative to the executable.
+    const wxString exePath = GetOCPN_ExePath();
+    possiblePackagedListingsPaths.Add(
         wxString::Format(wxT("%s%c%s%c%s%c%s%c%s"),
             wxFileName(exePath).GetPath(),
-            sep, "plugins", sep, "openobserver_pi", sep, "data", sep, "Listings");
+            sep, wxT("plugins"),
+            sep, wxT("openobserver_pi"),
+            sep, wxT("data"),
+            sep, wxT("Listings")));
+
+    for (const auto& packagedListingsPath : possiblePackagedListingsPaths) {
+        if (!wxDir::Exists(packagedListingsPath)) {
+            continue;
+        }
+
+        wxString sourceRoot = packagedListingsPath;
+        appendOSDirSlash(&sourceRoot);
+
+        wxArrayString allPackagedListings;
+        wxDir::GetAllFiles(sourceRoot, &allPackagedListings, wxT("*.xml"));
+
+        for (const auto& f : allPackagedListings) {
+            wxFileName relativeFile(f);
+
+            if (!relativeFile.MakeRelativeTo(sourceRoot)) {
+                continue;
+            }
+
+            const wxString relativePath = relativeFile.GetFullPath();
+            const wxString targetPath = wxString::Format(wxT("%s%s"), *g_pListingDir, relativePath);
+
+            wxFileName targetFile(targetPath);
+
+            if (!wxDir::Exists(targetFile.GetPath())) {
+                wxFileName::Mkdir(targetFile.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            }
+
+            if (!wxFile::Exists(targetFile.GetFullPath())) {
+                wxCopyFile(f, targetFile.GetFullPath());
+            }
+        }
+    }
+    // Copy packaged user icons.
+    // Do not overwrite user-customized icons.
+    //
+    // Source:
+    //   plugin data/UserIcons
+    //
+    // Destination:
+    //   OpenCPN user directory/UserIcons
+    wxString userIconsDir = *GetpPrivateApplicationDataLocation();
+    appendOSDirSlash(&userIconsDir);
+    userIconsDir.Append(wxT("UserIcons"));
+    appendOSDirSlash(&userIconsDir);
+
+    if (!wxDir::Exists(userIconsDir)) {
+        wxMkdir(userIconsDir);
+    }
+
+    wxArrayString possiblePackagedUserIconsPaths;
+
+    // 1. Standard OpenCPN plugin data directory, when available.
+    // Prefer the package layout installed by CMake:
+    //   openobserver_pi/data/UserIcons
+    // Keep openobserver_pi/UserIcons as a compatibility fallback.
+    if (!pluginDataDir.IsEmpty()) {
+        possiblePackagedUserIconsPaths.Add(
+            wxString::Format(wxT("%s%c%s%c%s"),
+                pluginDataDir,
+                sep, wxT("data"),
+                sep, wxT("UserIcons")));
+
+        possiblePackagedUserIconsPaths.Add(
+            wxString::Format(wxT("%s%c%s"),
+                pluginDataDir,
+                sep, wxT("UserIcons")));
+    }
+
+
+#ifdef __WXOSX__
+    // 2. macOS imported plugin location in the user's Application Support folder.
+    const wxString macUserIconsPath =
+        wxString::Format(
+            wxT("%s%cLibrary%cApplication Support%cOpenCPN%cContents%cSharedSupport%cplugins%copenobserver_pi%cdata%cUserIcons"),
+            wxGetHomeDir(),
+            sep, sep, sep, sep, sep, sep, sep, sep, sep);
+
+    possiblePackagedUserIconsPaths.Add(macUserIconsPath);
     
-    wxArrayString allPackagedListings;
-    wxDir::GetAllFiles(packagedListingsPath, &allPackagedListings);
-    for (auto f : allPackagedListings) {
-        wxString filename = wxFileName(f).GetFullName();
-        wxString targetPath = wxString::Format(wxT("%s%s"), *g_pListingDir, filename);
-        if (!wxFile::Exists(targetPath)) {
-            wxCopyFile(f, targetPath);
+#endif
+
+    // 3. Fallback for layouts where plugin resources are located relative to the executable.
+    possiblePackagedUserIconsPaths.Add(
+        wxString::Format(wxT("%s%c%s%c%s%c%s%c%s"),
+            wxFileName(exePath).GetPath(),
+            sep, wxT("plugins"),
+            sep, wxT("openobserver_pi"),
+            sep, wxT("data"),
+            sep, wxT("UserIcons")));
+
+    for (const auto& packagedUserIconsPath : possiblePackagedUserIconsPaths) {
+        if (!wxDir::Exists(packagedUserIconsPath)) {
+            continue;
+        }
+
+        wxString sourceRoot = packagedUserIconsPath;
+        appendOSDirSlash(&sourceRoot);
+
+        wxArrayString allPackagedUserIcons;
+        wxDir::GetAllFiles(sourceRoot, &allPackagedUserIcons);
+
+        for (const auto& f : allPackagedUserIcons) {
+            if (wxFileName(f).GetFullName() == wxT(".DS_Store")) {
+                continue;
+            }
+
+            wxFileName relativeFile(f);
+
+            if (!relativeFile.MakeRelativeTo(sourceRoot)) {
+                continue;
+            }
+
+            const wxString relativePath = relativeFile.GetFullPath();
+            const wxString targetPath = wxString::Format(wxT("%s%s"), userIconsDir, relativePath);
+
+            wxFileName targetFile(targetPath);
+
+            if (!wxDir::Exists(targetFile.GetPath())) {
+                wxFileName::Mkdir(targetFile.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            }
+
+            if (!wxFile::Exists(targetFile.GetFullPath())) {
+                wxCopyFile(f, targetFile.GetFullPath());
+            }
         }
     }
 
@@ -228,7 +389,11 @@ int openobserver_pi::Init(void)
     AddLocaleCatalog(PLUGIN_CATALOG_NAME);
 
     // Get a pointer to the opencpn display canvas, to use as a parent for windows created
-    m_parent_window = GetOCPNCanvasWindow();
+    m_parent_window = wxGetTopLevelParent(GetOCPNCanvasWindow());
+
+    if (!m_parent_window) {
+        m_parent_window = GetOCPNCanvasWindow();
+    }
     m_pConfig = GetOCPNConfigObject();
     LoadConfig();
 
@@ -286,6 +451,7 @@ int openobserver_pi::Init(void)
     m_ooControlDialogImpl->SetSize(m_dialogPosition.width,
                                    m_dialogPosition.height);
 
+
     return (
         WANTS_CURSOR_LATLON       |
         WANTS_TOOLBAR_CALLBACK    |
@@ -314,6 +480,8 @@ void openobserver_pi::LateInit(void)
 
 bool openobserver_pi::DeInit(void)
 {
+
+
     if (m_ooControlDialogImpl)
     {
         m_dialogPosition = m_ooControlDialogImpl->GetRect();
@@ -506,12 +674,15 @@ void openobserver_pi::ToggleToolbarIcon()
         m_ooMiniDialogImpl->Hide();
     } else {
         SetToolbarItemState(m_openobserver_button_id, true);
+
         if (m_bShowMainDialog) {
             m_ooMiniDialogImpl->Hide();
             m_ooControlDialogImpl->Show();
+            m_ooControlDialogImpl->Raise();
         } else {
             m_ooControlDialogImpl->Hide();
             m_ooMiniDialogImpl->Show();
+            m_ooMiniDialogImpl->Raise();
         }
     }
 }
@@ -523,10 +694,12 @@ void openobserver_pi::ToggleWindow()
     if (m_ooControlDialogImpl->IsShown()) {
         m_ooControlDialogImpl->Hide();
         m_ooMiniDialogImpl->Show();
+        m_ooMiniDialogImpl->Raise();
         m_bShowMainDialog = false;
     } else {
         m_ooMiniDialogImpl->Hide();
         m_ooControlDialogImpl->Show();
+        m_ooControlDialogImpl->Raise();
         m_bShowMainDialog = true;
     }
 }
@@ -575,7 +748,11 @@ void openobserver_pi::LoadConfig()
 
     m_pConfig->SetPath("/Settings/openobserver_pi");
     m_pConfig->Read("ObservationsIndex", &m_observationsIndex, -1);
-    m_pConfig->Read("ObservationsChoiceCount", &m_observationsChoiceCount, 3);
+    m_pConfig->Read("ObservationsChoiceCount", &m_observationsChoiceCount, 5);
+
+    if (m_observationsChoiceCount < 5) {
+    m_observationsChoiceCount = 5;
+    }
     m_pConfig->Read("DialogX", &m_dialogPosition.x, -1);
     m_pConfig->Read("DialogY", &m_dialogPosition.y, -1);
     m_pConfig->Read("DialogWidth", &m_dialogPosition.width, -1);
@@ -584,6 +761,150 @@ void openobserver_pi::LoadConfig()
     m_pConfig->Read("MiniDialogY", &m_miniDialogPosition.y, -1);
     m_pConfig->Read("MiniDialogWidth", &m_miniDialogPosition.width, -1);
     m_pConfig->Read("MiniDialogHeight", &m_miniDialogPosition.height, -1);
+}
+
+static wxString GetHumanReadableNmeaFieldDescription(const wxString& sentenceId, int fieldIndex)
+{
+    wxString label;
+
+    if (sentenceId == "RMC") {
+        if (fieldIndex == 1) label = "UTC time";
+        else if (fieldIndex == 2) label = "Navigation status";
+        else if (fieldIndex == 3) label = "GPS latitude";
+        else if (fieldIndex == 4) label = "Latitude hemisphere";
+        else if (fieldIndex == 5) label = "GPS longitude";
+        else if (fieldIndex == 6) label = "Longitude hemisphere";
+        else if (fieldIndex == 7) label = "GPS speed over ground";
+        else if (fieldIndex == 8) label = "GPS course over ground";
+        else if (fieldIndex == 9) label = "UTC date";
+        else if (fieldIndex == 10) label = "Magnetic variation";
+        else if (fieldIndex == 11) label = "Magnetic variation direction";
+        else if (fieldIndex == 12) label = "Positioning system mode";
+    } else if (sentenceId == "GGA") {
+        if (fieldIndex == 1) label = "UTC time";
+        else if (fieldIndex == 2) label = "GPS latitude";
+        else if (fieldIndex == 3) label = "Latitude hemisphere";
+        else if (fieldIndex == 4) label = "GPS longitude";
+        else if (fieldIndex == 5) label = "Longitude hemisphere";
+        else if (fieldIndex == 6) label = "GPS fix quality";
+        else if (fieldIndex == 7) label = "Satellites in use";
+        else if (fieldIndex == 8) label = "Horizontal dilution of precision";
+        else if (fieldIndex == 9) label = "Altitude";
+        else if (fieldIndex == 11) label = "Geoid separation";
+        else if (fieldIndex == 13) label = "DGPS data age";
+        else if (fieldIndex == 14) label = "DGPS station ID";
+    } else if (sentenceId == "GLL") {
+        if (fieldIndex == 1) label = "GPS latitude";
+        else if (fieldIndex == 2) label = "Latitude hemisphere";
+        else if (fieldIndex == 3) label = "GPS longitude";
+        else if (fieldIndex == 4) label = "Longitude hemisphere";
+        else if (fieldIndex == 5) label = "UTC time";
+        else if (fieldIndex == 6) label = "Navigation status";
+        else if (fieldIndex == 7) label = "Positioning system mode";
+    } else if (sentenceId == "VTG") {
+        if (fieldIndex == 1) label = "GPS course over ground true";
+        else if (fieldIndex == 3) label = "GPS course over ground magnetic";
+        else if (fieldIndex == 5) label = "GPS speed over ground knots";
+        else if (fieldIndex == 7) label = "GPS speed over ground km/h";
+        else if (fieldIndex == 9) label = "Positioning system mode";
+    } else if (sentenceId == "MWV") {
+        if (fieldIndex == 1) label = "Apparent wind angle";
+        else if (fieldIndex == 2) label = "Wind angle reference";
+        else if (fieldIndex == 3) label = "Apparent wind speed";
+        else if (fieldIndex == 4) label = "Wind speed unit";
+        else if (fieldIndex == 5) label = "Wind data status";
+    } else if (sentenceId == "HDG") {
+        if (fieldIndex == 1) label = "Magnetic heading";
+        else if (fieldIndex == 2) label = "Magnetic deviation";
+        else if (fieldIndex == 3) label = "Magnetic deviation direction";
+        else if (fieldIndex == 4) label = "Magnetic variation";
+        else if (fieldIndex == 5) label = "Magnetic variation direction";
+    } else if (sentenceId == "GSA") {
+        if (fieldIndex == 1) label = "GPS selection mode";
+        else if (fieldIndex == 2) label = "GPS fix type";
+        else if (fieldIndex >= 3 && fieldIndex <= 14) label = "Satellite PRN used for fix";
+        else if (fieldIndex == 15) label = "Position dilution of precision";
+        else if (fieldIndex == 16) label = "Horizontal dilution of precision";
+        else if (fieldIndex == 17) label = "Vertical dilution of precision";
+    } else if (sentenceId == "GSV") {
+        if (fieldIndex == 1) label = "GSV total messages";
+        else if (fieldIndex == 2) label = "GSV message number";
+        else if (fieldIndex == 3) label = "Satellites in view";
+        else label = "Satellite view detail";
+    } else if (sentenceId == "GST") {
+        if (fieldIndex == 1) label = "UTC time";
+        else if (fieldIndex == 2) label = "RMS range residual";
+        else if (fieldIndex == 3) label = "Error ellipse semi-major axis";
+        else if (fieldIndex == 4) label = "Error ellipse semi-minor axis";
+        else if (fieldIndex == 5) label = "Error ellipse orientation";
+        else if (fieldIndex == 6) label = "Latitude error";
+        else if (fieldIndex == 7) label = "Longitude error";
+        else if (fieldIndex == 8) label = "Altitude error";
+    }
+
+    if (label.IsEmpty()) {
+        label = wxString::Format(wxT("NMEA %s field %i"), sentenceId, fieldIndex);
+    }
+
+    return wxString::Format(wxT("%s [%s:%i]"), label, sentenceId, fieldIndex);
+}
+
+static int GetNmeaFieldSortPriority(const wxString& sentenceId, int fieldIndex)
+{
+    // Time
+    if (sentenceId == "RMC" && fieldIndex == 9) return 10;  // UTC date
+    if (sentenceId == "RMC" && fieldIndex == 1) return 20;  // UTC time
+    if (sentenceId == "GGA" && fieldIndex == 1) return 21;  // UTC time
+    if (sentenceId == "GLL" && fieldIndex == 5) return 22;  // UTC time
+    if (sentenceId == "ZDA" && fieldIndex == 1) return 23;  // UTC time
+
+    // Position
+    if (sentenceId == "RMC" && fieldIndex == 3) return 30;  // GPS latitude
+    if (sentenceId == "GGA" && fieldIndex == 2) return 31;  // GPS latitude
+    if (sentenceId == "GLL" && fieldIndex == 1) return 32;  // GPS latitude
+
+    if (sentenceId == "RMC" && fieldIndex == 5) return 40;  // GPS longitude
+    if (sentenceId == "GGA" && fieldIndex == 4) return 41;  // GPS longitude
+    if (sentenceId == "GLL" && fieldIndex == 3) return 42;  // GPS longitude
+
+    // Movement
+    if (sentenceId == "RMC" && fieldIndex == 7) return 50;  // SOG
+    if (sentenceId == "VTG" && fieldIndex == 5) return 51;  // SOG knots
+    if (sentenceId == "VTG" && fieldIndex == 7) return 52;  // SOG km/h
+
+    if (sentenceId == "RMC" && fieldIndex == 8) return 60;  // COG
+    if (sentenceId == "VTG" && fieldIndex == 1) return 61;  // COG true
+    if (sentenceId == "VTG" && fieldIndex == 3) return 62;  // COG magnetic
+
+    // Heading
+    if (sentenceId == "HDG" && fieldIndex == 1) return 70;  // Magnetic heading
+    if (sentenceId == "HDT" && fieldIndex == 1) return 71;  // True heading
+    if (sentenceId == "HDM" && fieldIndex == 1) return 72;  // Magnetic heading
+
+    // Wind
+    if (sentenceId == "MWV" && fieldIndex == 1) return 80;  // Apparent wind angle
+    if (sentenceId == "MWV" && fieldIndex == 3) return 90;  // Apparent wind speed
+    if (sentenceId == "MWD" && fieldIndex == 1) return 91;  // True wind direction
+    if (sentenceId == "MWD" && fieldIndex == 5) return 92;  // Wind speed knots
+
+    // GPS quality
+    if (sentenceId == "RMC" && fieldIndex == 2) return 100; // Navigation status
+    if (sentenceId == "GLL" && fieldIndex == 6) return 101; // Navigation status
+    if (sentenceId == "GGA" && fieldIndex == 6) return 110; // GPS fix quality
+    if (sentenceId == "GGA" && fieldIndex == 7) return 120; // Satellites in use
+    if (sentenceId == "GGA" && fieldIndex == 8) return 130; // HDOP
+    if (sentenceId == "GSA" && fieldIndex == 15) return 131; // PDOP
+    if (sentenceId == "GSA" && fieldIndex == 16) return 132; // HDOP
+    if (sentenceId == "GSA" && fieldIndex == 17) return 133; // VDOP
+
+    // Altitude / depth / temperature
+    if (sentenceId == "GGA" && fieldIndex == 9) return 140;  // Altitude
+    if (sentenceId == "DPT" && fieldIndex == 1) return 150;  // Water depth
+    if (sentenceId == "DBT" && fieldIndex == 3) return 151;  // Depth meters
+    if (sentenceId == "MTW" && fieldIndex == 1) return 160;  // Water temperature
+
+    // Advanced or unknown scanned fields.
+    return 1000;
 }
 
 void openobserver_pi::WriteNmeaXML(const std::unordered_map<wxString, std::set<int>>& scannedNmeaFields)
@@ -610,11 +931,12 @@ void openobserver_pi::WriteNmeaXML(const std::unordered_map<wxString, std::set<i
             wxXmlNode* fieldNode = new wxXmlNode(NULL, wxXML_ELEMENT_NODE, "field");
             fieldNode->AddAttribute("index", wxString::Format("%d", index));
             
-            wxXmlNode* textNode =new wxXmlNode(
+            wxXmlNode* textNode = new wxXmlNode(
                 wxXML_TEXT_NODE,
                 "",
-                wxString::Format(wxT("%s:%i"), sentenceId, index)
+                GetHumanReadableNmeaFieldDescription(sentenceId, index)
             );
+
             
             fieldNode->AddChild(textNode);
             sentenceNode->AddChild(fieldNode);
@@ -663,11 +985,28 @@ std::vector<NMEAField> openobserver_pi::ReadNmeaXML()
             if (fieldNode->GetChildren()) {
                 description = fieldNode->GetChildren()->GetContent();
             }
-            if (description.IsEmpty()) description = wxString::Format(wxT("%s:%i"), sentenceId, fieldIndex);
+            if (description.IsEmpty()) {
+                description = GetHumanReadableNmeaFieldDescription(sentenceId, (int)fieldIndex);
+            }
 
             res.push_back({sentenceId, (int)fieldIndex, description, ""});
         }
     }
+
+    std::sort(res.begin(), res.end(), [](const NMEAField& a, const NMEAField& b) {
+        const int priorityA = GetNmeaFieldSortPriority(a.m_sentenceId, a.m_fieldIndex);
+        const int priorityB = GetNmeaFieldSortPriority(b.m_sentenceId, b.m_fieldIndex);
+
+        if (priorityA != priorityB) {
+            return priorityA < priorityB;
+        }
+
+        if (a.m_sentenceId != b.m_sentenceId) {
+            return a.m_sentenceId < b.m_sentenceId;
+        }
+
+        return a.m_fieldIndex < b.m_fieldIndex;
+    });
 
     return res;
 }

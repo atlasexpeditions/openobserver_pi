@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<scientific_package_template
+    creator="Open Observer for OpenCPN"
+    file_version="1"
+    name="Default">
+
+  <daily_media_folder name="photos"/>
+  <daily_media_folder name="audio"/>
+  <daily_media_folder name="video"/>
+  <daily_media_folder name="tracks"/>
+  <daily_media_folder name="samples"/>
+  <daily_media_folder name="documents"/>
+  <daily_media_folder name="notes"/>
+  <daily_media_folder name="other"/>
+
+</scientific_package_template>

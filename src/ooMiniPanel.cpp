@@ -75,6 +75,9 @@ bool ooMiniPanel::Create(wxWindow* parent, wxWindowID id, const wxString& msg,
   bSizerTopButtons->Add(m_ObservationDuration, 0,
                         wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
+  m_ObservationsDurationLabel->Hide();
+  m_ObservationDuration->Hide();
+
   m_buttonToggleWindow = new wxButton(this, wxID_ANY, _("Toggle Window"),
                                         wxDefaultPosition, wxDefaultSize, 0);
   bSizerTopButtons->Add(m_buttonToggleWindow, 0,
@@ -183,19 +186,29 @@ void ooMiniPanel::UpdateObservationStatus()
   if (g_openobserver_pi->m_ooObservations->IsObserving())
   {
     m_StartStopObservation->SetLabel("Stop Observation");
-    
+
+    m_ObservationsDurationLabel->Show();
+    m_ObservationDuration->Show();
+
     m_ObservationDuration->SetBackgroundColour(*wxRED);
+    m_ObservationDuration->Refresh();
+
+    Layout();
+    GetParent()->Layout();
 
     // start timer to update observation duration
     m_ObservationDurationTimer.Start(100);  // 100 ms = 0.1 s
   } else {
-    //VPE color timer 
-    m_ObservationDuration->SetBackgroundColour(*wxWHITE);
-    m_ObservationDuration->Refresh();
     m_StartStopObservation->SetLabel("Start Observation");
- 
+
     m_ObservationDurationTimer.Stop();
-    
+
+    m_ObservationDuration->SetValue(wxEmptyString);
+    m_ObservationsDurationLabel->Hide();
+    m_ObservationDuration->Hide();
+
+    Layout();
+    GetParent()->Layout();
   }
 }
 

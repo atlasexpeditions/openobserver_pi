@@ -43,9 +43,9 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	m_panelProject->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOW ) );
 
 	wxFlexGridSizer* fgSizerProject;
-	fgSizerProject = new wxFlexGridSizer( 4, 1, 0, 0 );
+	fgSizerProject = new wxFlexGridSizer( 0, 1, 0, 0 );
 	fgSizerProject->AddGrowableCol( 0 );
-	fgSizerProject->AddGrowableRow( 3 );
+	fgSizerProject->AddGrowableRow( 4 );
 	fgSizerProject->SetFlexibleDirection( wxBOTH );
 	fgSizerProject->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_ALL );
 
@@ -93,13 +93,10 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	fgSizer8->Add( m_staticText6, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 	m_textProjectName = new wxTextCtrl( m_panelProject, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( -1,-1 ), 0 );
-	fgSizer8->Add( m_textProjectName, 1, wxALL|wxEXPAND, 5 );
+fgSizer8->Add( m_textProjectName, 1, wxALL|wxEXPAND, 5 );
 
-
-	fgSizer8->Add( 0, 0, 1, wxEXPAND, 5 );
-
-
-	fgSizer8->Add( 0, 0, 1, wxEXPAND, 5 );
+fgSizer8->Add( 0, 0, 1, wxEXPAND, 5 );
+fgSizer8->Add( 0, 0, 1, wxEXPAND, 5 );
 
 	m_staticText9 = new wxStaticText( m_panelProject, wxID_ANY, _("Color"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_staticText9->Wrap( -1 );
@@ -119,8 +116,28 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 
 
 	fgSizerProject->Add( fgSizer8, 0, wxEXPAND, 5 );
+	wxBoxSizer* bSizerProjectDescription;
+	bSizerProjectDescription = new wxBoxSizer( wxVERTICAL );
 
-	m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), 0 );
+	m_staticTextProjectDescription = new wxStaticText( m_panelProject, wxID_ANY, _("Description"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticTextProjectDescription->Wrap( -1 );
+	bSizerProjectDescription->Add( m_staticTextProjectDescription, 0, wxLEFT|wxRIGHT|wxTOP, 5 );
+
+	m_textProjectDescription = new wxTextCtrl(
+    m_panelProject,
+    wxID_ANY,
+    wxEmptyString,
+    wxDefaultPosition,
+    wxSize( -1,80 ),
+    wxTE_MULTILINE | wxTE_PROCESS_ENTER
+);
+m_textProjectDescription->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOW ) );
+m_textProjectDescription->SetForegroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOWTEXT ) );
+bSizerProjectDescription->Add( m_textProjectDescription, 0, wxALL|wxEXPAND, 5 );
+
+fgSizerProject->Add( bSizerProjectDescription, 0, wxEXPAND, 5 );
+	
+m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize( -1,-1 ), 0 );
 
 	// Grid
 	m_gridProject->CreateGrid( 2, 0 );
@@ -152,7 +169,7 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	fgSizerProject->Add( m_gridProject, 1, wxALL|wxEXPAND, 5 );
 
 	wxFlexGridSizer* fgSizer9;
-	fgSizer9 = new wxFlexGridSizer( 0, 4, 0, 0 );
+	fgSizer9 = new wxFlexGridSizer( 0, 5, 0, 0 );
 	fgSizer9->SetFlexibleDirection( wxBOTH );
 	fgSizer9->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
 
@@ -168,6 +185,17 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 
 	m_buttonScanNmea = new wxButton( m_panelProject, wxID_ANY, _("Start NMEA Scan"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer9->Add( m_buttonScanNmea, 0, wxALL, 5 );
+
+	m_checkShowAdvancedNmeaFields = new wxCheckBox(
+    	m_panelProject,
+    	wxID_ANY,
+    	_("Show advanced NMEA fields"),
+    	wxDefaultPosition,
+    	wxDefaultSize,
+    	0
+	);
+	m_checkShowAdvancedNmeaFields->SetValue(false);
+	fgSizer9->Add( m_checkShowAdvancedNmeaFields, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 
 	fgSizer9->Add( 0, 0, 1, wxEXPAND, 5 );
@@ -187,7 +215,7 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	fgSizer9->Add( m_buttonRefreshListings, 0, wxALL, 5 );
 
 
-	fgSizerProject->Add( fgSizer9, 1, wxEXPAND, 5 );
+	fgSizerProject->Add( fgSizer9, 0, wxEXPAND, 5 );
 
 
 	m_panelProject->SetSizer( fgSizerProject );
@@ -275,6 +303,35 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	m_ObservationsDeleteMarks = new wxButton( m_panelObservations, wxID_ANY, _("Delete Marks"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizerObservationsButtons->Add( m_ObservationsDeleteMarks, 0, wxALL, 5 );
 
+	m_buttonCreateScientificPackage = new wxButton(
+    m_panelObservations,
+    wxID_ANY,
+    _("Create Scientific Package"),
+    wxDefaultPosition,
+    wxDefaultSize,
+    0
+	);
+	fgSizerObservationsButtons->Add(
+    	m_buttonCreateScientificPackage,
+    	0,
+    	wxALL,
+    	5
+	);
+
+	m_buttonUpdateScientificPackage = new wxButton(
+    	m_panelObservations,
+    	wxID_ANY,
+    	_("Update Scientific Package"),
+    	wxDefaultPosition,
+    	wxDefaultSize,
+    	0
+	);
+	fgSizerObservationsButtons->Add(
+    	m_buttonUpdateScientificPackage,
+    	0,
+    	wxALL,
+    	5
+	);
 
 	m_fgSizerObservations->Add( fgSizerObservationsButtons, 0, wxEXPAND, 5 );
 
@@ -303,7 +360,6 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 
 	m_ObservationsExportObservations = new wxButton( this, wxID_ANY, _("Export..."), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizerBottomBar->Add( m_ObservationsExportObservations, 0, wxALL, 5 );
-
 
 	fgSizerBottomBar->Add( 0, 0, 1, wxEXPAND, 5 );
 
@@ -335,6 +391,7 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	m_gridProject->Connect( wxEVT_GRID_SELECT_CELL, wxGridEventHandler( ooControlDialogDef::OnProjectGridSelect ), NULL, this );
 	m_gridProject->Connect( wxEVT_GRID_RANGE_SELECT, wxGridRangeSelectEventHandler( ooControlDialogDef::OnProjectGridRangeSelect ), NULL, this );
 	m_buttonScanNmea->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickScanNmea ), NULL, this );
+	m_checkShowAdvancedNmeaFields->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnCheckBoxShowAdvancedNmeaFields ), NULL, this );
 	m_buttonEditListings->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickEditListings ), NULL, this );
 	m_buttonRefreshListings->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickRefreshListings ), NULL, this );
 	m_ObservationsNew->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickNewObservation ), NULL, this );
@@ -345,6 +402,8 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	m_buttonSaveObs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickSaveObservation ), NULL, this );
 	m_ObservationsImportObservations->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickImportObservations ), NULL, this );
 	m_ObservationsExportObservations->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickExportObservations ), NULL, this );
+	m_buttonCreateScientificPackage->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickCreateScientificPackage ), NULL, this );
+	m_buttonUpdateScientificPackage->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickUpdateScientificPackage ), NULL, this );
 	m_choiceObservations->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( ooControlDialogDef::OnChoiceObservationsChanged ), NULL, this );
 
 	return true;
@@ -363,6 +422,7 @@ ooControlDialogDef::~ooControlDialogDef()
 	m_gridProject->Disconnect( wxEVT_GRID_SELECT_CELL, wxGridEventHandler( ooControlDialogDef::OnProjectGridSelect ), NULL, this );
 	m_gridProject->Disconnect( wxEVT_GRID_RANGE_SELECT, wxGridRangeSelectEventHandler( ooControlDialogDef::OnProjectGridRangeSelect ), NULL, this );
 	m_buttonScanNmea->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickScanNmea ), NULL, this );
+	m_checkShowAdvancedNmeaFields->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnCheckBoxShowAdvancedNmeaFields ), NULL, this );
 	m_buttonEditListings->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickEditListings ), NULL, this );
 	m_buttonRefreshListings->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickRefreshListings ), NULL, this );
 	m_ObservationsNew->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickNewObservation ), NULL, this );
@@ -373,6 +433,8 @@ ooControlDialogDef::~ooControlDialogDef()
 	m_buttonSaveObs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickSaveObservation ), NULL, this );
 	m_ObservationsImportObservations->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickImportObservations ), NULL, this );
 	m_ObservationsExportObservations->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickExportObservations ), NULL, this );
+	m_buttonCreateScientificPackage->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickCreateScientificPackage ), NULL, this );
+	m_buttonUpdateScientificPackage->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickUpdateScientificPackage ), NULL, this );
 	m_choiceObservations->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( ooControlDialogDef::OnChoiceObservationsChanged ), NULL, this );
 
 }

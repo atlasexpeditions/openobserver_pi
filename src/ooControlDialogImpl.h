@@ -62,7 +62,7 @@ public:
         void SetViewScale(double viewScale);
       protected:
         void SetupObservationsForProject();
-        bool LoadObservations(const wxString& filename);
+        bool LoadObservations(const wxString& filename, bool updateFromMarks = true);
         bool SaveObservations(const wxString& filename = wxString(), bool stopObservation = true);
         ooProject GenerateProject() const;
         void SetProjectEditable(bool editable);
@@ -75,6 +75,8 @@ public:
         void OnButtonClickNewObservation( wxCommandEvent& event );
         void OnButtonClickDeleteObservation( wxCommandEvent& event );
         void OnButtonClickExportObservations( wxCommandEvent& event );
+        void OnButtonClickCreateScientificPackage( wxCommandEvent& event ) override;
+        void OnButtonClickUpdateScientificPackage( wxCommandEvent& event ) override;
         void OnButtonClickImportObservations(wxCommandEvent& event);
         void OnButtonClickObservationsAddMarks( wxCommandEvent& event );
         void OnButtonClickObservationsDeleteMarks( wxCommandEvent& event );
@@ -83,6 +85,8 @@ public:
         void ooControlCloseClick(wxCommandEvent& event);
         void ooControlDialogDefOnClose(wxCloseEvent& event);
         void OnButtonClickScanNmea(wxCommandEvent& event);
+        void OnCheckBoxShowAdvancedNmeaFields(wxCommandEvent& event) override;
+        void CommitCurrentObservationsGridEdit();
         void ooControlDialogActivate(wxActivateEvent& event);
         void OnButtonClickEditListings(wxCommandEvent& event);
         void OnButtonClickRefreshListings(wxCommandEvent& event);
@@ -103,6 +107,12 @@ public:
         void SetupListingEditors();
         void RefreshListings();
         void OnProjectGridSelectionChange();
+
+        bool m_markIconsLoaded;
+
+        void EnsureMarkIconChoiceContains(const wxString& iconName);
+        void SelectMarkIconOrFallback(const wxString& iconName);
+        void LoadMarkIconsIfNeeded(const wxString& preferredIconName = wxEmptyString);
 
         ooMiniPanel *m_MiniPanel;
 

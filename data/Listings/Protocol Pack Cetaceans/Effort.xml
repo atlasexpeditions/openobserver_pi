@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<listing creator="OpenObserver for OpenCPN" file_version="1">
+
+<item label="START"/>
+<item label="ON"/>
+<item label="OFF"/>
+<item label="COMPROMISED"/>
+<item label="END"/>
+
+</listing>

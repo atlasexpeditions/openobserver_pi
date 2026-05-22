@@ -43,6 +43,7 @@ void ComputeTrueWind(double sog, double cog, double apparentWindSpeed,
                      double& trueWindDirection);
 
     std::vector<NMEAField> ooObservations::m_nmeaFields;
+    bool ooObservations::m_showAdvancedNMEAFields = false;
 
 bool ooProject::ReadFromXML(const wxXmlNode* project)
 {
@@ -55,8 +56,10 @@ bool ooProject::ReadFromXML(const wxXmlNode* project)
     m_col_field_types.clear();
     m_col_sizes = wxGridSizesInfo();
     m_color = DEFAULT_PROJECT_COLOUR;
+    m_description = "";
 
     m_name = project->GetAttribute("name");
+
     wxArrayString colorStr = wxSplit(project->GetAttribute("color"), ',');
     int r, g, b;
     if (colorStr.GetCount() == 3 &&
@@ -65,24 +68,37 @@ bool ooProject::ReadFromXML(const wxXmlNode* project)
         colorStr[2].ToInt(&b)) {
         m_color = wxColor(r, g, b);
     }
+
     m_mark_icon = project->GetAttribute("mark_icon", DEFAULT_PROJECT_ICON);
+
+    // Optional project description.
+    // This keeps compatibility with older project XML files that do not have it.
+    for (wxXmlNode* child = project->GetChildren(); child != NULL; child = child->GetNext()) {
+        if (child->GetName() == "description") {
+            m_description = child->GetNodeContent();
+            break;
+        }
+    }
 
     for (wxXmlNode* field = project->GetChildren(); field != NULL ; field = field->GetNext()) {
         int c = -1;
         if (!field->GetAttribute("id").ToInt(&c) || c < 0) continue;
+
         m_col_labels.SetCount(c + 1);
         m_col_field_types.SetCount(c + 1);
 
         int col_size = -1;
         if (field->GetAttribute("col_size").ToInt(&col_size) && col_size >= 0) {
-          m_col_sizes.m_customSizes[c] = col_size;
+            m_col_sizes.m_customSizes[c] = col_size;
         }
+
         m_col_labels[c] = field->GetAttribute("label");
         m_col_field_types[c] = field->GetAttribute("field_type");
 
         if (m_col_labels[c].IsEmpty()) {
             m_col_labels[c] = wxString("Data");
         }
+
         if (m_col_field_types[c].IsEmpty()) {
             m_col_field_types[c] = wxString("Text");
         }
@@ -98,20 +114,30 @@ wxXmlNode* ooProject::SaveToXML(wxXmlNode* parent)
     const int C = m_col_field_types.size();
 
     wxXmlNode* project = new wxXmlNode(parent, wxXML_ELEMENT_NODE, "project");
+
     project->AddAttribute("name", m_name);
     project->AddAttribute(
         "color",
-        wxString::Format("%i,%i,%i", (int)m_color.Red(), (int)m_color.Green(), (int)m_color.Blue())
+        wxString::Format(
+            "%i,%i,%i",
+            (int)m_color.Red(),
+            (int)m_color.Green(),
+            (int)m_color.Blue())
     );
     project->AddAttribute("mark_icon", m_mark_icon);
-    
+
+    // Project description is stored as a child node to support multiline text.
+    wxXmlNode* description = new wxXmlNode(project, wxXML_ELEMENT_NODE, "description");
+    description->AddChild(new wxXmlNode(wxXML_TEXT_NODE, "", m_description));
+
     for (int c = 0; c < C; ++c) {
         wxXmlNode* field = new wxXmlNode(project, wxXML_ELEMENT_NODE, "field");
         field->AddAttribute("id", wxString::Format(wxT("%i"), c));
         field->AddAttribute("label", m_col_labels[c]);
         field->AddAttribute("field_type", m_col_field_types[c]);
         field->AddAttribute(
-            "col_size", wxString::Format(wxT("%i"), m_col_sizes.GetSize(c)));
+            "col_size",
+            wxString::Format(wxT("%i"), m_col_sizes.GetSize(c)));
     }
 
     return project;
@@ -221,7 +247,7 @@ void ooObservations::SetNmeaSentFix(wxString sentenceNmea)
             }
              m_SOG = nmea.Rmc.SpeedOverGroundKnots;
              
-             //wxLogMessage("SOG: %.2f kn  COG: %.2f°", m_SOG, m_COG);
+             //wxLogMessage("SOG: %.2f kn  COG: %.2f?", m_SOG, m_COG);
 
              wxString sog = GetNMEAField(m_sentenceNMEA, "RMC", 7);  // SOG
              wxString cog = GetNMEAField(m_sentenceNMEA, "RMC", 8);  // COG
@@ -247,7 +273,7 @@ void ooObservations::SetNmeaSentFix(wxString sentenceNmea)
 }
 
 // Computes TrueWindSpeed and TrueWindAngle using the Apparent Wind and the GPS SOG.
-static void ComputeTrueWind(double sog, double cog,
+void ComputeTrueWind(double sog, double cog,
                                      double apparentWindSpeed,
                                      double apparentWindAngle,
                                      double& trueWindSpeed,
@@ -299,27 +325,124 @@ wxString ooObservations::GetNMEAField(const wxString& sentence,
 
 ////////////VPE NMEA//////////////
 
+static bool IsReasonableUtcDateTime(const wxDateTime& dateTime)
+{
+    if (!dateTime.IsValid()) {
+        return false;
+    }
+
+    const int year = dateTime.GetYear();
+
+    // Simple safety range to reject uninitialized or absurd dates.
+    return year >= 2000 && year <= 2100;
+}
+
+static wxDateTime GetComputerUtcDateTime()
+{
+    return wxDateTime::Now().ToUTC();
+}
+
 wxString ooObservations::GetUtcTimeFromNMEA(int dateFormat) const
 {
-  wxDateTime::Tm tm = m_utcTime.GetTm();
-  wxString res;
-  switch (dateFormat) {
-    case UTC_TIME_DATE:
-      res = wxString::Format("%04d/%02d/%02d", (int)tm.year,
-                             (int)tm.mon + 1, (int)tm.mday);
-      break;
-    case UTC_TIME_TIME:
-      res = wxString::Format("%02d:%02d:%02d",
-                             (int)tm.hour, (int)tm.min, (int)tm.sec);
-      break;
-    case UTC_TIMESTAMP:
-      res = wxString::Format("%04d-%02d-%02dT%02d:%02d:%02dZ", (int)tm.year,
-                             (int)tm.mon + 1, (int)tm.mday, (int)tm.hour,
-                             (int)tm.min, (int)tm.sec);
-      break;
-  }
+    wxDateTime utcTime = m_utcTime;
 
-  return res;
+    if (!IsReasonableUtcDateTime(utcTime)) {
+        utcTime = GetComputerUtcDateTime();
+    }
+
+    wxDateTime::Tm tm = utcTime.GetTm();
+    wxString res;
+
+    switch (dateFormat) {
+        case UTC_TIME_DATE:
+            res = wxString::Format(
+                "%04d/%02d/%02d",
+                (int)tm.year,
+                (int)tm.mon + 1,
+                (int)tm.mday);
+            break;
+
+        case UTC_TIME_TIME:
+            res = wxString::Format(
+                "%02d:%02d:%02d",
+                (int)tm.hour,
+                (int)tm.min,
+                (int)tm.sec);
+            break;
+
+        case UTC_TIMESTAMP:
+            res = wxString::Format(
+                "%04d-%02d-%02dT%02d:%02d:%02dZ",
+                (int)tm.year,
+                (int)tm.mon + 1,
+                (int)tm.mday,
+                (int)tm.hour,
+                (int)tm.min,
+                (int)tm.sec);
+            break;
+    }
+
+    return res;
+}
+
+wxString ooObservations::GetUtcTimeSourceLabel() const
+{
+    if (IsReasonableUtcDateTime(m_utcTime)) {
+        return "GPS UTC";
+    }
+
+    return "Computer UTC";
+}
+
+wxString ooObservations::GenerateObservationId(const wxString& dateString)
+{
+    // Expected date format from GetUtcTimeFromNMEA(UTC_TIME_DATE): YYYY/MM/DD
+    wxString compactDate = "000000";
+
+    if (dateString.Length() >= 10) {
+        compactDate =
+            dateString.Mid(2, 2) +  // YY
+            dateString.Mid(5, 2) +  // MM
+            dateString.Mid(8, 2);   // DD
+    }
+
+    const wxString prefix = "OBS-" + compactDate + "-";
+
+    int observationIdCol = -1;
+    const int C = m_project.GetColCount();
+
+    for (int c = 0; c < C; ++c) {
+        if (m_project.GetColFieldTypes()[c].IsSameAs("Observation ID")) {
+            observationIdCol = c;
+            break;
+        }
+    }
+
+    int maxIndex = 0;
+
+    if (observationIdCol >= 0) {
+        const int R = GetNumberRows();
+
+        for (int r = 0; r < R; ++r) {
+            const wxString existingId = GetValue(r, observationIdCol);
+
+            if (!existingId.StartsWith(prefix)) {
+                continue;
+            }
+
+            wxString suffix = existingId.Mid(prefix.Length());
+            long index = 0;
+
+            if (suffix.ToLong(&index) && index > maxIndex) {
+                maxIndex = (int)index;
+            }
+        }
+    }
+
+    return wxString::Format(
+        wxT("%s%03d"),
+        prefix,
+        maxIndex + 1);
 }
 
 void ooObservations::StartObservation()
@@ -339,6 +462,8 @@ void ooObservations::StartObservation()
     wxString dateString         = GetUtcTimeFromNMEA(UTC_TIME_DATE);
     wxString timeString         = GetUtcTimeFromNMEA(UTC_TIME_TIME);
     wxString utcTimestampString = GetUtcTimeFromNMEA(UTC_TIMESTAMP);
+    wxString observationIdString = GenerateObservationId(dateString);
+
     
     // create new observation in table and fill in fields
     InsertRows(0, 1);
@@ -348,7 +473,9 @@ void ooObservations::StartObservation()
         for (int c=0; c<C; ++c)
         {
             wxString field_type = m_project.GetColFieldTypes()[c];
-            if (field_type.IsSameAs("Start Date"))
+            if (field_type.IsSameAs("Observation ID"))
+                SetValue(0, c, observationIdString);
+            else if (field_type.IsSameAs("Start Date"))
                 SetValue(0, c, dateString);
             else if (field_type.IsSameAs("Start Time"))
                 SetValue(0, c, timeString);
@@ -538,6 +665,7 @@ void ooObservations::AddMarks(int targetRow)
 {
     // Get column indices
     int markGUIDCol = -1;
+    int observationIdCol = -1;
     int dateCol = -1;
     int timeCol = -1;
     int tstpCol = -1;
@@ -553,6 +681,8 @@ void ooObservations::AddMarks(int targetRow)
         wxString field_type = m_project.GetColFieldTypes()[c];
         if (field_type.IsSameAs("Mark GUID")) {
             if (markGUIDCol < 0) markGUIDCol = c;
+        } else if (field_type.IsSameAs("Observation ID")) {
+            if (observationIdCol < 0) observationIdCol = c;
         } else if (field_type.IsSameAs("Start Date")) {
             if (dateCol < 0) dateCol = c;
         } else if (field_type.IsSameAs("Start Time")) {
@@ -598,7 +728,13 @@ void ooObservations::AddMarks(int targetRow)
             if (tstpCol>=0) datetime.ParseISOCombined(GetValue(r, tstpCol));
 
             wxString description = GetRowDescription(r);
-            wxString name = wxString::Format(wxT("%s (OO)"), datetime.FormatISOCombined());
+            wxString name;
+
+            if (observationIdCol >= 0 && !GetValue(r, observationIdCol).IsEmpty()) {
+                name = wxString::Format(wxT("%s (OO)"), GetValue(r, observationIdCol));
+            } else {
+                name = wxString::Format(wxT("%s (OO)"), datetime.FormatISOCombined());
+            }
 
             wxString guid = GetNewGUID();
 
@@ -718,45 +854,97 @@ int ooObservations::UpdateObservationsFromMarks()
     return res;
 }
 
-void ooObservations::SaveToCSV(wxFile *file)
+static wxString EscapeCSVCell(const wxString& value)
+{
+    wxString escaped = value;
+
+    // Keep each CSV record on a single line.
+    // Multiline cell content is flattened for CSV export only.
+    escaped.Replace("\r\n", " ");
+    escaped.Replace("\n", " ");
+    escaped.Replace("\r", " ");
+
+    // CSV rule: internal quotes must be doubled.
+    escaped.Replace("\"", "\"\"");
+
+    // Always wrap in quotes.
+    // This safely supports commas, semicolons, quotes,
+    // and leading/trailing spaces inside cells.
+    return "\"" + escaped + "\"";
+}
+
+void ooObservations::SaveToCSV(wxFile *file, bool stripMarkGuid)
 {
     const int C = GetNumberCols();
     const int R = GetNumberRows();
-    
-    for (int c=0; c<C; ++c)
-    {
-        file->Write("\"" + GetColLabelValue(c) + "\"");
 
-        if (c<(C - 1))
+    int markGuidCol = -1;
+
+    if (stripMarkGuid && m_project.GetColCount() == C) {
+        for (int c = 0; c < C; ++c) {
+            if (m_project.GetColFieldTypes()[c].IsSameAs("Mark GUID")) {
+                markGuidCol = c;
+                break;
+            }
+        }
+    }
+
+    for (int c = 0; c < C; ++c)
+    {
+        file->Write(EscapeCSVCell(GetColLabelValue(c)));
+
+        if (c < (C - 1))
             file->Write(",");
     }
     file->Write("\n");
 
-    for (int r=0; r<R; ++r)
+    for (int r = 0; r < R; ++r)
     {
-        for (int c=0; c<C; ++c)
+        for (int c = 0; c < C; ++c)
         {
-            file->Write("\"" + GetValue(r, c) + "\"");
+            wxString cellValue = GetValue(r, c);
 
-            if (c<(C - 1))
+            if (stripMarkGuid && c == markGuidCol) {
+                cellValue.Clear();
+            }
+
+            file->Write(EscapeCSVCell(cellValue));
+
+            if (c < (C - 1))
                 file->Write(",");
         }
         file->Write("\n");
     }
-
-    file->Close();
 }
 
-static wxString FormatImportedCsvCell(const wxString& value)
+static wxArrayString ParseCSVLine(const wxString& line)
 {
-    wxString res = value;
-    if (value.Length() >= 2 &&
-        value.GetChar(0) == '"' &&
-        value.GetChar(value.Length() - 1) == '"') {
-        int length = res.Length();
-        res = res.Right(length - 1).Left(length - 2);
+    wxArrayString cells;
+    wxString current;
+    bool inQuotes = false;
+
+    for (size_t i = 0; i < line.Length(); ++i) {
+        wxChar ch = line.GetChar(i);
+
+        if (ch == '"') {
+            if (inQuotes && i + 1 < line.Length() && line.GetChar(i + 1) == '"') {
+                // Escaped quote inside a quoted cell.
+                current += '"';
+                ++i;
+            } else {
+                // Toggle quoted section.
+                inQuotes = !inQuotes;
+            }
+        } else if (ch == ',' && !inQuotes) {
+            cells.Add(current);
+            current.clear();
+        } else {
+            current += ch;
+        }
     }
-    return res;
+
+    cells.Add(current);
+    return cells;
 }
 
 bool ooObservations::ReadFromCSV(const wxString& filename, wxString& err)
@@ -774,30 +962,42 @@ bool ooObservations::ReadFromCSV(const wxString& filename, wxString& err)
             bSkip = false;
             continue;
         }
-        wxArrayString cells = wxSplit(line, ',');
-        const int cellCount = cells.GetCount();
-        if (cellCount != C)
-        {
-            err = wxString::Format(wxT("CSV contains %i columns, but the current project has %i"), cellCount, C);
-            return false;
-        }
-        AppendRows(1);
-        int c = 0;
-        for (auto cell: cells)
-        {
-            SetValue(r, c, FormatImportedCsvCell(cell));
-            c++;
-        }
+        wxArrayString cells = ParseCSVLine(line);
+    const int cellCount = cells.GetCount();
+    if (cellCount != C)
+    {
+        err = wxString::Format(wxT("CSV contains %i columns, but the current project has %i"), cellCount, C);
+        return false;
+    }
+
+    AppendRows(1);
+    int c = 0;
+    for (auto cell: cells)
+    {
+        SetValue(r, c, cell);
+        c++;
+    }
         r++;
     }
 
     return true;
 }
 
-void ooObservations::SaveToXML(wxFile *file)
+void ooObservations::SaveToXML(wxFile *file, bool stripMarkGuid)
 {
     const int C = GetNumberCols();
     const int R = GetNumberRows();
+
+    int markGuidCol = -1;
+
+    if (stripMarkGuid && m_project.GetColCount() == C) {
+        for (int c = 0; c < C; ++c) {
+            if (m_project.GetColFieldTypes()[c].IsSameAs("Mark GUID")) {
+                markGuidCol = c;
+                break;
+            }
+        }
+    }
 
     wxXmlDocument xmlDoc;
     wxXmlNode* observations = new wxXmlNode(NULL, wxXML_ELEMENT_NODE, "observations");
@@ -818,16 +1018,23 @@ void ooObservations::SaveToXML(wxFile *file)
         for (int c=0; c<C; ++c) {
             wxXmlNode* field = new wxXmlNode(observation, wxXML_ELEMENT_NODE, "field");
             field->AddAttribute("id", wxString::Format(wxT("%i"), c));
-            field->AddChild(new wxXmlNode(wxXML_TEXT_NODE, "",  GetValue(r, c)));
+
+            wxString cellValue = GetValue(r, c);
+
+            if (stripMarkGuid && c == markGuidCol) {
+                cellValue.Clear();
+            }
+
+            field->AddChild(new wxXmlNode(wxXML_TEXT_NODE, "", cellValue));
         }
     }
-    
+
     // write the output to a wxString
     wxStringOutputStream stream;
     xmlDoc.Save(stream);
 
     // write the string to the file
-    file->Write(stream.GetString());    
+    file->Write(stream.GetString());
 }
 
 bool ooObservations::ReadListingFromXML(const wxString& filename, wxArrayString& result, wxArrayString& icons)
@@ -1037,6 +1244,7 @@ const ooProject& ooObservations::GetProject() const
 wxArrayString ooObservations::GetObservationFieldTypes()
 {
     wxArrayString observationFieldTypes;
+    observationFieldTypes.Add("Observation ID");
     observationFieldTypes.Add("Start Date");
     observationFieldTypes.Add("Start Time");
     observationFieldTypes.Add("Start Timestamp UTC");
@@ -1063,8 +1271,10 @@ wxArrayString ooObservations::GetObservationFieldTypes()
       observationFieldTypes.Add(it.first);
     }
     for (auto it : ooObservations::m_nmeaFields) {
+    if (m_showAdvancedNMEAFields || IsSimpleNMEAField(it)) {
         observationFieldTypes.Add(it.m_description);
     }
+}
     return observationFieldTypes;
 }
 
@@ -1111,6 +1321,63 @@ void ooObservations::SetIcons(const wxString& listing, const wxArrayString& icon
 void ooObservations::SetNMEAFields(const std::vector<NMEAField>& fields)
 {
     m_nmeaFields = fields;
+}
+
+void ooObservations::SetShowAdvancedNMEAFields(bool show)
+{
+    m_showAdvancedNMEAFields = show;
+}
+
+bool ooObservations::GetShowAdvancedNMEAFields()
+{
+    return m_showAdvancedNMEAFields;
+}
+
+bool ooObservations::IsSimpleNMEAField(const NMEAField& field)
+{
+    const wxString& sentenceId = field.m_sentenceId;
+    const int fieldIndex = field.m_fieldIndex;
+
+    if (sentenceId == "RMC" && fieldIndex == 9) return true; // UTC date
+    if (sentenceId == "RMC" && fieldIndex == 1) return true; // UTC time
+    if (sentenceId == "RMC" && fieldIndex == 3) return true; // GPS latitude
+    if (sentenceId == "RMC" && fieldIndex == 5) return true; // GPS longitude
+    if (sentenceId == "RMC" && fieldIndex == 7) return true; // SOG
+    if (sentenceId == "RMC" && fieldIndex == 8) return true; // COG
+    if (sentenceId == "RMC" && fieldIndex == 2) return true; // Navigation status
+
+    if (sentenceId == "GGA" && fieldIndex == 1) return true; // UTC time
+    if (sentenceId == "GGA" && fieldIndex == 2) return true; // GPS latitude
+    if (sentenceId == "GGA" && fieldIndex == 4) return true; // GPS longitude
+    if (sentenceId == "GGA" && fieldIndex == 6) return true; // GPS fix quality
+    if (sentenceId == "GGA" && fieldIndex == 7) return true; // Satellites in use
+    if (sentenceId == "GGA" && fieldIndex == 8) return true; // HDOP
+    if (sentenceId == "GGA" && fieldIndex == 9) return true; // Altitude
+
+    if (sentenceId == "GLL" && fieldIndex == 1) return true; // GPS latitude
+    if (sentenceId == "GLL" && fieldIndex == 3) return true; // GPS longitude
+    if (sentenceId == "GLL" && fieldIndex == 5) return true; // UTC time
+    if (sentenceId == "GLL" && fieldIndex == 6) return true; // Navigation status
+
+    if (sentenceId == "VTG" && fieldIndex == 1) return true; // COG true
+    if (sentenceId == "VTG" && fieldIndex == 5) return true; // SOG knots
+    if (sentenceId == "VTG" && fieldIndex == 7) return true; // SOG km/h
+
+    if (sentenceId == "HDG" && fieldIndex == 1) return true; // Magnetic heading
+    if (sentenceId == "HDT" && fieldIndex == 1) return true; // True heading
+    if (sentenceId == "HDM" && fieldIndex == 1) return true; // Magnetic heading
+
+    if (sentenceId == "MWV" && fieldIndex == 1) return true; // Apparent wind angle
+    if (sentenceId == "MWV" && fieldIndex == 3) return true; // Apparent wind speed
+
+    if (sentenceId == "MWD" && fieldIndex == 1) return true; // True wind direction
+    if (sentenceId == "MWD" && fieldIndex == 5) return true; // Wind speed knots
+
+    if (sentenceId == "DPT" && fieldIndex == 1) return true; // Water depth
+    if (sentenceId == "DBT" && fieldIndex == 3) return true; // Depth meters
+    if (sentenceId == "MTW" && fieldIndex == 1) return true; // Water temperature
+
+    return false;
 }
 
 const std::vector<NMEAField>& ooObservations::GetNMEAFields()

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<listing creator="OpenObserver for OpenCPN" file_version="1">
+
+
+<item label="0 - Calm"/>
+<item label="1 - Light air (1-3kn)"/>
+<item label="2 - Light breeze (4-6kn)"/>
+<item label="3 - Gentle breeze (7-10kn)"/>
+<item label="4 - Moderate breeze (11-16kn)"/>
+<item label="5 - Fresh breeze (17-21kn)"/>
+<item label="6 - Strong breeze (22-27kn)"/>
+<item label="7 - Moderate gale (28-33kn)"/>
+<item label="8 - Gale (34-40kn)"/>
+<item label="9 - Strong gale (41-47kn)"/>
+<item label="10 - Storm (48-55kn)"/>
+<item label="11 - Violent storm (56-63kn)"/>
+<item label="12 - Hurricane (64-73kn)"/>
+
+</listing>

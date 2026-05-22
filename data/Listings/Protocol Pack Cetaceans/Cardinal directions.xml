@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<listing creator="OpenObserver for OpenCPN" file_version="1">
+
+<item label="North"/>
+<item label="North-East"/>
+<item label="East"/>
+<item label="South-East"/>
+<item label="South"/>
+<item label="South-West"/>
+<item label="West"/>
+<item label="North-West"/>
+
+</listing>

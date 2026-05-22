@@ -41,6 +41,7 @@
 #include <wx/mstream.h>
 
 #include "ooControlDialogImpl.h"
+#include "ooScientificPackage.h"
 #include "openobserver_pi.h"
 
 #include "ocpn_plugin.h"
@@ -50,9 +51,16 @@
 #endif
 
 #include <wx/fontdlg.h>
+#include <wx/settings.h>
 
 extern openobserver_pi *g_openobserver_pi;
 extern wxString *g_pData;
+
+static bool IsDarkColour(const wxColour& colour);
+static wxColour BlendColour(const wxColour& base, const wxColour& overlay, double ratio);
+static wxColour ContrastTextColour(const wxColour& background);
+static wxColour AlternateRowColour(const wxColour& base);
+static void ApplyStandardBoldGridLabelFont(wxGrid* grid);
 
 ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent) 
     : ooControlDialogDef(parent),
@@ -61,27 +69,40 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
       m_ObservationsTable(nullptr),
       m_isScanningNmea(false),
       m_viewScale(1.0),
-      m_observationsChoiceCount(1)
+      m_observationsChoiceCount(1),
+      m_markIconsLoaded(false)
 {
 #if wxCHECK_VERSION(3,0,0)
     SetLayoutAdaptationMode(wxDIALOG_ADAPTATION_MODE_ENABLED);
 #endif // wxCHECK_VERSION(3,0,0)
+
+    SetWindowStyleFlag(GetWindowStyleFlag() | wxSTAY_ON_TOP);
+
+// Window stay-on-top behavior is updated depending on the selected tab.
+// Observations mode stays on top; Project mode behaves like a normal window
+   
+
+    // Make the observations/project switcher wider and easier to read.
+    m_choiceObservations->SetMinSize(wxSize(240, -1));
+    m_choiceObservations->SetInitialSize(wxSize(240, -1));
+    m_choiceObservations->GetParent()->Layout();
 
     m_MiniPanel = new ooMiniPanel(m_panelObservations);
     m_MiniPanel->SetToggleWindowButtonLabel("Minimize");
     this->Connect(wxEVT_SHOW, wxShowEventHandler(ooMiniPanel::OnShow), NULL, m_MiniPanel);
     
     std::function<void(wxCommandEvent&)> refreshHandler = [&](wxCommandEvent& event)
-        {
-            RefreshGridAppearance(m_ObservationsTable);
-            event.Skip();
-        };
+    {
+        RefreshGridAppearance(m_ObservationsTable);
+        event.Skip();
+    };
+
     m_MiniPanel->Bind(OBSERVATION_STARTED, refreshHandler);
     m_MiniPanel->Bind(OBSERVATION_STOPPED, refreshHandler);
 
     bSizerTopButtons->Add(m_MiniPanel, 1, wxEXPAND, 5);
     m_panelObservations->Layout();
-	m_fgSizerObservations->Fit(m_panelObservations);
+    m_fgSizerObservations->Fit(m_panelObservations);
 
     // Initialize on 'Observations' tab
     m_notebookControl->SetSelection(1);
@@ -90,7 +111,13 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
     RefreshListings();
     OnProjectGridSelectionChange();
 
-    m_listMarkIcons->Append(GetIconNameArray());
+    ApplyStandardBoldGridLabelFont(m_gridProject);
+
+    // Do not call GetIconNameArray() here.
+    // On macOS/OpenCPN 5.14 this can crash during plugin initialization.
+    // The full OpenCPN icon list is loaded later when the user enters project edit mode.
+    SelectMarkIconOrFallback(DEFAULT_PROJECT_ICON);
+
     m_currentObservationsIndex = 0;
 
     // bind backup timer (started in RestoreBackupObservations)
@@ -115,6 +142,7 @@ ooControlDialogImpl::~ooControlDialogImpl()
                                wxGridEventHandler(ooControlDialogImpl::OnObservationsGridCellChange),
                                NULL, this);
     }
+
     this->Disconnect(wxEVT_SHOW, wxShowEventHandler(ooMiniPanel::OnShow), NULL, m_MiniPanel);
 
     m_BackupTimer.Stop();
@@ -122,6 +150,83 @@ ooControlDialogImpl::~ooControlDialogImpl()
     if (!m_Observations) return;
 
     SaveObservations(GetBackupFilename(m_currentObservationsIndex));
+}
+
+void ooControlDialogImpl::EnsureMarkIconChoiceContains(const wxString& iconName)
+{
+    if (!m_listMarkIcons) {
+        return;
+    }
+
+    if (iconName.IsEmpty()) {
+        return;
+    }
+
+    if (m_listMarkIcons->FindString(iconName) == wxNOT_FOUND) {
+        m_listMarkIcons->Append(iconName);
+    }
+}
+
+void ooControlDialogImpl::SelectMarkIconOrFallback(const wxString& iconName)
+{
+    if (!m_listMarkIcons) {
+        return;
+    }
+
+    wxString selectedIcon = iconName;
+
+    if (selectedIcon.IsEmpty()) {
+        selectedIcon = DEFAULT_PROJECT_ICON;
+    }
+
+    EnsureMarkIconChoiceContains(selectedIcon);
+
+    int index = m_listMarkIcons->FindString(selectedIcon);
+
+    if (index == wxNOT_FOUND) {
+        EnsureMarkIconChoiceContains(DEFAULT_PROJECT_ICON);
+        index = m_listMarkIcons->FindString(DEFAULT_PROJECT_ICON);
+    }
+
+    if (index != wxNOT_FOUND) {
+        m_listMarkIcons->SetSelection(index);
+    }
+}
+
+void ooControlDialogImpl::LoadMarkIconsIfNeeded(const wxString& preferredIconName)
+{
+    if (!m_listMarkIcons) {
+        return;
+    }
+
+    wxString selectedIcon = preferredIconName;
+
+    if (selectedIcon.IsEmpty()) {
+        selectedIcon = m_listMarkIcons->GetStringSelection();
+    }
+
+    if (selectedIcon.IsEmpty()) {
+        selectedIcon = DEFAULT_PROJECT_ICON;
+    }
+
+    if (m_markIconsLoaded) {
+        SelectMarkIconOrFallback(selectedIcon);
+        return;
+    }
+
+    wxArrayString icons = GetIconNameArray();
+
+    if (icons.GetCount() == 0) {
+        SelectMarkIconOrFallback(selectedIcon);
+        return;
+    }
+
+    m_listMarkIcons->Clear();
+    m_listMarkIcons->Append(icons);
+
+    m_markIconsLoaded = true;
+
+    SelectMarkIconOrFallback(selectedIcon);
 }
 
 void ooControlDialogImpl::NewProject()
@@ -149,14 +254,16 @@ void ooControlDialogImpl::NewProject()
     allColSizes.Add(120);
     allColSizes.Add(70);
     allColSizes.Add(120);
+
     wxGridSizesInfo colSizes = wxGridSizesInfo(70, allColSizes);
     m_gridProject->SetColSizes(colSizes);
 
     // set the column labels and cell editors
-    for (int c=0; c<m_gridProject->GetNumberCols(); ++c)
+    for (int c = 0; c < m_gridProject->GetNumberCols(); ++c)
     {
         m_gridProject->SetColLabelValue(c, "");
     }
+
     UpdateProjectCellEditors();
 
     // fill the table
@@ -180,17 +287,17 @@ void ooControlDialogImpl::NewProject()
     m_gridProject->SetCellValue(1, 8, "Mark GUID");
 
     m_textProjectName->SetValue(wxString::Format(wxT("Default Project %i"), m_currentObservationsIndex + 1));
+    m_textProjectDescription->SetValue(wxEmptyString);
     m_colourProject->SetColour(DEFAULT_PROJECT_COLOUR);
-    m_listMarkIcons->SetSelection(
-        m_listMarkIcons->FindString(DEFAULT_PROJECT_ICON));
+    SelectMarkIconOrFallback(DEFAULT_PROJECT_ICON);
 }
 
 void ooControlDialogImpl::UpdateProjectCellEditors()
 {
     for (int c = 0; c < m_gridProject->GetNumberCols(); ++c) {
-      wxGridCellChoiceEditor* observationFieldTypeEditor =
-          new wxGridCellChoiceEditor(ooObservations::GetObservationFieldTypes());
-      m_gridProject->SetCellEditor(1, c, observationFieldTypeEditor);
+        wxGridCellChoiceEditor* observationFieldTypeEditor =
+            new wxGridCellChoiceEditor(ooObservations::GetObservationFieldTypes());
+        m_gridProject->SetCellEditor(1, c, observationFieldTypeEditor);
     }
 }
 
@@ -201,10 +308,9 @@ bool ooControlDialogImpl::LoadProject(const ooProject& project)
         m_gridProject->DeleteCols(0, m_gridProject->GetNumberCols());
 
     m_textProjectName->SetValue(project.GetName());
+    m_textProjectDescription->SetValue(project.GetDescription());
     m_colourProject->SetColour(project.GetColor());
-    m_listMarkIcons->SetSelection(
-        m_listMarkIcons->FindString(project.GetMarkIcon())
-    );
+    SelectMarkIconOrFallback(project.GetMarkIcon());
 
     const int C = project.GetColCount();
     for (int c = 0; c < C; c++) {
@@ -212,6 +318,7 @@ bool ooControlDialogImpl::LoadProject(const ooProject& project)
         if (c >= m_gridProject->GetNumberCols()) {
             m_gridProject->AppendCols(c - m_gridProject->GetNumberCols() + 1);
         }
+
         m_gridProject->SetColSize(c, project.GetColSizes().GetSize(c));
         // set label and field type
         m_gridProject->SetCellValue(0, c, project.GetColLabels()[c]);
@@ -222,6 +329,7 @@ bool ooControlDialogImpl::LoadProject(const ooProject& project)
     for (int c = 0; c < m_gridProject->GetNumberCols(); ++c) {
         m_gridProject->SetColLabelValue(c, "");
     }
+
     UpdateProjectCellEditors();
 
     m_CurrentProject = project;
@@ -231,22 +339,31 @@ bool ooControlDialogImpl::LoadProject(const ooProject& project)
 
 ooProject ooControlDialogImpl::GenerateProject() const
 {
-  const int C = m_gridProject->GetNumberCols();
+    const int C = m_gridProject->GetNumberCols();
 
-  wxArrayString labels, fieldTypes;
-  wxGridSizesInfo colSizes;
-  for (int c = 0; c < C; ++c) {
-      labels.push_back(m_gridProject->GetCellValue(0, c));
-      fieldTypes.push_back(m_gridProject->GetCellValue(1, c));
-      colSizes.m_customSizes[c] = m_gridProject->GetColSize(c);
-  }
-  return ooProject(
-      m_textProjectName->GetValue(),
-      colSizes,
-      fieldTypes,
-      labels,
-      m_colourProject->GetColour(),
-      m_listMarkIcons->GetStringSelection());
+    wxArrayString labels, fieldTypes;
+    wxGridSizesInfo colSizes;
+
+    for (int c = 0; c < C; ++c) {
+        labels.push_back(m_gridProject->GetCellValue(0, c));
+        fieldTypes.push_back(m_gridProject->GetCellValue(1, c));
+        colSizes.m_customSizes[c] = m_gridProject->GetColSize(c);
+    }
+
+    wxString markIcon = m_listMarkIcons->GetStringSelection();
+
+    if (markIcon.IsEmpty()) {
+        markIcon = DEFAULT_PROJECT_ICON;
+    }
+
+    return ooProject(
+    m_textProjectName->GetValue(),
+    m_textProjectDescription->GetValue(),
+    colSizes,
+    fieldTypes,
+    labels,
+    m_colourProject->GetColour(),
+    markIcon);
 }
 
 void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
@@ -291,13 +408,15 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
 	m_ObservationsTable->SetRowLabelAlignment( wxALIGN_CENTER, wxALIGN_CENTER );
 
 	// Label Appearance
-	m_ObservationsTable->SetLabelFont( wxFont( 11, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD, false, wxEmptyString ) );
-    m_ObservationsTable->SetLabelBackgroundColour(m_Observations->GetProject().GetColor());
-    m_ObservationsTable->SetLabelTextColour(wxColour(255, 255, 255));
+
+    const wxColour projectColour = m_Observations->GetProject().GetColor();
+    m_ObservationsTable->SetLabelBackgroundColour(projectColour);
+    m_ObservationsTable->SetLabelTextColour(ContrastTextColour(projectColour));
 
 	// Cell Defaults
-	m_ObservationsTable->SetDefaultCellFont( wxFont( 11, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_NORMAL, false, wxEmptyString ) );
-	m_ObservationsTable->SetDefaultCellAlignment( wxALIGN_LEFT, wxALIGN_TOP );
+    m_ObservationsTable->SetDefaultCellFont(GetFont());
+    m_ObservationsTable->SetDefaultCellAlignment(wxALIGN_LEFT, wxALIGN_CENTER);
+    m_ObservationsTable->SetDefaultRowSize(32, true);
 
     wxGridCellAutoWrapStringEditor *editor = new wxGridCellAutoWrapStringEditor();
     m_ObservationsTable->SetDefaultEditor(editor);
@@ -341,14 +460,22 @@ bool ooControlDialogImpl::SaveObservations(const wxString& filename, bool stopOb
                                     wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
         
         if (saveFileDialog.ShowModal() == wxID_CANCEL) return false;
+
         savePath = saveFileDialog.GetPath();
+
+        wxFileName saveFileName(savePath);
+
+        if (saveFileName.GetExt().Lower() != wxT("xml")) {
+            saveFileName.SetExt(wxT("xml"));
+            savePath = saveFileName.GetFullPath();
+        }
     }
     
     wxFileOutputStream output_stream(savePath);
     if (!output_stream.IsOk()) {
-      wxMessageBox("Unable to save observations to file " + savePath + ".",
-          "Error", wxOK, this);
-      return false;
+        wxMessageBox("Unable to save observations to file " + savePath + ".",
+            "Error", wxOK, this);
+        return false;
     }
 
     // Update the col size
@@ -357,11 +484,13 @@ bool ooControlDialogImpl::SaveObservations(const wxString& filename, bool stopOb
     if (stopObservation) {
         m_Observations->StopObservation();
     }
-    m_Observations->SaveToXML(output_stream.GetFile());
+    const bool stripMarkGuid = filename.IsEmpty();
+
+    m_Observations->SaveToXML(output_stream.GetFile(), stripMarkGuid);
     return true;
 }
 
-bool ooControlDialogImpl::LoadObservations(const wxString& filename)
+bool ooControlDialogImpl::LoadObservations(const wxString& filename, bool updateFromMarks)
 {
     if (!m_Observations) return false;
 
@@ -373,7 +502,10 @@ bool ooControlDialogImpl::LoadObservations(const wxString& filename)
         return false;
     }
 
-    m_Observations->UpdateObservationsFromMarks();
+    if (updateFromMarks) {
+        m_Observations->UpdateObservationsFromMarks();
+    }
+
     SetupObservationsForProject();
     RefreshGridAppearance(m_ObservationsTable);
 
@@ -402,51 +534,152 @@ bool ooControlDialogImpl::RestoreBackupObservations(int observationsIndex)
     m_currentObservationsIndex = observationsIndex;
     m_choiceObservations->SetSelection(observationsIndex);
     bool result = (wxFile::Exists(backupFilename) && // We do not want to show an error if the file does not exists.
-                   LoadObservations(backupFilename));      
+                   LoadObservations(backupFilename, false));   
     return result;
 }
 
-void ooControlDialogImpl::RefreshGridAppearance(wxGrid* grid) {
-  if (!grid) return;
+static bool IsDarkColour(const wxColour& colour)
+{
+    // Perceived brightness formula.
+    const int brightness =
+        (colour.Red() * 299 + colour.Green() * 587 + colour.Blue() * 114) / 1000;
 
-  int rows = grid->GetNumberRows();
-
-  wxColour evenColor(255, 255, 255);  // White
-  wxColour oddColor(250, 250, 250);   // Very light gray
-
-  grid->BeginBatch();
-
-  for (int row = 0; row < rows; row++) {
-    wxGridCellAttr* attr = new wxGridCellAttr();
-
-    if (row % 2 == 0)
-      attr->SetBackgroundColour(evenColor);
-    else
-      attr->SetBackgroundColour(oddColor);
-
-    grid->SetRowAttr(row, attr);
-  }
-
-  grid->EndBatch();
-  grid->ForceRefresh();
+    return brightness < 128;
 }
 
-void ooControlDialogImpl::ApplyModernGridStyle(wxGrid* grid) {
-  if (!grid) return;
+static wxColour BlendColour(const wxColour& base, const wxColour& overlay, double ratio)
+{
+    ratio = std::max(0.0, std::min(1.0, ratio));
 
-  //grid->EnableGridLines(false);  // supprime lignes moches
+    const unsigned char r = static_cast<unsigned char>(
+        base.Red() * (1.0 - ratio) + overlay.Red() * ratio);
+    const unsigned char g = static_cast<unsigned char>(
+        base.Green() * (1.0 - ratio) + overlay.Green() * ratio);
+    const unsigned char b = static_cast<unsigned char>(
+        base.Blue() * (1.0 - ratio) + overlay.Blue() * ratio);
 
-  grid->SetDefaultCellFont(wxFont(10, wxFONTFAMILY_DEFAULT, wxFONTSTYLE_NORMAL,
-                                  wxFONTWEIGHT_NORMAL));
-
-  grid->SetDefaultCellAlignment(wxALIGN_LEFT, wxALIGN_TOP);
-
-  grid->SetSelectionBackground(wxColour(0, 120, 215));  // bleu Windows moderne
-  grid->SetSelectionForeground(*wxWHITE);
-
-  grid->SetRowLabelSize(40);
+    return wxColour(r, g, b);
 }
 
+static wxColour ContrastTextColour(const wxColour& background)
+{
+    return IsDarkColour(background) ? *wxWHITE : *wxBLACK;
+}
+
+static wxColour AlternateRowColour(const wxColour& base)
+{
+    if (IsDarkColour(base)) {
+        return BlendColour(base, *wxWHITE, 0.06);
+    }
+
+    return BlendColour(base, *wxBLACK, 0.04);
+}
+
+static void ApplyStandardBoldGridLabelFont(wxGrid* grid)
+{
+    if (!grid) return;
+
+    wxFont labelFont = grid->GetDefaultCellFont();
+
+    if (!labelFont.IsOk()) {
+        labelFont = grid->GetFont();
+    }
+
+    if (!labelFont.IsOk()) {
+        labelFont = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
+    }
+
+    labelFont.SetWeight(wxFONTWEIGHT_BOLD);
+
+    grid->SetLabelFont(labelFont);
+    grid->SetColLabelAlignment(wxALIGN_CENTER, wxALIGN_CENTER);
+    grid->SetRowLabelAlignment(wxALIGN_CENTER, wxALIGN_CENTER);
+}
+
+void ooControlDialogImpl::RefreshGridAppearance(wxGrid* grid)
+{
+    if (!grid) return;
+
+     ApplyStandardBoldGridLabelFont(grid);
+
+    const wxColour baseBackground =
+        wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
+    const wxColour alternateBackground =
+        AlternateRowColour(baseBackground);
+
+    const wxColour baseTextColour =
+        ContrastTextColour(baseBackground);
+    const wxColour alternateTextColour =
+        ContrastTextColour(alternateBackground);
+
+    const wxColour selectionBackground =
+        wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHT);
+    const wxColour selectionText =
+        wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHTTEXT);
+
+    grid->BeginBatch();
+
+    grid->SetDefaultCellBackgroundColour(baseBackground);
+    grid->SetDefaultCellTextColour(baseTextColour);
+    grid->SetSelectionBackground(selectionBackground);
+    grid->SetSelectionForeground(selectionText);
+
+    const int rows = grid->GetNumberRows();
+
+    for (int row = 0; row < rows; row++) {
+        const wxColour rowBackground =
+            (row % 2 == 0) ? baseBackground : alternateBackground;
+        const wxColour rowTextColour =
+            ContrastTextColour(rowBackground);
+
+        wxGridCellAttr* attr = new wxGridCellAttr();
+        attr->SetBackgroundColour(rowBackground);
+        attr->SetTextColour(rowTextColour);
+
+        grid->SetRowAttr(row, attr);
+    }
+
+    grid->EndBatch();
+    grid->ForceRefresh();
+}
+
+void ooControlDialogImpl::ApplyModernGridStyle(wxGrid* grid)
+{
+    if (!grid) return;
+
+    ApplyStandardBoldGridLabelFont(grid);
+
+    const wxColour baseBackground =
+        wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
+    const wxColour baseTextColour =
+        ContrastTextColour(baseBackground);
+
+    const wxColour labelBackground =
+        wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE);
+    const wxColour labelTextColour =
+        ContrastTextColour(labelBackground);
+
+    const wxColour selectionBackground =
+        wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHT);
+    const wxColour selectionText =
+        wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHTTEXT);
+
+    grid->SetDefaultCellFont(GetFont());
+    grid->SetDefaultCellAlignment(wxALIGN_LEFT, wxALIGN_CENTER);
+    grid->SetDefaultRowSize(36, true);  
+
+    grid->SetDefaultCellBackgroundColour(baseBackground);
+    grid->SetDefaultCellTextColour(baseTextColour);
+
+    grid->SetLabelBackgroundColour(labelBackground);
+    grid->SetLabelTextColour(labelTextColour);
+
+    grid->SetSelectionBackground(selectionBackground);
+    grid->SetSelectionForeground(selectionText);
+
+    grid->SetRowLabelSize(40);
+    grid->ForceRefresh();
+}
 
 void ooControlDialogImpl::SetupObservationsForProject()
 {
@@ -454,9 +687,9 @@ void ooControlDialogImpl::SetupObservationsForProject()
     if (!m_ObservationsTable) return;
 
     // update table color
-    m_ObservationsTable->SetLabelBackgroundColour(
-        m_Observations->GetProject().GetColor()
-    );
+    const wxColour projectColour = m_Observations->GetProject().GetColor();
+    m_ObservationsTable->SetLabelBackgroundColour(projectColour);
+    m_ObservationsTable->SetLabelTextColour(ContrastTextColour(projectColour));
 
     // update column sizes of table to match
     m_ObservationsTable->SetColSizes(m_Observations->GetColSizes());
@@ -487,15 +720,18 @@ void ooControlDialogImpl::SetupListingEditors()
 
 void ooControlDialogImpl::SetPositionFix(time_t fixTime, double lat, double lon)
 {
-    //char dateString[16];
-    //strftime(dateString, 16, "%F", gmtime(&fixTime));
-    //char timeString[16];
-    //strftime(timeString, 16, "%T", gmtime(&fixTime));
     wxString dateString = m_Observations->GetUtcTimeFromNMEA(ooObservations::UTC_TIME_DATE);
     wxString timeString = m_Observations->GetUtcTimeFromNMEA(ooObservations::UTC_TIME_TIME);
+    wxString timeSource = m_Observations->GetUtcTimeSourceLabel();
 
     m_ObservationsDate->SetValue(dateString);
     m_ObservationsTime->SetValue(timeString);
+
+    m_ObservationsDateLabel1->SetLabel(wxString::Format(
+        wxT("Current Data (%s)"),
+        timeSource));
+    m_ObservationsDateLabel1->GetParent()->Layout();
+
     m_ObservationsLat->SetValue(toSDMM_PlugIn(1, lat));
     m_ObservationsLon->SetValue(toSDMM_PlugIn(2, lon));
 }
@@ -553,6 +789,13 @@ void ooControlDialogImpl::OnButtonClickScanNmea(wxCommandEvent& event)
     m_isScanningNmea = !m_isScanningNmea;
     m_buttonScanNmea->SetLabel(m_isScanningNmea ? "Stop NMEA Scan" : "Start NMEA Scan");
     OnNmeaFieldUpdate();
+}
+
+void ooControlDialogImpl::OnCheckBoxShowAdvancedNmeaFields(wxCommandEvent& event)
+{
+    ooObservations::SetShowAdvancedNMEAFields(m_checkShowAdvancedNmeaFields->GetValue());
+    UpdateProjectCellEditors();
+    event.Skip();
 }
 
 void ooControlDialogImpl::ooControlDialogActivate(wxActivateEvent& event)
@@ -688,12 +931,15 @@ void ooControlDialogImpl::OnButtonClickProjectEditUse(wxCommandEvent& event)
 void ooControlDialogImpl::SetProjectEditable(bool editable)
 {
     if (editable) {
+        LoadMarkIconsIfNeeded(m_CurrentProject.GetMarkIcon());
+
         m_ProjectEditUse->SetLabel("Use");
         m_gridProject->Enable();
         m_ProjectNew->Enable();
         m_ProjectNewColumn->Enable();
         m_ProjectDeleteColumn->Enable();
         m_textProjectName->Enable();
+        m_textProjectDescription->Enable();
         m_colourProject->Enable();
         m_listMarkIcons->Enable();
     } else {
@@ -709,6 +955,9 @@ void ooControlDialogImpl::SetProjectEditable(bool editable)
         // stays
         m_textProjectName->SetValue(m_textProjectName->GetValue());
         m_textProjectName->Disable();
+
+        m_textProjectDescription->SetValue(m_textProjectDescription->GetValue());
+        m_textProjectDescription->Disable();
     }
 }
 
@@ -781,8 +1030,18 @@ void ooControlDialogImpl::OnButtonClickDeleteObservation( wxCommandEvent& event 
 
 #include <wx/sysopt.h>
 
+void ooControlDialogImpl::CommitCurrentObservationsGridEdit()
+{
+    if (m_ObservationsTable && m_ObservationsTable->IsCellEditControlShown()) {
+        m_ObservationsTable->SaveEditControlValue();
+        m_ObservationsTable->HideCellEditControl();
+    }
+}
+
 void ooControlDialogImpl::OnButtonClickExportObservations( wxCommandEvent& event )
 {
+    CommitCurrentObservationsGridEdit();
+
     if (!m_Observations) return;
 
 #ifdef __WXMAC__
@@ -806,7 +1065,114 @@ void ooControlDialogImpl::OnButtonClickExportObservations( wxCommandEvent& event
     }
 
     if (exportFileDialog.GetPath().EndsWith("geojson")) m_Observations->SaveToGeoJSON(output_stream);
-    else                                                m_Observations->SaveToCSV(output_stream.GetFile());
+else                                                m_Observations->SaveToCSV(output_stream.GetFile(), true);
+}
+
+void ooControlDialogImpl::OnButtonClickCreateScientificPackage(wxCommandEvent& event)
+{
+    CommitCurrentObservationsGridEdit();
+
+    if (!m_Observations) return;
+
+    const wxString message =
+        _("Open Observer is going to create a new scientific package folder containing:\n\n"
+          "• Your current project's observations exported as CSV, GeoJSON and XML.\n\n"
+          "• One daily folder for each observation day.\n\n"
+          "• Media folders inside each daily folder, such as photos, audio, video, samples, documents, notes and other.\n\n"
+          "• Helpful metadata and README files explaining the package structure.\n\n"
+          "Open Observer will not move, delete or overwrite any media files.\n\n"
+          "Ready to prepare your scientific package?");
+
+    const int answer = wxMessageBox(
+        message,
+        _("Create Scientific Package"),
+        wxYES_NO | wxICON_INFORMATION,
+        this);
+
+    if (answer != wxYES) return;
+
+    wxDirDialog dirDialog(
+        this,
+        _("Choose a destination folder for the scientific package"),
+        wxEmptyString,
+        wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
+
+    if (dirDialog.ShowModal() != wxID_OK) return;
+
+    wxString createdPackagePath;
+    wxString errorMessage;
+
+    if (!ooScientificPackage::Create(
+            m_Observations,
+            dirDialog.GetPath(),
+            createdPackagePath,
+            errorMessage)) {
+        wxMessageBox(
+            _("Unable to create scientific package:\n\n") + errorMessage,
+            _("Create Scientific Package"),
+            wxOK | wxICON_ERROR,
+            this);
+        return;
+    }
+
+    wxMessageBox(
+        _("Scientific package created successfully:\n\n") + createdPackagePath,
+        _("Create Scientific Package"),
+        wxOK | wxICON_INFORMATION,
+        this);
+
+    wxLaunchDefaultApplication(createdPackagePath);
+}
+
+void ooControlDialogImpl::OnButtonClickUpdateScientificPackage(wxCommandEvent& event)
+{
+    CommitCurrentObservationsGridEdit();
+
+    if (!m_Observations) return;
+
+    const wxString message =
+        _("Open Observer is going to update the selected scientific package with your current observations.\n\n"
+          "It may refresh exports, add missing daily folders, and update metadata files.\n\n"
+          "Open Observer will not delete, move or overwrite any media files, documents or custom folders.\n\n"
+          "Ready to update your scientific package?");
+
+    const int answer = wxMessageBox(
+        message,
+        _("Update Scientific Package"),
+        wxYES_NO | wxICON_INFORMATION,
+        this);
+
+    if (answer != wxYES) return;
+
+    wxDirDialog dirDialog(
+        this,
+        _("Choose the scientific package folder to update"),
+        wxEmptyString,
+        wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
+
+    if (dirDialog.ShowModal() != wxID_OK) return;
+
+    wxString errorMessage;
+
+    if (!ooScientificPackage::Update(
+            m_Observations,
+            dirDialog.GetPath(),
+            errorMessage)) {
+        wxMessageBox(
+            _("Unable to update scientific package:\n\n") + errorMessage,
+            _("Update Scientific Package"),
+            wxOK | wxICON_ERROR,
+            this);
+        return;
+    }
+
+    wxMessageBox(
+        _("Scientific package updated successfully:\n\n") + dirDialog.GetPath(),
+        _("Update Scientific Package"),
+        wxOK | wxICON_INFORMATION,
+        this);
+
+    wxLaunchDefaultApplication(dirDialog.GetPath());
 }
 
 void ooControlDialogImpl::OnButtonClickImportObservations(wxCommandEvent& event)
@@ -878,6 +1244,8 @@ void ooControlDialogImpl::OnButtonClickLoadObservation(wxCommandEvent& event)
 
 void ooControlDialogImpl::OnButtonClickSaveObservation(wxCommandEvent& event)
 {
+    CommitCurrentObservationsGridEdit();
+
     SaveObservations();
 }
 
@@ -890,6 +1258,7 @@ void ooControlDialogImpl::ooControlDialogDefOnClose(wxCloseEvent& event)
 {
     g_openobserver_pi->ToggleToolbarIcon();
 }
+
 
 void ooControlDialogImpl::OnNotebookPageChanged(wxNotebookEvent& event)
 {
