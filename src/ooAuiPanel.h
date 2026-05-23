@@ -18,6 +18,8 @@ private:
     void OnStartStop(wxCommandEvent& event);
     void OnTimer(wxTimerEvent& event);
     void OnShow(wxShowEvent& event);
+    void OnContextMenu(wxContextMenuEvent& event);
+    void OnUndockPanel(wxCommandEvent& event);
     void UpdateObservationStatus();
     void UpdateObservationDuration();
 

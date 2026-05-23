@@ -3,11 +3,17 @@
 #include <wx/sizer.h>
 #include <wx/colour.h>
 #include <wx/settings.h>
+#include <wx/menu.h>
 
 #include "ooObservations.h"
 #include "openobserver_pi.h"
 
 extern openobserver_pi* g_openobserver_pi;
+
+enum
+{
+    ID_OO_AUI_UNDOCK_PANEL = wxID_HIGHEST + 3100
+};
 
 ooAuiPanel::ooAuiPanel(wxWindow* parent)
     : wxPanel(parent, wxID_ANY),
@@ -47,6 +53,8 @@ ooAuiPanel::ooAuiPanel(wxWindow* parent)
                  this,
                  m_timer.GetId());
     Bind(wxEVT_SHOW, &ooAuiPanel::OnShow, this);
+    Bind(wxEVT_CONTEXT_MENU, &ooAuiPanel::OnContextMenu, this);
+    Bind(wxEVT_MENU, &ooAuiPanel::OnUndockPanel, this, ID_OO_AUI_UNDOCK_PANEL);
 }
 
 void ooAuiPanel::SetProjectInfo(const wxString& projectName,
@@ -61,6 +69,20 @@ void ooAuiPanel::SetProjectInfo(const wxString& projectName,
     m_projectText->SetFont(projectFont);
 
     Layout();
+}
+
+void ooAuiPanel::OnContextMenu(wxContextMenuEvent& event)
+{
+    wxMenu menu;
+    menu.Append(ID_OO_AUI_UNDOCK_PANEL, _("Undock panel"));
+    PopupMenu(&menu);
+}
+
+void ooAuiPanel::OnUndockPanel(wxCommandEvent& event)
+{
+    if (g_openobserver_pi) {
+        g_openobserver_pi->UndockAuiPanel();
+    }
 }
 
 void ooAuiPanel::OnStartStop(wxCommandEvent& event)

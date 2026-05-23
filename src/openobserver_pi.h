@@ -188,6 +188,7 @@ public:
     
     void SetProject(const wxString& projectName, const wxColor& projectColor, int observationsIndex);
     void RefreshObservationDisplay();
+    void UndockAuiPanel();
 
     void ToggleToolbarIcon();
     void ToggleWindow();

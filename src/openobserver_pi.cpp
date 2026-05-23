@@ -499,7 +499,7 @@ int openobserver_pi::Init(void)
         INSTALLS_CONTEXTMENU_ITEMS  |
         WANTS_NMEA_EVENTS         |
         WANTS_NMEA_SENTENCES        |
-        //    USES_AUI_MANAGER            |
+        USES_AUI_MANAGER            |
         WANTS_PREFERENCES         |
         WANTS_ONPAINT_VIEWPORT      |
         WANTS_PLUGIN_MESSAGING    |
@@ -712,6 +712,41 @@ void openobserver_pi::RefreshObservationDisplay()
     if (m_ooAuiPanel) {
         m_ooAuiPanel->RefreshObservationDisplay();
     }
+}
+
+void openobserver_pi::UndockAuiPanel()
+{
+    if (!m_ooAuiPanel) return;
+
+    wxAuiManager* aui = GetFrameAuiManager();
+    if (!aui) return;
+
+    aui->DetachPane(m_ooAuiPanel);
+
+    wxString paneName = wxString::Format("OpenObserverAuiPanel_%ld",
+                                         static_cast<long>(wxGetUTCTime()));
+
+    aui->AddPane(m_ooAuiPanel,
+                 wxAuiPaneInfo()
+                     .Name(paneName)
+                     .Caption("Open Observer")
+                     .PaneBorder(true)
+                     .CaptionVisible(true)
+                     .Movable(true)
+                     .Resizable(true)
+                     .Floatable(true)
+                     .Dockable(true)
+                     .TopDockable(true)
+                     .BottomDockable(true)
+                     .LeftDockable(true)
+                     .RightDockable(true)
+                     .Float()
+                     .FloatingPosition(100, 100)
+                     .FloatingSize(240, 120)
+                     .CloseButton(true)
+                     .Show(true));
+
+    aui->Update();
 }
 
 void openobserver_pi::SetProject(const wxString& projectName, const wxColor& projectColor, int observationsIndex)
