@@ -135,7 +135,7 @@ extern "C" DECL_EXP void destroy_pi(opencpn_plugin* p)
 //---------------------------------------------------------------------------------------------------------
 
 openobserver_pi::openobserver_pi(void *ppimgr) 
-    : opencpn_plugin_118(ppimgr), m_ooObservations(nullptr), m_ooControlDialogImpl(nullptr), m_ooMiniDialogImpl(nullptr), m_ooAuiPanel(nullptr), m_useAuiPanel(false)
+    : opencpn_plugin_118(ppimgr), m_ooObservations(nullptr), m_ooControlDialogImpl(nullptr), m_ooMiniDialogImpl(nullptr), m_ooAuiPanel(nullptr), m_useAuiPanel(false), m_currentProjectName(wxEmptyString), m_currentProjectColor(*wxBLACK)
 {
     // Create the PlugIn icons
     g_ppimgr = ppimgr;
@@ -444,6 +444,11 @@ int openobserver_pi::Init(void)
 
         wxAuiManager* aui = GetFrameAuiManager();
         if (aui) {
+            if (!m_currentProjectName.IsEmpty()) {
+                m_ooAuiPanel->SetProjectInfo(m_currentProjectName,
+                                             m_currentProjectColor);
+            }
+
             aui->AddPane(m_ooAuiPanel,
                          wxAuiPaneInfo()
                              .Name("OpenObserverAuiPanel")
@@ -698,14 +703,31 @@ wxBitmap *openobserver_pi::GetPlugInBitmap()
     return &m_ptpicons->m_bm_openobserver_pi;
 }
 
+void openobserver_pi::RefreshObservationDisplay()
+{
+    if (m_ooControlDialogImpl) {
+        m_ooControlDialogImpl->RefreshObservationsGrid();
+    }
+
+    if (m_ooAuiPanel) {
+        m_ooAuiPanel->RefreshObservationDisplay();
+    }
+}
+
 void openobserver_pi::SetProject(const wxString& projectName, const wxColor& projectColor, int observationsIndex)
 {
     m_observationsIndex = observationsIndex;
+    m_currentProjectName = projectName;
+    m_currentProjectColor = projectColor;
     
     wxString title = "Open Observer - " + projectName;
     m_ooControlDialogImpl->SetTitle(title);
     m_ooMiniDialogImpl->SetTitle(title);
     m_ooMiniDialogImpl->SetProjectInfo(projectName, projectColor);
+
+    if (m_ooAuiPanel) {
+        m_ooAuiPanel->SetProjectInfo(projectName, projectColor);
+    }
 }
 
 
@@ -755,6 +777,11 @@ void openobserver_pi::ShowPreferencesDialog(wxWindow *parent)
 
             wxAuiManager* aui = GetFrameAuiManager();
             if (aui) {
+                if (!m_currentProjectName.IsEmpty()) {
+                    m_ooAuiPanel->SetProjectInfo(m_currentProjectName,
+                                                 m_currentProjectColor);
+                }
+
                 aui->AddPane(m_ooAuiPanel,
                              wxAuiPaneInfo()
                                  .Name("OpenObserverAuiPanel")

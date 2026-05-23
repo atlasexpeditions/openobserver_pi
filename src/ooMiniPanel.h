@@ -61,6 +61,7 @@ public:
                       const wxColor& projectColor);
 
   void OnShow(wxShowEvent& event);
+  void RefreshObservationDisplay();
 
 protected:
   void UpdateObservationStatus();

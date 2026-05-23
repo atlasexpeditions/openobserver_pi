@@ -60,6 +60,7 @@ public:
         void SetPositionFix(time_t fixTime, double lat, double lon);
         void SetNmeaSentence(const wxString& sentence);
         void SetViewScale(double viewScale);
+        void RefreshObservationsGrid();
       protected:
         void SetupObservationsForProject();
         bool LoadObservations(const wxString& filename, bool updateFromMarks = true);
@@ -69,7 +70,7 @@ public:
 
         void OnButtonClickProjectEditUse(wxCommandEvent& event);
         void OnButtonClickProjectNew(wxCommandEvent& event);
-	void OnButtonClickProjectNewColumn(wxCommandEvent& event);
+	      void OnButtonClickProjectNewColumn(wxCommandEvent& event);
         void OnButtonClickProjectDeleteColumn(wxCommandEvent& event);
 
         void OnButtonClickNewObservation( wxCommandEvent& event );

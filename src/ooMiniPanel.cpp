@@ -166,6 +166,10 @@ void ooMiniPanel::StartOrStopObservation()
   }
 
   UpdateObservationStatus();
+
+  if (g_openobserver_pi) {
+    g_openobserver_pi->RefreshObservationDisplay();
+  }
 }
 
 void ooMiniPanel::ooControlStartStopObservationClick(wxCommandEvent& event) 
@@ -174,6 +178,11 @@ void ooMiniPanel::ooControlStartStopObservationClick(wxCommandEvent& event)
 }
 
 void ooMiniPanel::OnShow(wxShowEvent& event)
+{
+  RefreshObservationDisplay();
+}
+
+void ooMiniPanel::RefreshObservationDisplay()
 {
   UpdateObservationDuration();
   UpdateObservationStatus();

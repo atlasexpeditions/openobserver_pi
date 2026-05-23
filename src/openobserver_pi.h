@@ -186,9 +186,8 @@ public:
     void SetNMEASentence(wxString& sentence);
     void SetCurrentViewPort(PlugIn_ViewPort& vp);
     
-    void SetProject(const wxString& projectName,
-                    const wxColor& projectColor,
-                    int observationsIndex);
+    void SetProject(const wxString& projectName, const wxColor& projectColor, int observationsIndex);
+    void RefreshObservationDisplay();
 
     void ToggleToolbarIcon();
     void ToggleWindow();
@@ -220,6 +219,8 @@ public:
     int     m_openobserver_button_id;
     int     m_observationsIndex, m_observationsChoiceCount;
     wxRect  m_dialogPosition, m_miniDialogPosition;
+    wxString m_currentProjectName;
+    wxColor m_currentProjectColor;
     int     m_addObservationItem;
 
     double  m_cursor_lat;

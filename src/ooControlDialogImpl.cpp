@@ -1028,6 +1028,18 @@ void ooControlDialogImpl::OnButtonClickDeleteObservation( wxCommandEvent& event 
 
 #include <wx/sysopt.h>
 
+void ooControlDialogImpl::RefreshObservationsGrid()
+{
+    if (m_ObservationsTable) {
+        RefreshGridAppearance(m_ObservationsTable);
+        m_ObservationsTable->ForceRefresh();
+    }
+
+    if (m_MiniPanel) {
+        m_MiniPanel->RefreshObservationDisplay();
+    }
+}
+
 void ooControlDialogImpl::CommitCurrentObservationsGridEdit()
 {
     if (m_ObservationsTable && m_ObservationsTable->IsCellEditControlShown()) {
