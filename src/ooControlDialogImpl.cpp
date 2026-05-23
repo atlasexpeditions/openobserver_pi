@@ -76,10 +76,8 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
     SetLayoutAdaptationMode(wxDIALOG_ADAPTATION_MODE_ENABLED);
 #endif // wxCHECK_VERSION(3,0,0)
 
-    SetWindowStyleFlag(GetWindowStyleFlag() | wxSTAY_ON_TOP);
-
-// Window stay-on-top behavior is updated depending on the selected tab.
-// Observations mode stays on top; Project mode behaves like a normal window
+// The full control dialog intentionally does not use wxSTAY_ON_TOP.
+// The mini dialog keeps wxSTAY_ON_TOP.
    
 
     // Make the observations/project switcher wider and easier to read.

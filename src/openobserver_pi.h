@@ -141,6 +141,7 @@ std::cout << x  << std::endl ; } while (0)
 #include <unordered_map>
 
 #include "ooObservations.h"
+#include "ooAuiPanel.h"
 #include "globals.h"
 
 //----------------------------------------------------------------------------------------------------------
@@ -209,6 +210,7 @@ public:
     tpicons *m_ptpicons;
     ooControlDialogImpl *m_ooControlDialogImpl;
     ooMiniDialogImpl *m_ooMiniDialogImpl;
+    ooAuiPanel *m_ooAuiPanel;
 
     bool    m_bReadyForRequests;
     int     m_iCallerId;

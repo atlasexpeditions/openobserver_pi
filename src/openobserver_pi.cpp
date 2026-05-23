@@ -56,6 +56,7 @@
 #include "ooObservations.h"
 #include "ooControlDialogImpl.h"
 #include "ooMiniDialogImpl.h"
+#include "ooAuiPanel.h"
 
 #include "wx/jsonwriter.h"
 
@@ -130,7 +131,7 @@ extern "C" DECL_EXP void destroy_pi(opencpn_plugin* p)
 //---------------------------------------------------------------------------------------------------------
 
 openobserver_pi::openobserver_pi(void *ppimgr) 
-    : opencpn_plugin_118(ppimgr), m_ooObservations(nullptr), m_ooControlDialogImpl(nullptr), m_ooMiniDialogImpl(nullptr)
+    : opencpn_plugin_118(ppimgr), m_ooObservations(nullptr), m_ooControlDialogImpl(nullptr), m_ooMiniDialogImpl(nullptr), m_ooAuiPanel(nullptr)
 {
     // Create the PlugIn icons
     g_ppimgr = ppimgr;
@@ -394,6 +395,7 @@ int openobserver_pi::Init(void)
     if (!m_parent_window) {
         m_parent_window = GetOCPNCanvasWindow();
     }
+
     m_pConfig = GetOCPNConfigObject();
     LoadConfig();
 
@@ -433,6 +435,31 @@ int openobserver_pi::Init(void)
     m_ooMiniDialogImpl->Move(m_miniDialogPosition.x, m_miniDialogPosition.y);
     m_ooMiniDialogImpl->SetSize(m_miniDialogPosition.width,
                                 m_miniDialogPosition.height);
+    m_ooAuiPanel = new ooAuiPanel(m_parent_window);
+
+    wxAuiManager* aui = GetFrameAuiManager();
+    if (aui) {
+            aui->AddPane(m_ooAuiPanel,
+                     wxAuiPaneInfo()
+                         .Name("OpenObserverAuiPanel")
+                         .Caption("Open Observer")
+                         .PaneBorder(true)
+                         .CaptionVisible(true)
+                         .Movable(true)
+                         .Resizable(true)
+                         .Floatable(true)
+                         .Dockable(true)
+                         .TopDockable(true)
+                         .BottomDockable(true)
+                         .LeftDockable(true)
+                         .RightDockable(true)
+                         .Float()
+                         .FloatingPosition(100, 100)
+                         .FloatingSize(240, 120)
+                         .CloseButton(true)
+                         .Show(true));
+        aui->Update();
+    }
 
     m_ooControlDialogImpl = new ooControlDialogImpl(m_parent_window);
     m_ooControlDialogImpl->SetObservationsChoiceCount(m_observationsChoiceCount);
@@ -497,6 +524,17 @@ bool openobserver_pi::DeInit(void)
         m_ooMiniDialogImpl->Close();
         delete m_ooMiniDialogImpl;
         m_ooMiniDialogImpl = nullptr;
+    }
+    if (m_ooAuiPanel)
+    {
+        wxAuiManager* aui = GetFrameAuiManager();
+        if (aui) {
+            aui->DetachPane(m_ooAuiPanel);
+            aui->Update();
+        }
+
+        m_ooAuiPanel->Destroy();
+        m_ooAuiPanel = nullptr;
     }
     if (m_pConfig) SaveConfig();
 
@@ -667,6 +705,17 @@ void openobserver_pi::SetProject(const wxString& projectName, const wxColor& pro
 void openobserver_pi::ToggleToolbarIcon()
 {
     if (!m_ooControlDialogImpl || !m_ooMiniDialogImpl) return;
+
+    if (m_ooAuiPanel) {
+        wxAuiManager* aui = GetFrameAuiManager();
+        if (aui) {
+            wxAuiPaneInfo& pane = aui->GetPane(m_ooAuiPanel);
+            if (pane.IsOk()) {
+                pane.Show(true);
+                aui->Update();
+            }
+        }
+    }
 
     if (m_ooControlDialogImpl->IsShown() || m_ooMiniDialogImpl->IsShown()) {
         SetToolbarItemState(m_openobserver_button_id, false);
