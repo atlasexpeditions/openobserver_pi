@@ -135,7 +135,7 @@ extern "C" DECL_EXP void destroy_pi(opencpn_plugin* p)
 //---------------------------------------------------------------------------------------------------------
 
 openobserver_pi::openobserver_pi(void *ppimgr) 
-    : opencpn_plugin_118(ppimgr), m_ooObservations(nullptr), m_ooControlDialogImpl(nullptr), m_ooMiniDialogImpl(nullptr), m_ooAuiPanel(nullptr), m_useAuiPanel(false), m_currentProjectName(wxEmptyString), m_currentProjectColor(*wxBLACK)
+: opencpn_plugin_118(ppimgr), m_ooObservations(nullptr), m_ooControlDialogImpl(nullptr), m_ooMiniDialogImpl(nullptr), m_ooAuiPanel(nullptr), m_useAuiPanel(false), m_currentProjectName(wxEmptyString), m_currentProjectColor(*wxBLACK), m_showMiniPanelItem(-1)
 {
     // Create the PlugIn icons
     g_ppimgr = ppimgr;
@@ -416,9 +416,14 @@ int openobserver_pi::Init(void)
     //    The Items will be re-parented when added to the real context meenu
     wxMenu dummy_menu;
     wxMenuItem* pmi =
-        new wxMenuItem(&dummy_menu, -1, _("Add OO observation here"));
+        new wxMenuItem(&dummy_menu, -1, _("Open Observer: add observation here"));
     m_addObservationItem = AddCanvasContextMenuItem(pmi, this);
     SetCanvasContextMenuItemViz(m_addObservationItem, true);
+
+    wxMenuItem* pmiShowMiniPanel =
+        new wxMenuItem(&dummy_menu, -1, _("Open Observer: show mini panel"));
+    m_showMiniPanelItem = AddCanvasContextMenuItem(pmiShowMiniPanel, this);
+    SetCanvasContextMenuItemViz(m_showMiniPanelItem, true);
 
     // Get item into font list in options/user interface
     AddPersistentFontKey( wxT("tp_Label") );
@@ -621,6 +626,11 @@ void openobserver_pi::OnToolbarToolUpCallback(int id)
 
 void openobserver_pi::OnContextMenuItemCallback(int id)
 {
+    if (id == m_showMiniPanelItem) {
+        ShowMiniPanel();
+        return;
+    }
+
     if (id != m_addObservationItem) return;
     if (m_ooObservations == nullptr) return;
 
@@ -749,6 +759,83 @@ void openobserver_pi::UndockAuiPanel()
     aui->Update();
 }
 
+void openobserver_pi::ShowMiniPanel()
+{
+    if (m_useAuiPanel) {
+        wxAuiManager* aui = GetFrameAuiManager();
+        if (!aui) return;
+
+        if (!m_ooAuiPanel) {
+            m_ooAuiPanel = new ooAuiPanel(m_parent_window);
+
+            if (!m_currentProjectName.IsEmpty()) {
+                m_ooAuiPanel->SetProjectInfo(m_currentProjectName,
+                                             m_currentProjectColor);
+            }
+
+            aui->AddPane(m_ooAuiPanel,
+                         wxAuiPaneInfo()
+                             .Name("OpenObserverAuiPanel")
+                             .Caption("Open Observer")
+                             .PaneBorder(true)
+                             .CaptionVisible(true)
+                             .Movable(true)
+                             .Resizable(true)
+                             .Floatable(true)
+                             .Dockable(true)
+                             .TopDockable(true)
+                             .BottomDockable(true)
+                             .LeftDockable(true)
+                             .RightDockable(true)
+                             .Float()
+                             .FloatingPosition(100, 100)
+                             .FloatingSize(m_ooAuiPanel->GetMinSize())
+                             .CloseButton(true)
+                             .Show(true));
+        } else {
+            wxAuiPaneInfo& pane = aui->GetPane(m_ooAuiPanel);
+
+            if (pane.IsOk()) {
+                pane.Show(true);
+            } else {
+                aui->AddPane(m_ooAuiPanel,
+                             wxAuiPaneInfo()
+                                 .Name("OpenObserverAuiPanel")
+                                 .Caption("Open Observer")
+                                 .PaneBorder(true)
+                                 .CaptionVisible(true)
+                                 .Movable(true)
+                                 .Resizable(true)
+                                 .Floatable(true)
+                                 .Dockable(true)
+                                 .TopDockable(true)
+                                 .BottomDockable(true)
+                                 .LeftDockable(true)
+                                 .RightDockable(true)
+                                 .Float()
+                                 .FloatingPosition(100, 100)
+                                 .FloatingSize(m_ooAuiPanel->GetMinSize())
+                                 .CloseButton(true)
+                                 .Show(true));
+            }
+        }
+
+        m_ooAuiPanel->Show();
+        m_ooAuiPanel->RefreshObservationDisplay();
+        aui->Update();
+        m_ooAuiPanel->Raise();
+        return;
+    }
+
+    if (!m_ooControlDialogImpl || !m_ooMiniDialogImpl) return;
+
+    m_ooControlDialogImpl->Hide();
+    m_ooMiniDialogImpl->Show();
+    m_ooMiniDialogImpl->Raise();
+    m_bShowMainDialog = false;
+    SetToolbarItemState(m_openobserver_button_id, true);
+}
+
 void openobserver_pi::SetProject(const wxString& projectName, const wxColor& projectColor, int observationsIndex)
 {
     m_observationsIndex = observationsIndex;
@@ -776,7 +863,7 @@ void openobserver_pi::ShowPreferencesDialog(wxWindow *parent)
     wxBoxSizer* topSizer = new wxBoxSizer(wxVERTICAL);
 
     wxCheckBox* useAuiPanelCheckBox =
-        new wxCheckBox(&dialog, wxID_ANY, _("Use dockable OpenCPN panel"));
+        new wxCheckBox(&dialog, wxID_ANY, _("Use dockable mini panel"));
     useAuiPanelCheckBox->SetValue(m_useAuiPanel);
 
     wxStaticText* infoText = new wxStaticText(

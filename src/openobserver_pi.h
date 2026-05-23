@@ -189,6 +189,7 @@ public:
     void SetProject(const wxString& projectName, const wxColor& projectColor, int observationsIndex);
     void RefreshObservationDisplay();
     void UndockAuiPanel();
+    void ShowMiniPanel();
 
     void ToggleToolbarIcon();
     void ToggleWindow();
@@ -223,6 +224,7 @@ public:
     wxString m_currentProjectName;
     wxColor m_currentProjectColor;
     int     m_addObservationItem;
+    int     m_showMiniPanelItem;
 
     double  m_cursor_lat;
     double  m_cursor_lon;
