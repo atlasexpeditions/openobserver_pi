@@ -135,7 +135,17 @@ extern "C" DECL_EXP void destroy_pi(opencpn_plugin* p)
 //---------------------------------------------------------------------------------------------------------
 
 openobserver_pi::openobserver_pi(void *ppimgr) 
-: opencpn_plugin_118(ppimgr), m_ooObservations(nullptr), m_ooControlDialogImpl(nullptr), m_ooMiniDialogImpl(nullptr), m_ooAuiPanel(nullptr), m_useAuiPanel(false), m_currentProjectName(wxEmptyString), m_currentProjectColor(*wxBLACK), m_showMiniPanelItem(-1)
+    : opencpn_plugin_118(ppimgr),
+      m_ooObservations(nullptr),
+      m_ooControlDialogImpl(nullptr),
+      m_ooMiniDialogImpl(nullptr),
+      m_ooAuiPanel(nullptr),
+      m_ooAuiObservationsPanel(nullptr),
+      m_useAuiPanel(false),
+      m_currentProjectName(wxEmptyString),
+      m_currentProjectColor(*wxBLACK),
+      m_showMiniPanelItem(-1),
+      m_showObservationsPanelItem(-1)
 {
     // Create the PlugIn icons
     g_ppimgr = ppimgr;
@@ -425,6 +435,12 @@ int openobserver_pi::Init(void)
     m_showMiniPanelItem = AddCanvasContextMenuItem(pmiShowMiniPanel, this);
     SetCanvasContextMenuItemViz(m_showMiniPanelItem, true);
 
+    wxMenuItem* pmiShowObservationsPanel =
+        new wxMenuItem(&dummy_menu, -1, _("Open Observer: show observations table"));
+    m_showObservationsPanelItem =
+        AddCanvasContextMenuItem(pmiShowObservationsPanel, this);
+    SetCanvasContextMenuItemViz(m_showObservationsPanelItem, true);
+
     // Get item into font list in options/user interface
     AddPersistentFontKey( wxT("tp_Label") );
     AddPersistentFontKey( wxT("tp_Data") );
@@ -631,6 +647,11 @@ void openobserver_pi::OnContextMenuItemCallback(int id)
         return;
     }
 
+    if (id == m_showObservationsPanelItem) {
+        ShowObservationsPanel();
+        return;
+    }
+
     if (id != m_addObservationItem) return;
     if (m_ooObservations == nullptr) return;
 
@@ -834,6 +855,14 @@ void openobserver_pi::ShowMiniPanel()
     m_ooMiniDialogImpl->Raise();
     m_bShowMainDialog = false;
     SetToolbarItemState(m_openobserver_button_id, true);
+}
+
+void openobserver_pi::ShowObservationsPanel()
+{
+    wxMessageBox(_("The Open Observer observations table panel is not implemented yet."),
+                 _("Open Observer"),
+                 wxOK | wxICON_INFORMATION,
+                 wxGetActiveWindow());
 }
 
 void openobserver_pi::SetProject(const wxString& projectName, const wxColor& projectColor, int observationsIndex)

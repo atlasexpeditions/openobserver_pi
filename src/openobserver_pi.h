@@ -148,6 +148,8 @@ std::cout << x  << std::endl ; } while (0)
 //    The PlugIn Class Definition
 //----------------------------------------------------------------------------------------------------------
 
+class ooAuiObservationsPanel;
+
 class openobserver_pi : public opencpn_plugin_118
 {
 public:
@@ -190,6 +192,7 @@ public:
     void RefreshObservationDisplay();
     void UndockAuiPanel();
     void ShowMiniPanel();
+    void ShowObservationsPanel();
 
     void ToggleToolbarIcon();
     void ToggleWindow();
@@ -213,6 +216,7 @@ public:
     ooControlDialogImpl *m_ooControlDialogImpl;
     ooMiniDialogImpl *m_ooMiniDialogImpl;
     ooAuiPanel *m_ooAuiPanel;
+    ooAuiObservationsPanel *m_ooAuiObservationsPanel;
 
     bool    m_bReadyForRequests;
     int     m_iCallerId;
@@ -225,6 +229,7 @@ public:
     wxColor m_currentProjectColor;
     int     m_addObservationItem;
     int     m_showMiniPanelItem;
+    int     m_showObservationsPanelItem;
 
     double  m_cursor_lat;
     double  m_cursor_lon;
