@@ -176,6 +176,7 @@ public:
     void OnToolbarToolDownCallback(int id);
     void OnToolbarToolUpCallback(int id);
     void OnContextMenuItemCallback(int id);
+    void ShowPreferencesDialog(wxWindow *parent) override;
 
     void LateInit(void);
     bool KeyboardEventHook( wxKeyEvent &event );

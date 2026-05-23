@@ -46,6 +46,10 @@
 
 #include <wx/aui/aui.h>
 #include <wx/gdicmn.h>
+#include <wx/checkbox.h>
+#include <wx/stattext.h>
+#include <wx/button.h>
+#include <wx/sizer.h>
 #include <algorithm>
 
 #include "openobserver_pi.h"
@@ -491,7 +495,7 @@ int openobserver_pi::Init(void)
         WANTS_NMEA_EVENTS         |
         WANTS_NMEA_SENTENCES        |
         //    USES_AUI_MANAGER            |
-//        WANTS_PREFERENCES         |
+        WANTS_PREFERENCES         |
         WANTS_ONPAINT_VIEWPORT      |
         WANTS_PLUGIN_MESSAGING    |
         WANTS_LATE_INIT           |
@@ -704,6 +708,91 @@ void openobserver_pi::SetProject(const wxString& projectName, const wxColor& pro
     m_ooMiniDialogImpl->SetProjectInfo(projectName, projectColor);
 }
 
+
+
+void openobserver_pi::ShowPreferencesDialog(wxWindow *parent)
+{
+    wxDialog dialog(parent, wxID_ANY, _("Open Observer Preferences"),
+                    wxDefaultPosition, wxDefaultSize,
+                    wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
+
+    wxBoxSizer* topSizer = new wxBoxSizer(wxVERTICAL);
+
+    wxCheckBox* useAuiPanelCheckBox =
+        new wxCheckBox(&dialog, wxID_ANY, _("Use dockable OpenCPN panel"));
+    useAuiPanelCheckBox->SetValue(m_useAuiPanel);
+
+    wxStaticText* infoText = new wxStaticText(
+        &dialog,
+        wxID_ANY,
+        _("This display mode can be changed immediately."));
+
+    topSizer->Add(useAuiPanelCheckBox, 0, wxALL | wxEXPAND, 10);
+    topSizer->Add(infoText, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 10);
+
+    wxStdDialogButtonSizer* buttonSizer =
+        dialog.CreateStdDialogButtonSizer(wxOK | wxCANCEL);
+    topSizer->Add(buttonSizer, 0, wxALL | wxALIGN_RIGHT, 10);
+
+    dialog.SetSizerAndFit(topSizer);
+
+    if (dialog.ShowModal() != wxID_OK) {
+        return;
+    }
+
+    bool newUseAuiPanel = useAuiPanelCheckBox->GetValue();
+
+    if (newUseAuiPanel == m_useAuiPanel) {
+        SaveConfig();
+        return;
+    }
+
+    m_useAuiPanel = newUseAuiPanel;
+
+    if (m_useAuiPanel) {
+        if (!m_ooAuiPanel) {
+            m_ooAuiPanel = new ooAuiPanel(m_parent_window);
+
+            wxAuiManager* aui = GetFrameAuiManager();
+            if (aui) {
+                aui->AddPane(m_ooAuiPanel,
+                             wxAuiPaneInfo()
+                                 .Name("OpenObserverAuiPanel")
+                                 .Caption("Open Observer")
+                                 .PaneBorder(true)
+                                 .CaptionVisible(true)
+                                 .Movable(true)
+                                 .Resizable(true)
+                                 .Floatable(true)
+                                 .Dockable(true)
+                                 .TopDockable(true)
+                                 .BottomDockable(true)
+                                 .LeftDockable(true)
+                                 .RightDockable(true)
+                                 .Float()
+                                 .FloatingPosition(100, 100)
+                                 .FloatingSize(240, 120)
+                                 .CloseButton(true)
+                                 .Show(true));
+                aui->Update();
+            }
+        }
+    } else {
+        if (m_ooAuiPanel) {
+            wxAuiManager* aui = GetFrameAuiManager();
+            if (aui) {
+                aui->DetachPane(m_ooAuiPanel);
+                aui->Update();
+            }
+
+            m_ooAuiPanel->Destroy();
+            m_ooAuiPanel = nullptr;
+        }
+    }
+
+    SaveConfig();
+}
+
 void openobserver_pi::ToggleToolbarIcon()
 {
     if (!m_ooControlDialogImpl || !m_ooMiniDialogImpl) return;
@@ -771,6 +860,7 @@ void openobserver_pi::SaveConfig()
     m_pConfig->Write("MiniDialogY", m_miniDialogPosition.y);
     m_pConfig->Write("MiniDialogWidth", m_miniDialogPosition.width);
     m_pConfig->Write("MiniDialogHeight", m_miniDialogPosition.height);
+    m_pConfig->Write("UseAuiPanel", m_useAuiPanel);
 }
 
 void openobserver_pi::LoadConfig()
@@ -801,6 +891,7 @@ void openobserver_pi::LoadConfig()
     m_pConfig->Read("MiniDialogY", &m_miniDialogPosition.y, -1);
     m_pConfig->Read("MiniDialogWidth", &m_miniDialogPosition.width, -1);
     m_pConfig->Read("MiniDialogHeight", &m_miniDialogPosition.height, -1);
+    m_pConfig->Read("UseAuiPanel", &m_useAuiPanel, false);
 }
 
 static wxString GetHumanReadableNmeaFieldDescription(const wxString& sentenceId, int fieldIndex)
