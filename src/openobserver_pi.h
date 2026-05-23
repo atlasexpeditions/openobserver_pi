@@ -215,6 +215,7 @@ public:
     bool    m_bReadyForRequests;
     int     m_iCallerId;
     bool    m_bShowMainDialog;
+    bool    m_useAuiPanel;
     int     m_openobserver_button_id;
     int     m_observationsIndex, m_observationsChoiceCount;
     wxRect  m_dialogPosition, m_miniDialogPosition;
