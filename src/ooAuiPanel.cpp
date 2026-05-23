@@ -21,14 +21,17 @@ ooAuiPanel::ooAuiPanel(wxWindow* parent)
       m_projectText(nullptr),
       m_buttonStartStop(nullptr),
       m_timerText(nullptr),
+      m_utcText(nullptr),
       m_timer()
 {
+    wxBoxSizer* outerSizer = new wxBoxSizer(wxVERTICAL);
     wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
     m_titleText = new wxStaticText(this, wxID_ANY, _("Open Observer"));
     m_projectText = new wxStaticText(this, wxID_ANY, _("Project: —"));
     m_buttonStartStop = new wxButton(this, wxID_ANY, _("Start Observation"));
     m_timerText = new wxStaticText(this, wxID_ANY, _("00:00:00"));
+    m_utcText = new wxStaticText(this, wxID_ANY, _("UTC: --:--:--"));
 
     wxFont titleFont = m_titleText->GetFont();
     titleFont.SetWeight(wxFONTWEIGHT_BOLD);
@@ -39,13 +42,27 @@ ooAuiPanel::ooAuiPanel(wxWindow* parent)
     timerFont.SetWeight(wxFONTWEIGHT_BOLD);
     m_timerText->SetFont(timerFont);
 
-    sizer->Add(m_titleText, 0, wxLEFT | wxRIGHT | wxTOP | wxALIGN_CENTER_HORIZONTAL, 8);
-    sizer->Add(m_projectText, 0, wxLEFT | wxRIGHT | wxTOP | wxALIGN_CENTER_HORIZONTAL, 8);
-    sizer->Add(m_buttonStartStop, 0, wxALL | wxEXPAND, 8);
-    sizer->Add(m_timerText, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxALIGN_CENTER_HORIZONTAL, 8);
+    wxFont utcFont = m_utcText->GetFont();
+    utcFont.SetPointSize(utcFont.GetPointSize() - 1);
+    m_utcText->SetFont(utcFont);
 
-    SetSizer(sizer);
+    sizer->Add(m_titleText, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, 6);
+    sizer->Add(m_projectText, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, 8);
+    sizer->Add(m_timerText, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, 8);
+    sizer->Add(m_buttonStartStop, 0, wxEXPAND | wxBOTTOM, 8);
+    sizer->Add(m_utcText, 0, wxALIGN_CENTER_HORIZONTAL, 0);
+
+    m_buttonStartStop->SetMinSize(wxSize(-1, 38));
+
+    outerSizer->Add(sizer, 1, wxEXPAND | wxALL, 12);
+
+    SetSizer(outerSizer);
+    SetMinSize(wxSize(280, 180));
     Layout();
+
+    UpdateObservationStatus();
+    UpdateUtcDisplay();
+    m_timer.Start(1000);
 
     m_buttonStartStop->Bind(wxEVT_BUTTON, &ooAuiPanel::OnStartStop, this);
     m_timer.Bind(wxEVT_TIMER,
@@ -113,7 +130,9 @@ void ooAuiPanel::OnStartStop(wxCommandEvent& event)
 
 void ooAuiPanel::OnTimer(wxTimerEvent& event)
 {
+    UpdateObservationStatus();
     UpdateObservationDuration();
+    UpdateUtcDisplay();
     event.Skip();
 }
 
@@ -127,6 +146,7 @@ void ooAuiPanel::RefreshObservationDisplay()
 {
     UpdateObservationDuration();
     UpdateObservationStatus();
+    UpdateUtcDisplay();
 }
 
 void ooAuiPanel::UpdateObservationStatus()
@@ -139,12 +159,8 @@ void ooAuiPanel::UpdateObservationStatus()
         m_buttonStartStop->SetLabel(_("Stop Observation"));
         m_timerText->SetForegroundColour(*wxRED);
         UpdateObservationDuration();
-        if (!m_timer.IsRunning()) {
-            m_timer.Start(100);
-        }
     } else {
         m_buttonStartStop->SetLabel(_("Start Observation"));
-        m_timer.Stop();
         m_timerText->SetLabel(_("00:00:00"));
         m_timerText->SetForegroundColour(
             wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
@@ -173,6 +189,27 @@ void ooAuiPanel::UpdateObservationDuration()
 
     m_timerText->SetLabel(
         wxString::Format("%02u:%02u:%02u", hours, minutes, seconds));
+
+    Layout();
+}
+
+void ooAuiPanel::UpdateUtcDisplay()
+{
+    if (!g_openobserver_pi || !g_openobserver_pi->m_ooObservations) {
+        m_utcText->SetLabel(_("UTC: --:--:--"));
+        return;
+    }
+
+    const wxString utcTime =
+        g_openobserver_pi->m_ooObservations->GetUtcTimeFromNMEA(
+            ooObservations::UTC_TIME_TIME);
+
+    const wxString utcSource =
+        g_openobserver_pi->m_ooObservations->GetUtcTimeSourceLabel();
+
+    m_utcText->SetLabel(wxString::Format(_("UTC: %s %s"),
+                                         utcTime,
+                                         utcSource));
 
     Layout();
 }

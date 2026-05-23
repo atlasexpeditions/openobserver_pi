@@ -465,7 +465,7 @@ int openobserver_pi::Init(void)
                              .RightDockable(true)
                              .Float()
                              .FloatingPosition(100, 100)
-                             .FloatingSize(240, 120)
+                             .FloatingSize(m_ooAuiPanel->GetMinSize())
                              .CloseButton(true)
                              .Show(true));
             aui->Update();
@@ -742,7 +742,7 @@ void openobserver_pi::UndockAuiPanel()
                      .RightDockable(true)
                      .Float()
                      .FloatingPosition(100, 100)
-                     .FloatingSize(240, 120)
+                     .FloatingSize(280, 180)
                      .CloseButton(true)
                      .Show(true));
 
@@ -833,7 +833,7 @@ void openobserver_pi::ShowPreferencesDialog(wxWindow *parent)
                                  .RightDockable(true)
                                  .Float()
                                  .FloatingPosition(100, 100)
-                                 .FloatingSize(240, 120)
+                                 .FloatingSize(m_ooAuiPanel->GetMinSize())
                                  .CloseButton(true)
                                  .Show(true));
                 aui->Update();

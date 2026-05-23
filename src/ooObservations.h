@@ -208,6 +208,7 @@ private:
     double m_SOG = 0;
     double m_COG = 0;
     wxDateTime m_utcTime;
+    wxDateTime m_lastUtcNmeaUpdate;
 
     double StartLongSave;
     double StartLatSave;

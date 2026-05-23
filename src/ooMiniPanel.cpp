@@ -113,6 +113,8 @@ bool ooMiniPanel::Create(wxWindow* parent, wxWindowID id, const wxString& msg,
                                   &ooMiniPanel::OnObservationDurationTimer,
                                   this, m_ObservationDurationTimer.GetId());
 
+  m_ObservationDurationTimer.Start(1000);
+
     return true;
 }
 
@@ -205,12 +207,8 @@ void ooMiniPanel::UpdateObservationStatus()
     Layout();
     GetParent()->Layout();
 
-    // start timer to update observation duration
-    m_ObservationDurationTimer.Start(100);  // 100 ms = 0.1 s
-  } else {
+    } else {
     m_StartStopObservation->SetLabel("Start Observation");
-
-    m_ObservationDurationTimer.Stop();
 
     m_ObservationDuration->SetValue(wxEmptyString);
     m_ObservationsDurationLabel->Hide();
@@ -239,6 +237,7 @@ void ooMiniPanel::UpdateObservationDuration()
 }
 
 void ooMiniPanel::OnObservationDurationTimer(wxTimerEvent& event) {
+  UpdateObservationStatus();
   UpdateObservationDuration();
 }
 

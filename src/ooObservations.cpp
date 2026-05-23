@@ -213,6 +213,8 @@ const wxArrayString& ooObservations::GetColFieldTypes() const
     return m_project.GetColFieldTypes();
 }
 
+static bool IsReasonableUtcDateTime(const wxDateTime& dateTime);
+
 void ooObservations::SetPositionFix(time_t fixTime, double lat, double lon)
 {
     m_position_fix_time = fixTime;
@@ -240,6 +242,9 @@ void ooObservations::SetNmeaSentFix(wxString sentenceNmea)
             if (nmea.Rmc.IsDataValid == NTrue) {
                 wxString dt = nmea.Rmc.Date + nmea.Rmc.UTCTime;
                 m_utcTime.ParseFormat(dt.c_str(), _T("%d%m%y%H%M%S"));
+                if (IsReasonableUtcDateTime(m_utcTime)) {
+                    m_lastUtcNmeaUpdate = wxDateTime::Now();
+                }
             }
             if (nmea.Rmc.TrackMadeGoodDegreesTrue >= 0 && nmea.Rmc.TrackMadeGoodDegreesTrue <= 360)
             {
@@ -259,6 +264,9 @@ void ooObservations::SetNmeaSentFix(wxString sentenceNmea)
                       nmea.Zda.Day);
             dt.Append(nmea.Zda.UTCTime);
             m_utcTime.ParseFormat(dt.c_str(), _T("%d%m%y%H%M%S"));
+            if (IsReasonableUtcDateTime(m_utcTime)) {
+                m_lastUtcNmeaUpdate = wxDateTime::Now();
+            }
         }
         for (auto& item : ooObservations::m_nmeaFields) {
             if (nmea.LastSentenceIDParsed.IsSameAs(item.m_sentenceId)) {
@@ -346,7 +354,13 @@ wxString ooObservations::GetUtcTimeFromNMEA(int dateFormat) const
 {
     wxDateTime utcTime = m_utcTime;
 
-    if (!IsReasonableUtcDateTime(utcTime)) {
+    const wxTimeSpan maxGpsAge = wxTimeSpan::Seconds(5);
+    const bool hasFreshNmeaUtc =
+        IsReasonableUtcDateTime(utcTime) &&
+        m_lastUtcNmeaUpdate.IsValid() &&
+        (wxDateTime::Now() - m_lastUtcNmeaUpdate) <= maxGpsAge;
+
+    if (!hasFreshNmeaUtc) {
         utcTime = GetComputerUtcDateTime();
     }
 
@@ -387,7 +401,13 @@ wxString ooObservations::GetUtcTimeFromNMEA(int dateFormat) const
 
 wxString ooObservations::GetUtcTimeSourceLabel() const
 {
-    if (IsReasonableUtcDateTime(m_utcTime)) {
+    const wxTimeSpan maxGpsAge = wxTimeSpan::Seconds(5);
+    const bool hasFreshNmeaUtc =
+        IsReasonableUtcDateTime(m_utcTime) &&
+        m_lastUtcNmeaUpdate.IsValid() &&
+        (wxDateTime::Now() - m_lastUtcNmeaUpdate) <= maxGpsAge;
+
+    if (hasFreshNmeaUtc) {
         return "GPS UTC";
     }
 

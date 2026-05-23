@@ -22,10 +22,12 @@ private:
     void OnUndockPanel(wxCommandEvent& event);
     void UpdateObservationStatus();
     void UpdateObservationDuration();
+    void UpdateUtcDisplay();
 
     wxStaticText* m_titleText;
     wxStaticText* m_projectText;
     wxButton* m_buttonStartStop;
     wxStaticText* m_timerText;
-        wxTimer m_timer;
+    wxStaticText* m_utcText;
+    wxTimer m_timer;
 };
