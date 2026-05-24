@@ -87,6 +87,27 @@ wxArrayString ooScientificPackage::GetDefaultDailyFolders()
     return folders;
 }
 
+wxArrayString ooScientificPackage::GetDefaultWorkingFolders()
+{
+    wxArrayString folders;
+    folders.Add("02_working");
+    folders.Add("02_working/notes");
+    folders.Add("02_working/maps");
+    folders.Add("02_working/reports");
+    folders.Add("02_working/tables");
+    folders.Add("02_working/working_files");
+    return folders;
+}
+
+wxArrayString ooScientificPackage::GetDefaultRawDataFolders()
+{
+    wxArrayString folders;
+    folders.Add("00_exports/raw_data");
+    folders.Add("00_exports/raw_data/nmea");
+    folders.Add("00_exports/raw_data/tracks");
+    return folders;
+}
+
 wxString ooScientificPackage::GetDefaultTemplatePath()
 {
     if (g_PrivateDataDir) {
@@ -118,43 +139,134 @@ wxString ooScientificPackage::GetDefaultTemplatePath()
     return wxEmptyString;
 }
 
-wxArrayString ooScientificPackage::ReadDailyFoldersFromTemplate(const wxString& templatePath)
+static wxArrayString ReadFolderNamesFromTemplateSection(
+    const wxString& templatePath,
+    const wxString& sectionName,
+    const wxString& attributeName,
+    const wxArrayString& fallbackFolders)
 {
     wxArrayString folders;
 
     if (templatePath.IsEmpty()) {
-        return GetDefaultDailyFolders();
+        return fallbackFolders;
     }
 
     wxXmlDocument xmlDoc;
     if (!xmlDoc.Load(templatePath)) {
-        return GetDefaultDailyFolders();
+        return fallbackFolders;
     }
 
     wxXmlNode* root = xmlDoc.GetRoot();
-    if (!root || root->GetName() != "scientific_package_template") {
-        return GetDefaultDailyFolders();
+    if (!root || root->GetName() != "data_package_template") {
+        return fallbackFolders;
     }
 
-    for (wxXmlNode* node = root->GetChildren(); node; node = node->GetNext()) {
-        if (node->GetName() != "daily_media_folder") {
+    for (wxXmlNode* sectionNode = root->GetChildren();
+         sectionNode;
+         sectionNode = sectionNode->GetNext()) {
+        if (sectionNode->GetName() != sectionName) {
             continue;
         }
 
-        wxString name = node->GetAttribute("name", "");
-        name.Trim(true);
-        name.Trim(false);
+        for (wxXmlNode* folderNode = sectionNode->GetChildren();
+             folderNode;
+             folderNode = folderNode->GetNext()) {
+            if (folderNode->GetName() != "folder") {
+                continue;
+            }
 
-        if (!name.IsEmpty()) {
-            folders.Add(SanitizeFileName(name));
+            wxString name = folderNode->GetAttribute(attributeName, "");
+            name.Trim(true);
+            name.Trim(false);
+
+            if (!name.IsEmpty()) {
+                folders.Add(name);
+            }
         }
     }
 
     if (folders.IsEmpty()) {
-        return GetDefaultDailyFolders();
+        return fallbackFolders;
     }
 
     return folders;
+}
+
+static wxArrayString ReadFolderPathsFromTemplateSection(
+    const wxString& templatePath,
+    const wxString& sectionName,
+    const wxArrayString& fallbackFolders)
+{
+    wxArrayString folders;
+
+    if (templatePath.IsEmpty()) {
+        return fallbackFolders;
+    }
+
+    wxXmlDocument xmlDoc;
+    if (!xmlDoc.Load(templatePath)) {
+        return fallbackFolders;
+    }
+
+    wxXmlNode* root = xmlDoc.GetRoot();
+    if (!root || root->GetName() != "data_package_template") {
+        return fallbackFolders;
+    }
+
+    for (wxXmlNode* sectionNode = root->GetChildren();
+         sectionNode;
+         sectionNode = sectionNode->GetNext()) {
+        if (sectionNode->GetName() != sectionName) {
+            continue;
+        }
+
+        for (wxXmlNode* folderNode = sectionNode->GetChildren();
+             folderNode;
+             folderNode = folderNode->GetNext()) {
+            if (folderNode->GetName() != "folder") {
+                continue;
+            }
+
+            wxString path = folderNode->GetAttribute("path", "");
+            path.Trim(true);
+            path.Trim(false);
+
+            if (!path.IsEmpty()) {
+                folders.Add(path);
+            }
+        }
+    }
+
+    if (folders.IsEmpty()) {
+        return fallbackFolders;
+    }
+
+    return folders;
+}
+
+wxArrayString ooScientificPackage::ReadDailyFoldersFromTemplate(const wxString& templatePath)
+{
+    return ReadFolderNamesFromTemplateSection(
+        templatePath,
+        "daily_media",
+        "name",
+        GetDefaultDailyFolders());
+}
+
+wxArrayString ooScientificPackage::ReadWorkingFoldersFromTemplate(const wxString& templatePath)
+{
+    return ReadFolderPathsFromTemplateSection(
+        templatePath,
+        "working",
+        GetDefaultWorkingFolders());
+}
+
+wxArrayString ooScientificPackage::ReadRawDataFoldersFromTemplate(const wxString& templatePath)
+{
+    return ReadFolderPathsFromTemplateSection(
+        templatePath,
+        "raw_data",
+        GetDefaultRawDataFolders());
 }
 
 bool ooScientificPackage::EnsureDirectory(const wxString& path, wxString& errorMessage)
@@ -375,6 +487,45 @@ bool ooScientificPackage::CreateDailyFolders(
     return true;
 }
 
+bool ooScientificPackage::CreateStaticFolders(
+    const wxString& packageDir,
+    const wxArrayString& folderPaths,
+    wxString& errorMessage)
+{
+    for (size_t i = 0; i < folderPaths.GetCount(); ++i) {
+        wxString folderPath = folderPaths[i];
+        folderPath.Trim(true);
+        folderPath.Trim(false);
+
+        if (folderPath.IsEmpty()) {
+            continue;
+        }
+
+        folderPath.Replace("\\", "/");
+
+        wxString currentPath = packageDir;
+        wxArrayString parts = wxSplit(folderPath, '/');
+
+        for (size_t j = 0; j < parts.GetCount(); ++j) {
+            wxString part = parts[j];
+            part.Trim(true);
+            part.Trim(false);
+
+            if (part.IsEmpty()) {
+                continue;
+            }
+
+            currentPath = JoinPath(currentPath, part);
+
+            if (!EnsureDirectory(currentPath, errorMessage)) {
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 bool ooScientificPackage::ExportObservations(
     ooObservations* observations,
     const wxString& packageDir,
@@ -426,6 +577,129 @@ bool ooScientificPackage::ExportObservations(
         }
 
         observations->SaveToXML(output.GetFile(), true);
+    }
+
+    return true;
+}
+
+bool ooScientificPackage::CopyNmeaRecordings(
+    ooObservations* observations,
+    const wxString& packageDir,
+    wxString& errorMessage)
+{
+    if (!observations) {
+        return true;
+    }
+
+    if (!g_PrivateDataDir || g_PrivateDataDir->IsEmpty()) {
+        return true;
+    }
+
+    int dateCol = -1;
+    int timestampCol = -1;
+    int nmeaRecordingCol = -1;
+
+    const int C = observations->GetProject().GetColCount();
+
+    for (int c = 0; c < C; ++c) {
+        const wxString fieldType = observations->GetProject().GetColFieldTypes()[c];
+
+        if (fieldType.IsSameAs("Start Date")) {
+            dateCol = c;
+        } else if (fieldType.IsSameAs("Start Timestamp UTC")) {
+            timestampCol = c;
+        } else if (fieldType.IsSameAs("NMEA Recording")) {
+            nmeaRecordingCol = c;
+        }
+    }
+
+    if (nmeaRecordingCol < 0) {
+        return true;
+    }
+
+    const int R = observations->GetNumberRows();
+
+    for (int r = 0; r < R; ++r) {
+        wxString recordingName = observations->GetValue(r, nmeaRecordingCol);
+        recordingName.Trim(true);
+        recordingName.Trim(false);
+
+        if (recordingName.IsEmpty() || recordingName.IsSameAs("no data")) {
+            continue;
+        }
+
+        wxFileName recordingFile(recordingName);
+        recordingName = recordingFile.GetFullName();
+
+        if (recordingName.IsEmpty()) {
+            continue;
+        }
+
+        wxString dateValue;
+
+        if (dateCol >= 0) {
+            dateValue = observations->GetValue(r, dateCol);
+            dateValue.Trim(true);
+            dateValue.Trim(false);
+        }
+
+        if (dateValue.IsEmpty() && timestampCol >= 0) {
+            wxString timestamp = observations->GetValue(r, timestampCol);
+            timestamp.Trim(true);
+            timestamp.Trim(false);
+
+            if (timestamp.Length() >= 10) {
+                dateValue = timestamp.Left(10);
+            }
+        }
+
+        if (dateValue.Length() >= 10) {
+            dateValue = dateValue.Left(10);
+            dateValue.Replace("/", "-");
+        }
+
+        if (dateValue.IsEmpty()) {
+            continue;
+        }
+
+        const wxString sourcePath = JoinPath(
+            JoinPath(
+                JoinPath(*g_PrivateDataDir, "NMEArecordings"),
+                dateValue),
+            recordingName);
+
+        if (!wxFileExists(sourcePath)) {
+            continue;
+        }
+
+        const wxString dailyNmeaDir = JoinPath(
+            JoinPath(
+                JoinPath(packageDir, "01_daily_media"),
+                dateValue),
+            "nmea");
+
+        const wxString rawNmeaDir = JoinPath(
+            JoinPath(
+                JoinPath(packageDir, "00_exports"),
+                "raw_data"),
+            "nmea");
+
+        if (!EnsureDirectory(dailyNmeaDir, errorMessage)) {
+            return false;
+        }
+
+        if (!EnsureDirectory(rawNmeaDir, errorMessage)) {
+            return false;
+        }
+
+        const wxString dailyDestination = JoinPath(dailyNmeaDir, recordingName);
+        const wxString rawDestination = JoinPath(rawNmeaDir, recordingName);
+
+        if (!wxFileExists(dailyDestination)) {
+            wxCopyFile(sourcePath, dailyDestination, false);
+        }
+
+        wxCopyFile(sourcePath, rawDestination, true);
     }
 
     return true;
@@ -644,17 +918,18 @@ bool ooScientificPackage::Create(
     if (!EnsureDirectory(JoinPath(packageDir, "00_exports"), errorMessage)) return false;
     if (!EnsureDirectory(JoinPath(JoinPath(packageDir, "00_exports"), "metadata"), errorMessage)) return false;
     if (!EnsureDirectory(JoinPath(packageDir, "01_daily_media"), errorMessage)) return false;
-    if (!EnsureDirectory(JoinPath(packageDir, "02_working"), errorMessage)) return false;
-    if (!EnsureDirectory(JoinPath(JoinPath(packageDir, "02_working"), "notes"), errorMessage)) return false;
-    if (!EnsureDirectory(JoinPath(JoinPath(packageDir, "02_working"), "maps"), errorMessage)) return false;
-    if (!EnsureDirectory(JoinPath(JoinPath(packageDir, "02_working"), "reports"), errorMessage)) return false;
-    if (!EnsureDirectory(JoinPath(JoinPath(packageDir, "02_working"), "tables"), errorMessage)) return false;
-    if (!EnsureDirectory(JoinPath(JoinPath(packageDir, "02_working"), "working_files"), errorMessage)) return false;
+
+    const wxString templatePath = GetDefaultTemplatePath();
 
     wxArrayString dates = GetObservationDates(observations);
-    wxArrayString dailyFolders = ReadDailyFoldersFromTemplate(GetDefaultTemplatePath());
+    wxArrayString dailyFolders = ReadDailyFoldersFromTemplate(templatePath);
+    wxArrayString workingFolders = ReadWorkingFoldersFromTemplate(templatePath);
+    wxArrayString rawDataFolders = ReadRawDataFoldersFromTemplate(templatePath);
 
+    if (!CreateStaticFolders(packageDir, workingFolders, errorMessage)) return false;
+    if (!CreateStaticFolders(packageDir, rawDataFolders, errorMessage)) return false;
     if (!CreateDailyFolders(packageDir, dates, dailyFolders, errorMessage)) return false;
+    if (!CopyNmeaRecordings(observations, packageDir, errorMessage)) return false;
     if (!ExportObservations(observations, packageDir, errorMessage)) return false;
     if (!WriteGeneratedFilesWarning(packageDir, errorMessage)) return false;
     if (!WriteReadme(observations, packageDir, errorMessage)) return false;
@@ -691,13 +966,18 @@ bool ooScientificPackage::Update(
     if (!EnsureDirectory(JoinPath(packageDir, "00_exports"), errorMessage)) return false;
     if (!EnsureDirectory(JoinPath(JoinPath(packageDir, "00_exports"), "metadata"), errorMessage)) return false;
     if (!EnsureDirectory(JoinPath(packageDir, "01_daily_media"), errorMessage)) return false;
-    if (!EnsureDirectory(JoinPath(packageDir, "02_working"), errorMessage)) return false;
-    if (!EnsureDirectory(JoinPath(JoinPath(packageDir, "02_working"), "notes"), errorMessage)) return false;
+
+    const wxString templatePath = GetDefaultTemplatePath();
 
     wxArrayString dates = GetObservationDates(observations);
-    wxArrayString dailyFolders = ReadDailyFoldersFromTemplate(GetDefaultTemplatePath());
+    wxArrayString dailyFolders = ReadDailyFoldersFromTemplate(templatePath);
+    wxArrayString workingFolders = ReadWorkingFoldersFromTemplate(templatePath);
+    wxArrayString rawDataFolders = ReadRawDataFoldersFromTemplate(templatePath);
 
+    if (!CreateStaticFolders(packageDir, workingFolders, errorMessage)) return false;
+    if (!CreateStaticFolders(packageDir, rawDataFolders, errorMessage)) return false;
     if (!CreateDailyFolders(packageDir, dates, dailyFolders, errorMessage)) return false;
+    if (!CopyNmeaRecordings(observations, packageDir, errorMessage)) return false;
     if (!ExportObservations(observations, packageDir, errorMessage)) return false;
     if (!WriteGeneratedFilesWarning(packageDir, errorMessage)) return false;
     if (!WriteReadme(observations, packageDir, errorMessage)) return false;

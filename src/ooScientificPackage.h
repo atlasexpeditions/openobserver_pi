@@ -37,7 +37,11 @@ private:
     static wxArrayString GetObservationIdsOrFallbacks(ooObservations* observations);
 
     static wxArrayString GetDefaultDailyFolders();
+    static wxArrayString GetDefaultWorkingFolders();
+    static wxArrayString GetDefaultRawDataFolders();
     static wxArrayString ReadDailyFoldersFromTemplate(const wxString& templatePath);
+    static wxArrayString ReadWorkingFoldersFromTemplate(const wxString& templatePath);
+    static wxArrayString ReadRawDataFoldersFromTemplate(const wxString& templatePath);
     static wxString GetDefaultTemplatePath();
     static bool CopyTemplateUsed(const wxString& packageDir, wxString& errorMessage);
 
@@ -50,7 +54,17 @@ private:
         const wxArrayString& dailyFolders,
         wxString& errorMessage);
 
+    static bool CreateStaticFolders(
+        const wxString& packageDir,
+        const wxArrayString& folderPaths,
+        wxString& errorMessage);
+
     static bool ExportObservations(
+        ooObservations* observations,
+        const wxString& packageDir,
+        wxString& errorMessage);
+
+    static bool CopyNmeaRecordings(
         ooObservations* observations,
         const wxString& packageDir,
         wxString& errorMessage);
