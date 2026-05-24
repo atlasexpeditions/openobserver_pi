@@ -1357,6 +1357,10 @@ void ooControlDialogImpl::OnObservationsGridCellChange(wxGridEvent& event)
         m_Observations->AddMarks(r);
     }
 
+    if (g_openobserver_pi) {
+        g_openobserver_pi->RefreshObservationDisplay();
+    }
+
     event.Skip();
 }
 

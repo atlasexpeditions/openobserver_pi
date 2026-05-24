@@ -191,6 +191,7 @@ public:
     void SetProject(const wxString& projectName, const wxColor& projectColor, int observationsIndex);
     void RefreshObservationDisplay();
     void UndockAuiPanel();
+    void UndockAuiObservationsPanel();
     void ShowMiniPanel();
     void ShowObservationsPanel();
 
@@ -222,6 +223,7 @@ public:
     int     m_iCallerId;
     bool    m_bShowMainDialog;
     bool    m_useAuiPanel;
+    bool    m_showAuiObservationsPanel;
     int     m_openobserver_button_id;
     int     m_observationsIndex, m_observationsChoiceCount;
     wxRect  m_dialogPosition, m_miniDialogPosition;
