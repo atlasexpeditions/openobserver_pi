@@ -306,7 +306,7 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 	m_buttonCreateScientificPackage = new wxButton(
     m_panelObservations,
     wxID_ANY,
-    _("Create Scientific Package"),
+    _("Create Data Package"),
     wxDefaultPosition,
     wxDefaultSize,
     0
@@ -321,7 +321,7 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 	m_buttonUpdateScientificPackage = new wxButton(
     	m_panelObservations,
     	wxID_ANY,
-    	_("Update Scientific Package"),
+    	_("Update Data Package"),
     	wxDefaultPosition,
     	wxDefaultSize,
     	0

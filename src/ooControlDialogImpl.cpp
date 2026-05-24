@@ -1085,17 +1085,17 @@ void ooControlDialogImpl::OnButtonClickCreateScientificPackage(wxCommandEvent& e
     if (!m_Observations) return;
 
     const wxString message =
-        _("Open Observer is going to create a new scientific package folder containing:\n\n"
+        _("Open Observer is going to create a new data package folder containing:\n\n"
           "• Your current project's observations exported as CSV, GeoJSON and XML.\n\n"
           "• One daily folder for each observation day.\n\n"
           "• Media folders inside each daily folder, such as photos, audio, video, samples, documents, notes and other.\n\n"
           "• Helpful metadata and README files explaining the package structure.\n\n"
           "Open Observer will not move, delete or overwrite any media files.\n\n"
-          "Ready to prepare your scientific package?");
+          "Ready to prepare your data package?");
 
     const int answer = wxMessageBox(
         message,
-        _("Create Scientific Package"),
+        _("Create Data Package"),
         wxYES_NO | wxICON_INFORMATION,
         this);
 
@@ -1103,7 +1103,7 @@ void ooControlDialogImpl::OnButtonClickCreateScientificPackage(wxCommandEvent& e
 
     wxDirDialog dirDialog(
         this,
-        _("Choose a destination folder for the scientific package"),
+        _("Choose a destination folder for the data package"),
         wxEmptyString,
         wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
 
@@ -1118,8 +1118,8 @@ void ooControlDialogImpl::OnButtonClickCreateScientificPackage(wxCommandEvent& e
             createdPackagePath,
             errorMessage)) {
         wxMessageBox(
-            _("Unable to create scientific package:\n\n") + errorMessage,
-            _("Create Scientific Package"),
+            _("Unable to create data package:\n\n") + errorMessage,
+            _("Create Data Package"),
             wxOK | wxICON_ERROR,
             this);
         return;
@@ -1127,7 +1127,7 @@ void ooControlDialogImpl::OnButtonClickCreateScientificPackage(wxCommandEvent& e
 
     wxMessageBox(
         _("Scientific package created successfully:\n\n") + createdPackagePath,
-        _("Create Scientific Package"),
+        _("Create Data Package"),
         wxOK | wxICON_INFORMATION,
         this);
 
@@ -1141,14 +1141,14 @@ void ooControlDialogImpl::OnButtonClickUpdateScientificPackage(wxCommandEvent& e
     if (!m_Observations) return;
 
     const wxString message =
-        _("Open Observer is going to update the selected scientific package with your current observations.\n\n"
+        _("Open Observer is going to update the selected data package with your current observations.\n\n"
           "It may refresh exports, add missing daily folders, and update metadata files.\n\n"
           "Open Observer will not delete, move or overwrite any media files, documents or custom folders.\n\n"
-          "Ready to update your scientific package?");
+          "Ready to update your data package?");
 
     const int answer = wxMessageBox(
         message,
-        _("Update Scientific Package"),
+        _("Update Data Package"),
         wxYES_NO | wxICON_INFORMATION,
         this);
 
@@ -1156,7 +1156,7 @@ void ooControlDialogImpl::OnButtonClickUpdateScientificPackage(wxCommandEvent& e
 
     wxDirDialog dirDialog(
         this,
-        _("Choose the scientific package folder to update"),
+        _("Choose the data package folder to update"),
         wxEmptyString,
         wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
 
@@ -1169,8 +1169,8 @@ void ooControlDialogImpl::OnButtonClickUpdateScientificPackage(wxCommandEvent& e
             dirDialog.GetPath(),
             errorMessage)) {
         wxMessageBox(
-            _("Unable to update scientific package:\n\n") + errorMessage,
-            _("Update Scientific Package"),
+            _("Unable to update data package:\n\n") + errorMessage,
+            _("Update Data Package"),
             wxOK | wxICON_ERROR,
             this);
         return;
@@ -1178,7 +1178,7 @@ void ooControlDialogImpl::OnButtonClickUpdateScientificPackage(wxCommandEvent& e
 
     wxMessageBox(
         _("Scientific package updated successfully:\n\n") + dirDialog.GetPath(),
-        _("Update Scientific Package"),
+        _("Update Data Package"),
         wxOK | wxICON_INFORMATION,
         this);
 
