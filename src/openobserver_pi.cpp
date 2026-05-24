@@ -144,6 +144,7 @@ openobserver_pi::openobserver_pi(void *ppimgr)
       m_ooAuiObservationsPanel(nullptr),
       m_useAuiPanel(false),
       m_showAuiObservationsPanel(false),
+      m_recordNmeaStreamDuringEachObservation(false),
       m_currentProjectName(wxEmptyString),
       m_currentProjectColor(*wxBLACK),
       m_showMiniPanelItem(-1),
@@ -545,7 +546,7 @@ void openobserver_pi::LateInit(void)
 
 bool openobserver_pi::DeInit(void)
 {
-
+    StopNmeaRecordingIfNeeded();
 
     if (m_ooControlDialogImpl)
     {
@@ -740,6 +741,13 @@ void openobserver_pi::SetNMEASentence(wxString& sentence)
         m_ooObservations->SetNmeaSentFix(sentence);
     if (m_ooControlDialogImpl)
         m_ooControlDialogImpl->SetNmeaSentence(sentence);
+
+    if (m_recordNmeaStreamDuringEachObservation &&
+        m_ooObservations &&
+        m_ooObservations->IsObserving() &&
+        m_nmeaRecorder.IsRecording()) {
+        m_nmeaRecorder.WriteSentence(sentence);
+    }
 }
 
 void openobserver_pi::SetCurrentViewPort(PlugIn_ViewPort& vp)
@@ -765,6 +773,23 @@ void openobserver_pi::RefreshObservationDisplay()
 
     if (m_ooAuiObservationsPanel) {
         m_ooAuiObservationsPanel->RefreshObservations();
+    }
+}
+
+void openobserver_pi::StartNmeaRecordingIfNeeded()
+{
+    if (!m_recordNmeaStreamDuringEachObservation) return;
+    if (!m_ooObservations) return;
+    if (!m_ooObservations->IsObserving()) return;
+    if (!g_PrivateDataDir) return;
+
+    m_nmeaRecorder.StartRecording(*g_PrivateDataDir);
+}
+
+void openobserver_pi::StopNmeaRecordingIfNeeded()
+{
+    if (m_nmeaRecorder.IsRecording()) {
+        m_nmeaRecorder.StopRecording();
     }
 }
 
@@ -1032,6 +1057,10 @@ void openobserver_pi::ShowPreferencesDialog(wxWindow *parent)
         new wxCheckBox(&dialog, wxID_ANY, _("Use dockable observations table"));
     showAuiObservationsPanelCheckBox->SetValue(m_showAuiObservationsPanel);
 
+    wxCheckBox* recordNmeaStreamCheckBox =
+        new wxCheckBox(&dialog, wxID_ANY, _("Record NMEA stream during each observation"));
+    recordNmeaStreamCheckBox->SetValue(m_recordNmeaStreamDuringEachObservation);
+
     wxStaticText* infoText = new wxStaticText(
         &dialog,
         wxID_ANY,
@@ -1039,6 +1068,7 @@ void openobserver_pi::ShowPreferencesDialog(wxWindow *parent)
 
     topSizer->Add(useAuiPanelCheckBox, 0, wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 10);
     topSizer->Add(showAuiObservationsPanelCheckBox, 0, wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 10);
+    topSizer->Add(recordNmeaStreamCheckBox, 0, wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 10);
     topSizer->Add(infoText, 0, wxLEFT | wxRIGHT | wxTOP | wxBOTTOM | wxEXPAND, 10);
 
     wxStdDialogButtonSizer* buttonSizer =
@@ -1054,18 +1084,25 @@ void openobserver_pi::ShowPreferencesDialog(wxWindow *parent)
     bool newUseAuiPanel = useAuiPanelCheckBox->GetValue();
     bool newShowAuiObservationsPanel =
         showAuiObservationsPanelCheckBox->GetValue();
+    bool newRecordNmeaStream =
+        recordNmeaStreamCheckBox->GetValue();
 
     const bool useAuiPanelChanged = (newUseAuiPanel != m_useAuiPanel);
     const bool showAuiObservationsPanelChanged =
         (newShowAuiObservationsPanel != m_showAuiObservationsPanel);
+    const bool recordNmeaStreamChanged =
+        (newRecordNmeaStream != m_recordNmeaStreamDuringEachObservation);
 
-    if (!useAuiPanelChanged && !showAuiObservationsPanelChanged) {
+    if (!useAuiPanelChanged &&
+        !showAuiObservationsPanelChanged &&
+        !recordNmeaStreamChanged) {
         SaveConfig();
         return;
     }
 
     m_useAuiPanel = newUseAuiPanel;
     m_showAuiObservationsPanel = newShowAuiObservationsPanel;
+    m_recordNmeaStreamDuringEachObservation = newRecordNmeaStream;
 
     if (m_useAuiPanel) {
         if (!m_ooAuiPanel) {
@@ -1202,6 +1239,8 @@ void openobserver_pi::SaveConfig()
     m_pConfig->Write("MiniDialogHeight", m_miniDialogPosition.height);
     m_pConfig->Write("UseAuiPanel", m_useAuiPanel);
     m_pConfig->Write("ShowAuiObservationsPanel", m_showAuiObservationsPanel);
+    m_pConfig->Write("RecordNmeaStreamDuringEachObservation",
+                     m_recordNmeaStreamDuringEachObservation);
 }
 
 void openobserver_pi::LoadConfig()
@@ -1234,6 +1273,9 @@ void openobserver_pi::LoadConfig()
     m_pConfig->Read("MiniDialogHeight", &m_miniDialogPosition.height, -1);
     m_pConfig->Read("UseAuiPanel", &m_useAuiPanel, false);
     m_pConfig->Read("ShowAuiObservationsPanel", &m_showAuiObservationsPanel, false);
+    m_pConfig->Read("RecordNmeaStreamDuringEachObservation",
+                    &m_recordNmeaStreamDuringEachObservation,
+                    false);
 }
 
 static wxString GetHumanReadableNmeaFieldDescription(const wxString& sentenceId, int fieldIndex)

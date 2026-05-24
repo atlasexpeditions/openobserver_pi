@@ -111,8 +111,10 @@ void ooAuiPanel::OnStartStop(wxCommandEvent& event)
 
     if (g_openobserver_pi->m_ooObservations->IsObserving()) {
         g_openobserver_pi->m_ooObservations->StopObservation();
+        g_openobserver_pi->StopNmeaRecordingIfNeeded();
     } else {
         g_openobserver_pi->m_ooObservations->StartObservation();
+        g_openobserver_pi->StartNmeaRecordingIfNeeded();
     }
 
     UpdateObservationStatus();

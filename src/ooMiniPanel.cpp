@@ -152,6 +152,7 @@ void ooMiniPanel::StartOrStopObservation()
   if (g_openobserver_pi->m_ooObservations->IsObserving()) {
     // stop observation
     g_openobserver_pi->m_ooObservations->StopObservation();
+    g_openobserver_pi->StopNmeaRecordingIfNeeded();
 
     // issue event
     wxCommandEvent event(OBSERVATION_STOPPED, GetId());
@@ -160,6 +161,7 @@ void ooMiniPanel::StartOrStopObservation()
   } else {
     // start observation
     g_openobserver_pi->m_ooObservations->StartObservation();
+    g_openobserver_pi->StartNmeaRecordingIfNeeded();
 
     // issue event
     wxCommandEvent event(OBSERVATION_STARTED, GetId());

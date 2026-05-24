@@ -142,6 +142,7 @@ std::cout << x  << std::endl ; } while (0)
 
 #include "ooObservations.h"
 #include "ooAuiPanel.h"
+#include "ooNmeaRecorder.h"
 #include "globals.h"
 
 //----------------------------------------------------------------------------------------------------------
@@ -190,6 +191,8 @@ public:
     
     void SetProject(const wxString& projectName, const wxColor& projectColor, int observationsIndex);
     void RefreshObservationDisplay();
+    void StartNmeaRecordingIfNeeded();
+    void StopNmeaRecordingIfNeeded();
     void UndockAuiPanel();
     void UndockAuiObservationsPanel();
     void ShowMiniPanel();
@@ -224,6 +227,8 @@ public:
     bool    m_bShowMainDialog;
     bool    m_useAuiPanel;
     bool    m_showAuiObservationsPanel;
+    bool    m_recordNmeaStreamDuringEachObservation;
+    ooNmeaRecorder m_nmeaRecorder;
     int     m_openobserver_button_id;
     int     m_observationsIndex, m_observationsChoiceCount;
     wxRect  m_dialogPosition, m_miniDialogPosition;

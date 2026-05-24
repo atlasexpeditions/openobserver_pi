@@ -186,6 +186,7 @@ set(SRCS
     src/ooMiniPanel.cpp
     src/ooAuiPanel.cpp
     src/ooAuiObservationsPanel.cpp
+    src/ooNmeaRecorder.cpp
     src/tpicons.cpp
     src/tpUtils.cpp
 )
@@ -200,6 +201,7 @@ set(HDRS
     src/ooMiniPanel.h
     src/ooAuiPanel.h
     src/ooAuiObservationsPanel.h
+    src/ooNmeaRecorder.h
     src/tpicons.h
     src/tpIconCombo.h
     src/tpUtils.h
