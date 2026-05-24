@@ -789,7 +789,21 @@ void openobserver_pi::StartNmeaRecordingIfNeeded()
 void openobserver_pi::StopNmeaRecordingIfNeeded()
 {
     if (m_nmeaRecorder.IsRecording()) {
-        m_nmeaRecorder.StopRecording();
+        const bool hadRecordedData = m_nmeaRecorder.HasRecordedData();
+        const wxString recordingPath = m_nmeaRecorder.StopRecording();
+
+        if (m_ooObservations) {
+            if (!recordingPath.IsEmpty()) {
+                wxFileName recordingFile(recordingPath);
+                const wxString storedRecordingName = recordingFile.GetFullName();
+
+                m_ooObservations->SetCurrentObservationNmeaRecording(storedRecordingName);
+                RefreshObservationDisplay();
+            } else if (!hadRecordedData) {
+                m_ooObservations->SetCurrentObservationNmeaRecording("no data");
+                RefreshObservationDisplay();
+            }
+        }
     }
 }
 

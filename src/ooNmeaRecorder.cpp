@@ -19,8 +19,10 @@ static wxString EnsureTrailingPathSeparator(const wxString& path)
 }
 
 ooNmeaRecorder::ooNmeaRecorder()
-    : m_currentFilePath(wxEmptyString),
-      m_isRecording(false)
+    : m_tempFilePath(wxEmptyString),
+      m_finalFilePath(wxEmptyString),
+      m_isRecording(false),
+      m_hasRecordedData(false)
 {
 }
 
@@ -58,33 +60,65 @@ bool ooNmeaRecorder::StartRecording(const wxString& openObserverPrivateDataDir)
         }
     }
 
-    wxString candidatePath = dayFolder + fileBaseName + ".nmea";
+    wxString finalPath = dayFolder + fileBaseName + ".nmea";
+    wxString tempPath = dayFolder + fileBaseName + ".recording";
 
     int suffix = 1;
-    while (wxFileExists(candidatePath)) {
-        candidatePath = dayFolder + fileBaseName +
-                        wxString::Format("_%d.nmea", suffix);
+    while (wxFileExists(finalPath) || wxFileExists(tempPath)) {
+        finalPath = dayFolder + fileBaseName +
+                    wxString::Format("_%d.nmea", suffix);
+        tempPath = dayFolder + fileBaseName +
+                   wxString::Format("_%d.recording", suffix);
         suffix++;
     }
 
-    if (!m_file.Open(candidatePath, "w")) {
+    if (!m_file.Open(tempPath, "w")) {
         return false;
     }
 
-    m_currentFilePath = candidatePath;
+    m_tempFilePath = tempPath;
+    m_finalFilePath = finalPath;
     m_isRecording = true;
+    m_hasRecordedData = false;
 
     return true;
 }
 
-void ooNmeaRecorder::StopRecording()
+wxString ooNmeaRecorder::StopRecording()
 {
+    const wxString tempPath = m_tempFilePath;
+    const wxString finalPath = m_finalFilePath;
+
     if (m_file.IsOpened()) {
         m_file.Flush();
         m_file.Close();
     }
 
     m_isRecording = false;
+
+    if (!m_hasRecordedData) {
+        if (!tempPath.IsEmpty() && wxFileExists(tempPath)) {
+            wxRemoveFile(tempPath);
+        }
+
+        m_tempFilePath = wxEmptyString;
+        m_finalFilePath = wxEmptyString;
+        return wxEmptyString;
+    }
+
+    if (!tempPath.IsEmpty() && !finalPath.IsEmpty()) {
+        if (wxFileExists(finalPath)) {
+            wxRemoveFile(finalPath);
+        }
+
+        if (wxRenameFile(tempPath, finalPath)) {
+            m_tempFilePath = wxEmptyString;
+            m_finalFilePath = finalPath;
+            return finalPath;
+        }
+    }
+
+    return wxEmptyString;
 }
 
 void ooNmeaRecorder::WriteSentence(const wxString& sentence)
@@ -104,6 +138,7 @@ void ooNmeaRecorder::WriteSentence(const wxString& sentence)
     }
 
     m_file.Write(line, wxConvUTF8);
+    m_hasRecordedData = true;
 }
 
 bool ooNmeaRecorder::IsRecording() const
@@ -111,7 +146,16 @@ bool ooNmeaRecorder::IsRecording() const
     return m_isRecording;
 }
 
+bool ooNmeaRecorder::HasRecordedData() const
+{
+    return m_hasRecordedData;
+}
+
 wxString ooNmeaRecorder::GetCurrentFilePath() const
 {
-    return m_currentFilePath;
+    if (m_isRecording) {
+        return m_tempFilePath;
+    }
+
+    return m_finalFilePath;
 }

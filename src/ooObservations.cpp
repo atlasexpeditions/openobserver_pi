@@ -599,6 +599,27 @@ void ooObservations::StopObservation()
     m_IsObserving = false;
 }
 
+void ooObservations::SetCurrentObservationNmeaRecording(const wxString& recordingPath)
+{
+    if (recordingPath.IsEmpty()) return;
+    if (GetNumberRows() <= 0) return;
+
+    const int C = GetNumberCols();
+    if (m_project.GetColCount() != C) {
+        wxLogError("m_col_field_types.GetCount() does not match number of observation columns");
+        return;
+    }
+
+    for (int c = 0; c < C; ++c) {
+        const wxString field_type = m_project.GetColFieldTypes()[c];
+
+        if (field_type.IsSameAs("NMEA Recording")) {
+            SetValue(0, c, recordingPath);
+            return;
+        }
+    }
+}
+
 void ooObservations::AddObservation(double lat, double lon)
 {
     if (m_IsObserving) return;
@@ -1278,6 +1299,7 @@ wxArrayString ooObservations::GetObservationFieldTypes()
     observationFieldTypes.Add("End Longitude");
     observationFieldTypes.Add("Observation Duration");
     observationFieldTypes.Add("Mark GUID");
+    observationFieldTypes.Add("NMEA Recording");
     observationFieldTypes.Add("Text");
     observationFieldTypes.Add("NMEA AWS");
     observationFieldTypes.Add("NMEA AWA");

@@ -134,6 +134,7 @@ public:
 
     void StartObservation();
     void StopObservation();
+    void SetCurrentObservationNmeaRecording(const wxString& recordingPath);
     void AddObservation(double lat, double lon);
 
     bool IsObserving() const;

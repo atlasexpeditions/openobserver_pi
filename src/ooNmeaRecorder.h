@@ -10,15 +10,18 @@ public:
     ~ooNmeaRecorder();
 
     bool StartRecording(const wxString& openObserverPrivateDataDir);
-    void StopRecording();
+    wxString StopRecording();
 
     void WriteSentence(const wxString& sentence);
 
     bool IsRecording() const;
+    bool HasRecordedData() const;
     wxString GetCurrentFilePath() const;
 
 private:
     wxFFile m_file;
-    wxString m_currentFilePath;
+    wxString m_tempFilePath;
+    wxString m_finalFilePath;
     bool m_isRecording;
+    bool m_hasRecordedData;
 };
