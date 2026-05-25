@@ -116,6 +116,7 @@ class ooControlDialogDef : public wxDialog
 		virtual void OnButtonClickSaveObservation( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickImportObservations( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickExportObservations( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickDataPackage( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickCreateScientificPackage( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickUpdateScientificPackage( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnChoiceObservationsChanged( wxCommandEvent& event ) { event.Skip(); }

@@ -1078,6 +1078,74 @@ void ooControlDialogImpl::OnButtonClickExportObservations( wxCommandEvent& event
 else                                                m_Observations->SaveToCSV(output_stream.GetFile(), true);
 }
 
+void ooControlDialogImpl::OnButtonClickDataPackage(wxCommandEvent& event)
+{
+    wxDialog dialog(
+        this,
+        wxID_ANY,
+        _("Data Package"),
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
+
+    wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
+
+    wxStaticText* title = new wxStaticText(
+        &dialog,
+        wxID_ANY,
+        _("Prepare your Open Observer Data Package"));
+
+    wxFont titleFont = title->GetFont();
+    titleFont.SetWeight(wxFONTWEIGHT_BOLD);
+    title->SetFont(titleFont);
+
+    mainSizer->Add(title, 0, wxALL, 14);
+
+    wxButton* createButton = new wxButton(
+        &dialog,
+        wxID_YES,
+        _("Create a new Data Package"),
+        wxDefaultPosition,
+        wxSize(360, 38));
+
+    wxButton* updateButton = new wxButton(
+        &dialog,
+        wxID_NO,
+        _("Update an existing Data Package"),
+        wxDefaultPosition,
+        wxSize(360, 38));
+
+    mainSizer->Add(createButton, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxALIGN_CENTER_HORIZONTAL, 14);
+    mainSizer->Add(updateButton, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxALIGN_CENTER_HORIZONTAL, 14);
+
+    wxStaticText* safetyText = new wxStaticText(
+        &dialog,
+        wxID_ANY,
+        _("Open Observer will not delete your existing media or working files."));
+
+    safetyText->Wrap(420);
+    mainSizer->Add(safetyText, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxALIGN_CENTER_HORIZONTAL, 14);
+
+    wxButton* cancelButton = new wxButton(
+        &dialog,
+        wxID_CANCEL,
+        _("Cancel"));
+
+    mainSizer->Add(cancelButton, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxALIGN_CENTER_HORIZONTAL, 14);
+
+    dialog.SetSizerAndFit(mainSizer);
+    dialog.CentreOnParent();
+
+    const int answer = dialog.ShowModal();
+
+    if (answer == wxID_YES) {
+        OnButtonClickCreateScientificPackage(event);
+    } else if (answer == wxID_NO) {
+        OnButtonClickUpdateScientificPackage(event);
+    }
+}
+
+
 void ooControlDialogImpl::OnButtonClickCreateScientificPackage(wxCommandEvent& event)
 {
     CommitCurrentObservationsGridEdit();

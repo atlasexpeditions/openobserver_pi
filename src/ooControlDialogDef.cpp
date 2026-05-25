@@ -306,7 +306,7 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 	m_buttonCreateScientificPackage = new wxButton(
     m_panelObservations,
     wxID_ANY,
-    _("Create Data Package"),
+    _("Data Package…"),
     wxDefaultPosition,
     wxDefaultSize,
     0
@@ -332,6 +332,7 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
     	wxALL,
     	5
 	);
+	m_buttonUpdateScientificPackage->Hide();
 
 	m_fgSizerObservations->Add( fgSizerObservationsButtons, 0, wxEXPAND, 5 );
 
@@ -402,7 +403,7 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 	m_buttonSaveObs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickSaveObservation ), NULL, this );
 	m_ObservationsImportObservations->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickImportObservations ), NULL, this );
 	m_ObservationsExportObservations->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickExportObservations ), NULL, this );
-	m_buttonCreateScientificPackage->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickCreateScientificPackage ), NULL, this );
+	m_buttonCreateScientificPackage->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickDataPackage ), NULL, this );
 	m_buttonUpdateScientificPackage->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickUpdateScientificPackage ), NULL, this );
 	m_choiceObservations->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( ooControlDialogDef::OnChoiceObservationsChanged ), NULL, this );
 
@@ -433,7 +434,7 @@ ooControlDialogDef::~ooControlDialogDef()
 	m_buttonSaveObs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickSaveObservation ), NULL, this );
 	m_ObservationsImportObservations->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickImportObservations ), NULL, this );
 	m_ObservationsExportObservations->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickExportObservations ), NULL, this );
-	m_buttonCreateScientificPackage->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickCreateScientificPackage ), NULL, this );
+	m_buttonCreateScientificPackage->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickDataPackage ), NULL, this );
 	m_buttonUpdateScientificPackage->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickUpdateScientificPackage ), NULL, this );
 	m_choiceObservations->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( ooControlDialogDef::OnChoiceObservationsChanged ), NULL, this );
 

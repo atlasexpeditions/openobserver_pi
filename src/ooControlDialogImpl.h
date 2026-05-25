@@ -76,6 +76,7 @@ public:
         void OnButtonClickNewObservation( wxCommandEvent& event );
         void OnButtonClickDeleteObservation( wxCommandEvent& event );
         void OnButtonClickExportObservations( wxCommandEvent& event );
+        void OnButtonClickDataPackage( wxCommandEvent& event ) override;
         void OnButtonClickCreateScientificPackage( wxCommandEvent& event ) override;
         void OnButtonClickUpdateScientificPackage( wxCommandEvent& event ) override;
         void OnButtonClickImportObservations(wxCommandEvent& event);
