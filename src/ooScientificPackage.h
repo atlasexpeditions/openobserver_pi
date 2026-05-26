@@ -16,16 +16,39 @@ class ooObservations;
 class ooScientificPackage
 {
 public:
+    struct RunSummary
+    {
+        RunSummary()
+            : foldersTouched(0),
+              nmeaRecordingsCopied(0),
+              exportFilesRefreshed(0)
+        {
+        }
+
+        int foldersTouched;
+        int nmeaRecordingsCopied;
+        int exportFilesRefreshed;
+        wxString logPath;
+        wxArrayString logLines;
+    };
     static bool Create(
         ooObservations* observations,
         const wxString& rootDir,
         wxString& createdPackagePath,
-        wxString& errorMessage);
+        wxString& errorMessage,
+        const wxArrayString& dailyFolders,
+        const wxArrayString& workingFolders,
+        const wxArrayString& rawDataFolders,
+        RunSummary& runSummary);
 
     static bool Update(
         ooObservations* observations,
         const wxString& packageDir,
-        wxString& errorMessage);
+        wxString& errorMessage,
+        const wxArrayString& dailyFolders,
+        const wxArrayString& workingFolders,
+        const wxArrayString& rawDataFolders,
+        RunSummary& runSummary);
 
 private:
     static wxString SanitizeFileName(const wxString& value);
@@ -52,22 +75,26 @@ private:
         const wxString& packageDir,
         const wxArrayString& dates,
         const wxArrayString& dailyFolders,
-        wxString& errorMessage);
+        wxString& errorMessage,
+        RunSummary& runSummary);
 
     static bool CreateStaticFolders(
         const wxString& packageDir,
         const wxArrayString& folderPaths,
-        wxString& errorMessage);
+        wxString& errorMessage,
+        RunSummary& runSummary);
 
     static bool ExportObservations(
         ooObservations* observations,
         const wxString& packageDir,
-        wxString& errorMessage);
+        wxString& errorMessage,
+        RunSummary& runSummary);
 
     static bool CopyNmeaRecordings(
         ooObservations* observations,
         const wxString& packageDir,
-        wxString& errorMessage);
+        wxString& errorMessage,
+        RunSummary& runSummary);
 
     static bool WriteReadme(
         ooObservations* observations,
@@ -83,6 +110,19 @@ private:
         ooObservations* observations,
         const wxString& packageDir,
         wxString& errorMessage);
+
+    static bool WriteDataPackageSettings(
+        const wxString& packageDir,
+        const wxArrayString& dailyFolders,
+        const wxArrayString& workingFolders,
+        const wxArrayString& rawDataFolders,
+        wxString& errorMessage);
+
+    static bool WriteRunLog(
+        const wxString& packageDir,
+        const wxString& actionLabel,
+        RunSummary& runSummary,
+        wxString& errorMessage);        
 
     static bool WriteGeneratedFilesWarning(
         const wxString& packageDir,

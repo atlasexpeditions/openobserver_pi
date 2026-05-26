@@ -34,6 +34,8 @@
 #include <wx/sstream.h>
 #include <wx/wfstream.h>
 #include <wx/file.h>
+#include <wx/checklst.h>
+#include <wx/textfile.h>
 
 #include <wx/xml/xml.h>
 
@@ -1078,6 +1080,342 @@ void ooControlDialogImpl::OnButtonClickExportObservations( wxCommandEvent& event
 else                                                m_Observations->SaveToCSV(output_stream.GetFile(), true);
 }
 
+static bool ExtractJsonArrayValues(
+    const wxString& content,
+    const wxString& key,
+    wxArrayString& values)
+{
+    values.Clear();
+
+    const wxString marker = "\"" + key + "\"";
+    int keyPos = content.Find(marker);
+    if (keyPos == wxNOT_FOUND) {
+        return false;
+    }
+
+    int arrayStart = content.find("[", keyPos);
+    if (arrayStart == wxNOT_FOUND) {
+        return false;
+    }
+
+    int arrayEnd = content.find("]", arrayStart);
+    if (arrayEnd == wxNOT_FOUND) {
+        return false;
+    }
+
+    wxString arrayContent = content.Mid(arrayStart + 1, arrayEnd - arrayStart - 1);
+
+    int pos = 0;
+    while (pos < (int)arrayContent.Length()) {
+        int quoteStart = arrayContent.find("\"", pos);
+        if (quoteStart == wxNOT_FOUND) {
+            break;
+        }
+
+        int quoteEnd = arrayContent.find("\"", quoteStart + 1);
+        if (quoteEnd == wxNOT_FOUND) {
+            break;
+        }
+
+        wxString value = arrayContent.Mid(quoteStart + 1, quoteEnd - quoteStart - 1);
+        value.Trim(true);
+        value.Trim(false);
+
+        if (!value.IsEmpty()) {
+            values.Add(value);
+        }
+
+        pos = quoteEnd + 1;
+    }
+
+    return true;
+}
+
+static bool ReadDataPackageSettings(
+    const wxString& packageDir,
+    wxArrayString& dailyFolders,
+    wxArrayString& workingFolders,
+    wxArrayString& rawDataFolders)
+{
+    dailyFolders.Clear();
+    workingFolders.Clear();
+    rawDataFolders.Clear();
+
+    const wxString settingsPath =
+        packageDir + wxFILE_SEP_PATH +
+        "00_exports" + wxFILE_SEP_PATH +
+        "metadata" + wxFILE_SEP_PATH +
+        "data_package_settings.json";
+
+    if (!wxFileExists(settingsPath)) {
+        return false;
+    }
+
+    wxTextFile file(settingsPath);
+    if (!file.Open()) {
+        return false;
+    }
+
+    wxString content;
+    for (size_t i = 0; i < file.GetLineCount(); ++i) {
+        content += file.GetLine(i) + "\n";
+    }
+
+    file.Close();
+
+    bool foundAny = false;
+    foundAny = ExtractJsonArrayValues(content, "dailyMediaFolders", dailyFolders) || foundAny;
+    foundAny = ExtractJsonArrayValues(content, "workingFolders", workingFolders) || foundAny;
+    foundAny = ExtractJsonArrayValues(content, "rawDataFolders", rawDataFolders) || foundAny;
+
+    return foundAny;
+}
+
+static void ApplyDataPackageSettingsToChecklist(
+    wxCheckListBox* folderChecklist,
+    const wxArrayString& dailyFolders,
+    const wxArrayString& workingFolders,
+    const wxArrayString& rawDataFolders)
+{
+    if (!folderChecklist) {
+        return;
+    }
+
+    for (unsigned int i = 0; i < folderChecklist->GetCount(); ++i) {
+        folderChecklist->Check(i, false);
+    }
+
+    folderChecklist->Check(0, dailyFolders.Index("photos") != wxNOT_FOUND);
+    folderChecklist->Check(1, dailyFolders.Index("audio") != wxNOT_FOUND);
+    folderChecklist->Check(2, dailyFolders.Index("video") != wxNOT_FOUND);
+    folderChecklist->Check(3, dailyFolders.Index("tracks") != wxNOT_FOUND);
+    folderChecklist->Check(4, dailyFolders.Index("nmea") != wxNOT_FOUND);
+    folderChecklist->Check(5, dailyFolders.Index("samples") != wxNOT_FOUND);
+    folderChecklist->Check(6, dailyFolders.Index("documents") != wxNOT_FOUND);
+    folderChecklist->Check(7, dailyFolders.Index("notes") != wxNOT_FOUND);
+    folderChecklist->Check(8, dailyFolders.Index("other") != wxNOT_FOUND);
+
+    folderChecklist->Check(9, rawDataFolders.Index("00_exports/raw_data/nmea") != wxNOT_FOUND);
+    folderChecklist->Check(10, rawDataFolders.Index("00_exports/raw_data/tracks") != wxNOT_FOUND);
+
+    folderChecklist->Check(11, workingFolders.Index("02_working/notes") != wxNOT_FOUND);
+    folderChecklist->Check(12, workingFolders.Index("02_working/maps") != wxNOT_FOUND);
+    folderChecklist->Check(13, workingFolders.Index("02_working/reports") != wxNOT_FOUND);
+    folderChecklist->Check(14, workingFolders.Index("02_working/tables") != wxNOT_FOUND);
+    folderChecklist->Check(15, workingFolders.Index("02_working/working_files") != wxNOT_FOUND);
+}
+
+static bool ShowDataPackageFolderDialog(
+    wxWindow* parent,
+    bool createMode,
+    wxString& selectedPath,
+    wxArrayString& selectedDailyFolders,
+    wxArrayString& selectedWorkingFolders,
+    wxArrayString& selectedRawDataFolders)
+{
+    wxDialog dialog(
+        parent,
+        wxID_ANY,
+        createMode ? _("Create a new Data Package") : _("Update an existing Data Package"),
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
+
+    wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
+
+    wxStaticText* title = new wxStaticText(
+        &dialog,
+        wxID_ANY,
+        createMode ? _("Create a new Data Package") : _("Update an existing Data Package"));
+
+    wxFont titleFont = title->GetFont();
+    titleFont.SetWeight(wxFONTWEIGHT_BOLD);
+    title->SetFont(titleFont);
+
+    mainSizer->Add(title, 0, wxALL, 14);
+
+    wxStaticText* explanation = new wxStaticText(
+        &dialog,
+        wxID_ANY,
+        createMode
+            ? _("Choose the folder where Open Observer will create the new Data Package.")
+            : _("Choose the existing Data Package folder to update."));
+
+    explanation->Wrap(460);
+    mainSizer->Add(explanation, 0, wxLEFT | wxRIGHT | wxBOTTOM, 14);
+
+    wxStaticText* folderIntro = new wxStaticText(
+        &dialog,
+        wxID_ANY,
+        createMode
+            ? _("Choose which folders Open Observer should prepare.\n\n"
+                "You can keep only what is useful for you in this project.")
+            : _("Choose which folders Open Observer should update.\n\n"
+                "You can keep only what is useful for you in this project.\n"
+                "Missing folders will be added."));
+
+    folderIntro->Wrap(460);
+   
+    wxArrayString folderChoices;
+    folderChoices.Add(_("Daily media / photos"));
+    folderChoices.Add(_("Daily media / audio"));
+    folderChoices.Add(_("Daily media / video"));
+    folderChoices.Add(_("Daily media / tracks"));
+    folderChoices.Add(_("Daily media / nmea"));
+    folderChoices.Add(_("Daily media / samples"));
+    folderChoices.Add(_("Daily media / documents"));
+    folderChoices.Add(_("Daily media / notes"));
+    folderChoices.Add(_("Daily media / other"));
+    folderChoices.Add(_("Raw data / nmea"));
+    folderChoices.Add(_("Raw data / tracks"));
+    folderChoices.Add(_("Working / notes"));
+    folderChoices.Add(_("Working / maps"));
+    folderChoices.Add(_("Working / reports"));
+    folderChoices.Add(_("Working / tables"));
+    folderChoices.Add(_("Working / working files"));
+
+    wxCheckListBox* folderChecklist = new wxCheckListBox(
+        &dialog,
+        wxID_ANY,
+        wxDefaultPosition,
+        wxSize(460, 190),
+        folderChoices);
+
+    for (unsigned int i = 0; i < folderChoices.GetCount(); ++i) {
+        folderChecklist->Check(i, true);
+    }
+
+    wxBoxSizer* pathSizer = new wxBoxSizer(wxHORIZONTAL);
+
+    wxTextCtrl* pathText = new wxTextCtrl(
+        &dialog,
+        wxID_ANY,
+        selectedPath,
+        wxDefaultPosition,
+        wxSize(380, -1));
+
+    wxButton* browseButton = new wxButton(
+        &dialog,
+        wxID_ANY,
+        _("Browse…"));
+
+    pathSizer->Add(pathText, 1, wxRIGHT | wxEXPAND, 8);
+    pathSizer->Add(browseButton, 0);
+
+    if (createMode) {
+        mainSizer->Add(folderIntro, 0, wxLEFT | wxRIGHT | wxBOTTOM, 14);
+        mainSizer->Add(folderChecklist, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 14);
+        mainSizer->Add(pathSizer, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 14);
+    } else {
+        mainSizer->Add(pathSizer, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 14);
+        mainSizer->Add(folderIntro, 0, wxLEFT | wxRIGHT | wxBOTTOM, 14);
+        mainSizer->Add(folderChecklist, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 14);
+    }
+
+    wxStaticText* safetyText = new wxStaticText(
+        &dialog,
+        wxID_ANY,
+        _("Open Observer will not delete your existing media or working files."));
+
+    safetyText->Wrap(460);
+    mainSizer->Add(safetyText, 0, wxLEFT | wxRIGHT | wxBOTTOM, 14);
+
+    wxBoxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
+
+    wxButton* actionButton = new wxButton(
+        &dialog,
+        wxID_OK,
+        createMode ? _("Create Data Package") : _("Update Data Package"));
+
+    wxButton* cancelButton = new wxButton(
+        &dialog,
+        wxID_CANCEL,
+        _("Cancel"));
+
+    buttonSizer->AddStretchSpacer();
+    buttonSizer->Add(actionButton, 0, wxALL, 5);
+    buttonSizer->Add(cancelButton, 0, wxALL, 5);
+
+    mainSizer->Add(buttonSizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxBOTTOM, 9);
+
+    browseButton->Bind(wxEVT_BUTTON, [&](wxCommandEvent&) {
+        wxDirDialog dirDialog(
+            &dialog,
+            createMode
+                ? _("Choose the folder where Open Observer will create the new Data Package")
+                : _("Choose the existing Data Package folder to update"),
+            pathText->GetValue(),
+            wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
+
+        if (dirDialog.ShowModal() == wxID_OK) {
+            pathText->SetValue(dirDialog.GetPath());
+
+            if (!createMode) {
+                wxArrayString savedDailyFolders;
+                wxArrayString savedWorkingFolders;
+                wxArrayString savedRawDataFolders;
+
+                if (ReadDataPackageSettings(
+                        dirDialog.GetPath(),
+                        savedDailyFolders,
+                        savedWorkingFolders,
+                        savedRawDataFolders)) {
+                    ApplyDataPackageSettingsToChecklist(
+                        folderChecklist,
+                        savedDailyFolders,
+                        savedWorkingFolders,
+                        savedRawDataFolders);
+                }
+            }
+        }
+    });
+
+    dialog.SetSizerAndFit(mainSizer);
+    dialog.CentreOnParent();
+
+    if (dialog.ShowModal() != wxID_OK) {
+        return false;
+    }
+
+    selectedPath = pathText->GetValue();
+    selectedPath.Trim(true);
+    selectedPath.Trim(false);
+
+    if (selectedPath.IsEmpty()) {
+        wxMessageBox(
+            _("Please choose a folder before continuing."),
+            createMode ? _("Create Data Package") : _("Update Data Package"),
+            wxOK | wxICON_WARNING,
+            parent);
+        return false;
+    }
+
+    selectedDailyFolders.Clear();
+    selectedWorkingFolders.Clear();
+    selectedRawDataFolders.Clear();
+
+    if (folderChecklist->IsChecked(0)) selectedDailyFolders.Add("photos");
+    if (folderChecklist->IsChecked(1)) selectedDailyFolders.Add("audio");
+    if (folderChecklist->IsChecked(2)) selectedDailyFolders.Add("video");
+    if (folderChecklist->IsChecked(3)) selectedDailyFolders.Add("tracks");
+    if (folderChecklist->IsChecked(4)) selectedDailyFolders.Add("nmea");
+    if (folderChecklist->IsChecked(5)) selectedDailyFolders.Add("samples");
+    if (folderChecklist->IsChecked(6)) selectedDailyFolders.Add("documents");
+    if (folderChecklist->IsChecked(7)) selectedDailyFolders.Add("notes");
+    if (folderChecklist->IsChecked(8)) selectedDailyFolders.Add("other");
+
+    if (folderChecklist->IsChecked(9)) selectedRawDataFolders.Add("00_exports/raw_data/nmea");
+    if (folderChecklist->IsChecked(10)) selectedRawDataFolders.Add("00_exports/raw_data/tracks");
+
+    if (folderChecklist->IsChecked(11)) selectedWorkingFolders.Add("02_working/notes");
+    if (folderChecklist->IsChecked(12)) selectedWorkingFolders.Add("02_working/maps");
+    if (folderChecklist->IsChecked(13)) selectedWorkingFolders.Add("02_working/reports");
+    if (folderChecklist->IsChecked(14)) selectedWorkingFolders.Add("02_working/tables");
+    if (folderChecklist->IsChecked(15)) selectedWorkingFolders.Add("02_working/working_files");
+
+    return true;
+}
+
 void ooControlDialogImpl::OnButtonClickDataPackage(wxCommandEvent& event)
 {
     wxDialog dialog(
@@ -1133,6 +1471,18 @@ void ooControlDialogImpl::OnButtonClickDataPackage(wxCommandEvent& event)
 
     mainSizer->Add(cancelButton, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxALIGN_CENTER_HORIZONTAL, 14);
 
+    createButton->Bind(wxEVT_BUTTON, [&](wxCommandEvent&) {
+        dialog.EndModal(wxID_YES);
+    });
+
+    updateButton->Bind(wxEVT_BUTTON, [&](wxCommandEvent&) {
+        dialog.EndModal(wxID_NO);
+    });
+
+    cancelButton->Bind(wxEVT_BUTTON, [&](wxCommandEvent&) {
+        dialog.EndModal(wxID_CANCEL);
+    });
+
     dialog.SetSizerAndFit(mainSizer);
     dialog.CentreOnParent();
 
@@ -1152,39 +1502,34 @@ void ooControlDialogImpl::OnButtonClickCreateScientificPackage(wxCommandEvent& e
 
     if (!m_Observations) return;
 
-    const wxString message =
-        _("Open Observer is going to create a new data package folder containing:\n\n"
-          "• Your current project's observations exported as CSV, GeoJSON and XML.\n\n"
-          "• One daily folder for each observation day.\n\n"
-          "• Media folders inside each daily folder, such as photos, audio, video, samples, documents, notes and other.\n\n"
-          "• Helpful metadata and README files explaining the package structure.\n\n"
-          "Open Observer will not move, delete or overwrite any media files.\n\n"
-          "Ready to prepare your data package?");
+    wxString destinationFolder;
+    wxArrayString selectedDailyFolders;
+    wxArrayString selectedWorkingFolders;
+    wxArrayString selectedRawDataFolders;
 
-    const int answer = wxMessageBox(
-        message,
-        _("Create Data Package"),
-        wxYES_NO | wxICON_INFORMATION,
-        this);
-
-    if (answer != wxYES) return;
-
-    wxDirDialog dirDialog(
-        this,
-        _("Choose a destination folder for the data package"),
-        wxEmptyString,
-        wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
-
-    if (dirDialog.ShowModal() != wxID_OK) return;
+    if (!ShowDataPackageFolderDialog(
+            this,
+            true,
+            destinationFolder,
+            selectedDailyFolders,
+            selectedWorkingFolders,
+            selectedRawDataFolders)) {
+        return;
+    }
 
     wxString createdPackagePath;
     wxString errorMessage;
+    ooScientificPackage::RunSummary runSummary;
 
     if (!ooScientificPackage::Create(
             m_Observations,
-            dirDialog.GetPath(),
+            destinationFolder,
             createdPackagePath,
-            errorMessage)) {
+            errorMessage,
+            selectedDailyFolders,
+            selectedWorkingFolders,
+            selectedRawDataFolders,
+            runSummary)) {
         wxMessageBox(
             _("Unable to create data package:\n\n") + errorMessage,
             _("Create Data Package"),
@@ -1194,7 +1539,12 @@ void ooControlDialogImpl::OnButtonClickCreateScientificPackage(wxCommandEvent& e
     }
 
     wxMessageBox(
-        _("Scientific package created successfully:\n\n") + createdPackagePath,
+        _("Data Package created successfully:\n\n") + createdPackagePath +
+        _("\n\nSummary:\n") +
+        wxString::Format(_("• %d folders created\n"), runSummary.foldersTouched) +
+        wxString::Format(_("• %d NMEA recordings copied\n"), runSummary.nmeaRecordingsCopied) +
+        wxString::Format(_("• %d export files refreshed\n"), runSummary.exportFilesRefreshed) +
+        _("\nA detailed log was written to:\n00_exports/metadata/data_package_last_run.txt"),
         _("Create Data Package"),
         wxOK | wxICON_INFORMATION,
         this);
@@ -1208,34 +1558,32 @@ void ooControlDialogImpl::OnButtonClickUpdateScientificPackage(wxCommandEvent& e
 
     if (!m_Observations) return;
 
-    const wxString message =
-        _("Open Observer is going to update the selected data package with your current observations.\n\n"
-          "It may refresh exports, add missing daily folders, and update metadata files.\n\n"
-          "Open Observer will not delete, move or overwrite any media files, documents or custom folders.\n\n"
-          "Ready to update your data package?");
+    wxString packageFolder;
+    wxArrayString selectedDailyFolders;
+    wxArrayString selectedWorkingFolders;
+    wxArrayString selectedRawDataFolders;
 
-    const int answer = wxMessageBox(
-        message,
-        _("Update Data Package"),
-        wxYES_NO | wxICON_INFORMATION,
-        this);
-
-    if (answer != wxYES) return;
-
-    wxDirDialog dirDialog(
-        this,
-        _("Choose the data package folder to update"),
-        wxEmptyString,
-        wxDD_DEFAULT_STYLE | wxDD_DIR_MUST_EXIST);
-
-    if (dirDialog.ShowModal() != wxID_OK) return;
+    if (!ShowDataPackageFolderDialog(
+            this,
+            false,
+            packageFolder,
+            selectedDailyFolders,
+            selectedWorkingFolders,
+            selectedRawDataFolders)) {
+        return;
+    }
 
     wxString errorMessage;
+    ooScientificPackage::RunSummary runSummary;
 
     if (!ooScientificPackage::Update(
             m_Observations,
-            dirDialog.GetPath(),
-            errorMessage)) {
+            packageFolder,
+            errorMessage,
+            selectedDailyFolders,
+            selectedWorkingFolders,
+            selectedRawDataFolders,
+            runSummary)) {
         wxMessageBox(
             _("Unable to update data package:\n\n") + errorMessage,
             _("Update Data Package"),
@@ -1245,12 +1593,17 @@ void ooControlDialogImpl::OnButtonClickUpdateScientificPackage(wxCommandEvent& e
     }
 
     wxMessageBox(
-        _("Scientific package updated successfully:\n\n") + dirDialog.GetPath(),
+        _("Data Package updated successfully:\n\n") + packageFolder +
+        _("\n\nSummary:\n") +
+        wxString::Format(_("• %d folders updated\n"), runSummary.foldersTouched) +
+        wxString::Format(_("• %d NMEA recordings copied\n"), runSummary.nmeaRecordingsCopied) +
+        wxString::Format(_("• %d export files refreshed\n"), runSummary.exportFilesRefreshed) +
+        _("\nA detailed log was written to:\n00_exports/metadata/data_package_last_run.txt"),
         _("Update Data Package"),
         wxOK | wxICON_INFORMATION,
         this);
 
-    wxLaunchDefaultApplication(dirDialog.GetPath());
+    wxLaunchDefaultApplication(packageFolder);
 }
 
 void ooControlDialogImpl::OnButtonClickImportObservations(wxCommandEvent& event)
