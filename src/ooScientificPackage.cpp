@@ -6,6 +6,7 @@
  **************************************************************************/
 
 #include "ooScientificPackage.h"
+#include "ooGpxTrackExport.h"
 #include "ooObservations.h"
 
 #include <wx/filename.h>
@@ -774,7 +775,10 @@ bool ooScientificPackage::WriteRunLog(
     file.Write("-------\n");
     file.Write(wxString::Format("Folders touched: %d\n", runSummary.foldersTouched));
     file.Write(wxString::Format("NMEA recordings copied: %d\n", runSummary.nmeaRecordingsCopied));
-    file.Write(wxString::Format("Export files refreshed: %d\n\n", runSummary.exportFilesRefreshed));
+    file.Write(wxString::Format("Export files refreshed: %d\n", runSummary.exportFilesRefreshed));
+    file.Write(wxString::Format("Daily GPX tracks exported: %d\n", runSummary.gpxDailyTracksExported));
+    file.Write(wxString::Format("Compiled GPX tracks exported: %d\n", runSummary.gpxCompiledTracksExported));
+    file.Write(wxString::Format("GPX track points exported: %d\n\n", runSummary.gpxTrackPointsExported));
 
     file.Write("Details\n");
     file.Write("-------\n");
@@ -1079,6 +1083,37 @@ bool ooScientificPackage::Create(
     if (!CreateStaticFolders(packageDir, workingFolders, errorMessage, runSummary)) return false;
     if (!CreateStaticFolders(packageDir, rawDataFolders, errorMessage, runSummary)) return false;
     if (!CreateDailyFolders(packageDir, dates, dailyFolders, errorMessage, runSummary)) return false;
+    if (dailyFolders.Index("tracks") != wxNOT_FOUND) {
+    ooGpxExportResult gpxResult =
+        ooGpxTrackExport::ExportDailyOpenCpnTracks(dates, packageDir);
+
+    runSummary.gpxDailyTracksExported += gpxResult.exportedTrackCount;
+    runSummary.gpxTrackPointsExported += gpxResult.exportedPointCount;
+
+    if (gpxResult.success) {
+        runSummary.logLines.Add(
+            wxString::Format("Daily GPX tracks exported: %d", gpxResult.exportedTrackCount));
+    } else if (!gpxResult.message.IsEmpty()) {
+        runSummary.logLines.Add("Daily GPX tracks not exported: " + gpxResult.message);
+    }
+}
+
+if (rawDataFolders.Index("00_exports/raw_data/tracks") != wxNOT_FOUND) {
+    ooGpxExportResult gpxResult =
+        ooGpxTrackExport::ExportCompiledOpenCpnTrack(
+            dates,
+            packageDir,
+            SanitizeFileName(GetProjectName(observations)));
+
+    runSummary.gpxCompiledTracksExported += gpxResult.exportedTrackCount;
+    runSummary.gpxTrackPointsExported += gpxResult.exportedPointCount;
+
+    if (gpxResult.success) {
+        runSummary.logLines.Add("Compiled GPX track exported.");
+    } else if (!gpxResult.message.IsEmpty()) {
+        runSummary.logLines.Add("Compiled GPX track not exported: " + gpxResult.message);
+    }
+}
     if (!CopyNmeaRecordings(observations, packageDir, errorMessage, runSummary)) return false;
     if (!ExportObservations(observations, packageDir, errorMessage, runSummary)) return false;
     if (!WriteGeneratedFilesWarning(packageDir, errorMessage)) return false;
@@ -1128,6 +1163,37 @@ bool ooScientificPackage::Update(
     if (!CreateStaticFolders(packageDir, workingFolders, errorMessage, runSummary)) return false;
     if (!CreateStaticFolders(packageDir, rawDataFolders, errorMessage, runSummary)) return false;
     if (!CreateDailyFolders(packageDir, dates, dailyFolders, errorMessage, runSummary)) return false;
+    if (dailyFolders.Index("tracks") != wxNOT_FOUND) {
+    ooGpxExportResult gpxResult =
+        ooGpxTrackExport::ExportDailyOpenCpnTracks(dates, packageDir);
+
+    runSummary.gpxDailyTracksExported += gpxResult.exportedTrackCount;
+    runSummary.gpxTrackPointsExported += gpxResult.exportedPointCount;
+
+    if (gpxResult.success) {
+        runSummary.logLines.Add(
+            wxString::Format("Daily GPX tracks exported: %d", gpxResult.exportedTrackCount));
+    } else if (!gpxResult.message.IsEmpty()) {
+        runSummary.logLines.Add("Daily GPX tracks not exported: " + gpxResult.message);
+    }
+}
+
+if (rawDataFolders.Index("00_exports/raw_data/tracks") != wxNOT_FOUND) {
+    ooGpxExportResult gpxResult =
+        ooGpxTrackExport::ExportCompiledOpenCpnTrack(
+            dates,
+            packageDir,
+            SanitizeFileName(GetProjectName(observations)));
+
+    runSummary.gpxCompiledTracksExported += gpxResult.exportedTrackCount;
+    runSummary.gpxTrackPointsExported += gpxResult.exportedPointCount;
+
+    if (gpxResult.success) {
+        runSummary.logLines.Add("Compiled GPX track exported.");
+    } else if (!gpxResult.message.IsEmpty()) {
+        runSummary.logLines.Add("Compiled GPX track not exported: " + gpxResult.message);
+    }
+}
     if (!CopyNmeaRecordings(observations, packageDir, errorMessage, runSummary)) return false;
     if (!ExportObservations(observations, packageDir, errorMessage, runSummary)) return false;
     if (!WriteGeneratedFilesWarning(packageDir, errorMessage)) return false;

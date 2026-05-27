@@ -18,16 +18,22 @@ class ooScientificPackage
 public:
     struct RunSummary
     {
-        RunSummary()
-            : foldersTouched(0),
-              nmeaRecordingsCopied(0),
-              exportFilesRefreshed(0)
-        {
-        }
+RunSummary()
+    : foldersTouched(0),
+      nmeaRecordingsCopied(0),
+      exportFilesRefreshed(0),
+      gpxDailyTracksExported(0),
+      gpxCompiledTracksExported(0),
+      gpxTrackPointsExported(0)
+{
+}
 
-        int foldersTouched;
-        int nmeaRecordingsCopied;
-        int exportFilesRefreshed;
+int foldersTouched;
+int nmeaRecordingsCopied;
+int exportFilesRefreshed;
+int gpxDailyTracksExported;
+int gpxCompiledTracksExported;
+int gpxTrackPointsExported;
         wxString logPath;
         wxArrayString logLines;
     };

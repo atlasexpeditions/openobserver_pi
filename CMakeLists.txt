@@ -179,6 +179,7 @@ set(SRCS
     src/openobserver_pi.cpp
     src/ooObservations.cpp
     src/ooScientificPackage.cpp
+    src/ooGpxTrackExport.cpp
     src/ooControlDialogDef.cpp 
     src/ooControlDialogImpl.cpp
     src/ooMiniDialogDef.cpp 

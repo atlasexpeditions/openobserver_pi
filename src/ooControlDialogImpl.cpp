@@ -1544,6 +1544,9 @@ void ooControlDialogImpl::OnButtonClickCreateScientificPackage(wxCommandEvent& e
         wxString::Format(_("• %d folders created\n"), runSummary.foldersTouched) +
         wxString::Format(_("• %d NMEA recordings copied\n"), runSummary.nmeaRecordingsCopied) +
         wxString::Format(_("• %d export files refreshed\n"), runSummary.exportFilesRefreshed) +
+        wxString::Format(_("• %d daily GPX tracks exported\n"), runSummary.gpxDailyTracksExported) +
+        wxString::Format(_("• %d raw OpenCPN GPX tracks exported\n"), runSummary.gpxCompiledTracksExported) +
+        wxString::Format(_("• %d GPX track points exported\n"), runSummary.gpxTrackPointsExported) +
         _("\nA detailed log was written to:\n00_exports/metadata/data_package_last_run.txt"),
         _("Create Data Package"),
         wxOK | wxICON_INFORMATION,
@@ -1598,6 +1601,9 @@ void ooControlDialogImpl::OnButtonClickUpdateScientificPackage(wxCommandEvent& e
         wxString::Format(_("• %d folders updated\n"), runSummary.foldersTouched) +
         wxString::Format(_("• %d NMEA recordings copied\n"), runSummary.nmeaRecordingsCopied) +
         wxString::Format(_("• %d export files refreshed\n"), runSummary.exportFilesRefreshed) +
+        wxString::Format(_("• %d daily GPX tracks exported\n"), runSummary.gpxDailyTracksExported) +
+        wxString::Format(_("• %d raw OpenCPN GPX tracks exported\n"), runSummary.gpxCompiledTracksExported) +
+        wxString::Format(_("• %d GPX track points exported\n"), runSummary.gpxTrackPointsExported) +
         _("\nA detailed log was written to:\n00_exports/metadata/data_package_last_run.txt"),
         _("Update Data Package"),
         wxOK | wxICON_INFORMATION,
