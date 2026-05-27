@@ -93,6 +93,7 @@ private:
     static bool ExportObservations(
         ooObservations* observations,
         const wxString& packageDir,
+        const wxArrayString& rawDataFolders,
         wxString& errorMessage,
         RunSummary& runSummary);
 

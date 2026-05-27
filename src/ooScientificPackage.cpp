@@ -81,10 +81,8 @@ wxArrayString ooScientificPackage::GetDefaultDailyFolders()
     folders.Add("audio");
     folders.Add("video");
     folders.Add("tracks");
+    folders.Add("nmea");
     folders.Add("samples");
-    folders.Add("documents");
-    folders.Add("notes");
-    folders.Add("other");
     return folders;
 }
 
@@ -92,20 +90,16 @@ wxArrayString ooScientificPackage::GetDefaultWorkingFolders()
 {
     wxArrayString folders;
     folders.Add("02_working");
-    folders.Add("02_working/notes");
-    folders.Add("02_working/maps");
-    folders.Add("02_working/reports");
-    folders.Add("02_working/tables");
-    folders.Add("02_working/working_files");
     return folders;
 }
 
 wxArrayString ooScientificPackage::GetDefaultRawDataFolders()
 {
     wxArrayString folders;
-    folders.Add("00_exports/raw_data");
-    folders.Add("00_exports/raw_data/nmea");
-    folders.Add("00_exports/raw_data/tracks");
+    folders.Add("00_raw-data");
+    folders.Add("00_raw-data/observations");
+    folders.Add("00_raw-data/nmea-recordings");
+    folders.Add("00_raw-data/tracks");
     return folders;
 }
 
@@ -292,12 +286,12 @@ bool ooScientificPackage::IsScientificPackageFolder(
         return false;
     }
 
-    const wxString exportsDir = JoinPath(packageDir, "00_exports");
+    const wxString rawDataDir = JoinPath(packageDir, "00_raw-data");
     const wxString dailyMediaDir = JoinPath(packageDir, "01_daily_media");
-    const wxString metadataDir = JoinPath(exportsDir, "metadata");
+    const wxString metadataDir = JoinPath(rawDataDir, "metadata");
     const wxString packageMetadataFile = JoinPath(metadataDir, "package_metadata.json");
 
-    if (!wxDirExists(exportsDir) ||
+    if (!wxDirExists(rawDataDir) ||
         !wxDirExists(dailyMediaDir) ||
         !wxDirExists(metadataDir) ||
         !wxFileExists(packageMetadataFile)) {
@@ -314,14 +308,11 @@ bool ooScientificPackage::IsScientificPackageFolder(
     wxFileName selectedDir(packageDir, "");
     selectedDir.Normalize();
 
-    wxString selectedName;
+    wxString folderName = selectedDir.GetDirs().IsEmpty()
+        ? wxString()
+        : selectedDir.GetDirs().Last();
 
-    if (!selectedDir.GetDirs().IsEmpty()) {
-        selectedName = selectedDir.GetDirs().Last();
-    }
-
-    return selectedName == expectedPrefix ||
-           selectedName.StartsWith(expectedPrefix + "_");
+    return folderName.StartsWith(expectedPrefix);
 }
 
 wxArrayString ooScientificPackage::GetObservationDates(ooObservations* observations)
@@ -542,6 +533,7 @@ bool ooScientificPackage::CreateStaticFolders(
 bool ooScientificPackage::ExportObservations(
     ooObservations* observations,
     const wxString& packageDir,
+    const wxArrayString& rawDataFolders,
     wxString& errorMessage,
     RunSummary& runSummary)
 {
@@ -550,43 +542,11 @@ bool ooScientificPackage::ExportObservations(
         return false;
     }
 
-    const wxString exportsDir = JoinPath(packageDir, "00_exports");
     const wxString exportBaseName = SanitizeFileName(GetProjectName(observations));
 
-    if (!EnsureDirectory(exportsDir, errorMessage)) {
-        return false;
-    }
-
+    // The project XML stays at the root of the Data Package and is always refreshed.
     {
-        const wxString csvPath = JoinPath(exportsDir, exportBaseName + ".csv");
-
-        wxFileOutputStream output(csvPath);
-        if (!output.IsOk()) {
-            errorMessage = "Unable to write " + exportBaseName + ".csv";
-            return false;
-        }
-
-        observations->SaveToCSV(output.GetFile(), true);
-        runSummary.exportFilesRefreshed++;
-        runSummary.logLines.Add("Export refreshed: 00_exports/" + exportBaseName + ".csv");
-    }
-
-    {
-        const wxString geojsonPath = JoinPath(exportsDir, exportBaseName + ".geojson");
-
-        wxFileOutputStream output(geojsonPath);
-        if (!output.IsOk()) {
-            errorMessage = "Unable to write " + exportBaseName + ".geojson";
-            return false;
-        }
-
-        observations->SaveToGeoJSON(output);
-        runSummary.exportFilesRefreshed++;
-        runSummary.logLines.Add("Export refreshed: 00_exports/" + exportBaseName + ".geojson");
-    }
-
-    {
-        const wxString xmlPath = JoinPath(exportsDir, exportBaseName + ".xml");
+        const wxString xmlPath = JoinPath(packageDir, exportBaseName + ".xml");
 
         wxFileOutputStream output(xmlPath);
         if (!output.IsOk()) {
@@ -596,7 +556,53 @@ bool ooScientificPackage::ExportObservations(
 
         observations->SaveToXML(output.GetFile(), true);
         runSummary.exportFilesRefreshed++;
-        runSummary.logLines.Add("Export refreshed: 00_exports/" + exportBaseName + ".xml");
+        runSummary.logLines.Add("Project XML refreshed: " + exportBaseName + ".xml");
+    }
+
+    // CSV and GeoJSON observation exports are optional and live under 00_raw-data/observations.
+    if (rawDataFolders.Index("00_raw-data/observations") == wxNOT_FOUND) {
+        runSummary.logLines.Add("Observation CSV/GeoJSON exports skipped: observations folder not selected.");
+        return true;
+    }
+
+    const wxString observationsDir = JoinPath(
+        JoinPath(packageDir, "00_raw-data"),
+        "observations");
+
+    if (!EnsureDirectory(observationsDir, errorMessage)) {
+        return false;
+    }
+
+    {
+        const wxString csvPath = JoinPath(observationsDir, exportBaseName + ".csv");
+
+        wxFileOutputStream output(csvPath);
+        if (!output.IsOk()) {
+            errorMessage = "Unable to write " + exportBaseName + ".csv";
+            return false;
+        }
+
+        observations->SaveToCSV(output.GetFile(), true);
+        runSummary.exportFilesRefreshed++;
+        runSummary.logLines.Add(
+            "Observation export refreshed: 00_raw-data/observations/" +
+            exportBaseName + ".csv");
+    }
+
+    {
+        const wxString geojsonPath = JoinPath(observationsDir, exportBaseName + ".geojson");
+
+        wxFileOutputStream output(geojsonPath);
+        if (!output.IsOk()) {
+            errorMessage = "Unable to write " + exportBaseName + ".geojson";
+            return false;
+        }
+
+        observations->SaveToGeoJSON(output);
+        runSummary.exportFilesRefreshed++;
+        runSummary.logLines.Add(
+            "Observation export refreshed: 00_raw-data/observations/" +
+            exportBaseName + ".geojson");
     }
 
     return true;
@@ -704,10 +710,8 @@ bool ooScientificPackage::CopyNmeaRecordings(
             "nmea");
 
         const wxString rawNmeaDir = JoinPath(
-            JoinPath(
-                JoinPath(packageDir, "00_exports"),
-                "raw_data"),
-            "nmea");
+            JoinPath(packageDir, "00_raw-data"),
+            "nmea-recordings");
 
         if (!EnsureDirectory(dailyNmeaDir, errorMessage)) {
             return false;
@@ -733,7 +737,7 @@ bool ooScientificPackage::CopyNmeaRecordings(
         if (wxCopyFile(sourcePath, rawDestination, true)) {
             copiedThisRecording = true;
             runSummary.logLines.Add(
-                "NMEA copied: 00_exports/raw_data/nmea/" + recordingName);
+                "NMEA copied: 00_raw-data/nmea-recordings/" + recordingName);
         }
 
         if (copiedThisRecording) {
@@ -750,7 +754,7 @@ bool ooScientificPackage::WriteRunLog(
     RunSummary& runSummary,
     wxString& errorMessage)
 {
-    const wxString metadataDir = JoinPath(JoinPath(packageDir, "00_exports"), "metadata");
+    const wxString metadataDir = JoinPath(JoinPath(packageDir, "00_raw-data"), "metadata");
 
     if (!EnsureDirectory(metadataDir, errorMessage)) {
         return false;
@@ -799,7 +803,7 @@ bool ooScientificPackage::WriteGeneratedFilesWarning(
     wxString& errorMessage)
 {
     const wxString warningPath =
-        JoinPath(JoinPath(packageDir, "00_exports"), "DO_NOT_EDIT_GENERATED_FILES.txt");
+        JoinPath(JoinPath(packageDir, "00_raw-data"), "DO_NOT_EDIT_GENERATED_FILES.txt");
 
     wxFile file(warningPath, wxFile::write);
     if (!file.IsOpened()) {
@@ -823,7 +827,7 @@ bool ooScientificPackage::WriteReadme(
     const wxString& packageDir,
     wxString& errorMessage)
 {
-    const wxString metadataDir = JoinPath(JoinPath(packageDir, "00_exports"), "metadata");
+    const wxString metadataDir = JoinPath(JoinPath(packageDir, "00_raw-data"), "metadata");
 
     if (!EnsureDirectory(metadataDir, errorMessage)) {
         return false;
@@ -837,29 +841,28 @@ bool ooScientificPackage::WriteReadme(
 
     wxString projectName = GetProjectName(observations);
 
-    file.Write(
-        "Open Observer Data Package\n"
-        "================================\n\n");
-
-    file.Write("Project: " + projectName + "\n");
-    file.Write("Created or updated UTC: " + GetCurrentUtcTimestampString() + "\n\n");
-
-    file.Write(
+        file.Write(
         "Folder structure\n"
         "----------------\n\n"
-        "00_exports/\n"
-        "  Generated observation exports and metadata. These files may be refreshed\n"
-        "  by Open Observer when updating the package.\n\n"
+        "00_raw-data/\n"
+        "  Generated raw data, exports and metadata. These files may be refreshed by\n"
+        "  Open Observer when creating or updating the package.\n\n"
+        "00_raw-data/observations/\n"
+        "  Generated CSV and GeoJSON observation exports.\n\n"
+        "00_raw-data/nmea-recordings/\n"
+        "  Raw NMEA recording files copied from Open Observer when available.\n\n"
+        "00_raw-data/tracks/\n"
+        "  Raw OpenCPN GPX track exports generated by Open Observer when available.\n\n"
         "01_daily_media/\n"
-        "  One folder per observation day. Place photos, audio, video, tracks,\n"
-        "  samples, documents, notes and other field media here.\n\n"
+        "  One folder per observation day. Place photos, audio, video, daily tracks,\n"
+        "  NMEA files and samples here.\n\n"
         "02_working/\n"
         "  User working folder for notes, maps, reports, tables and analysis files.\n\n"
         "Important rule\n"
         "--------------\n\n"
-        "Open Observer may refresh files in 00_exports/.\n"
-        "Open Observer will not delete, move or overwrite user media files,\n"
-        "documents or custom folders in 01_daily_media/ or 02_working/.\n\n"
+        "Open Observer may refresh generated files in 00_raw-data/.\n"
+        "Open Observer will not delete, move or clean user media files in 01_daily_media/\n"
+        "or user working files in 02_working/.\n\n"
         "Recommended file naming\n"
         "-----------------------\n\n"
         "Use the Observation ID when available, for example:\n"
@@ -877,7 +880,7 @@ bool ooScientificPackage::WriteObservationIds(
     const wxString& packageDir,
     wxString& errorMessage)
 {
-    const wxString metadataDir = JoinPath(JoinPath(packageDir, "00_exports"), "metadata");
+    const wxString metadataDir = JoinPath(JoinPath(packageDir, "00_raw-data"), "metadata");
 
     if (!EnsureDirectory(metadataDir, errorMessage)) {
         return false;
@@ -938,7 +941,7 @@ bool ooScientificPackage::WriteDataPackageSettings(
     const wxArrayString& rawDataFolders,
     wxString& errorMessage)
 {
-    const wxString metadataDir = JoinPath(JoinPath(packageDir, "00_exports"), "metadata");
+    const wxString metadataDir = JoinPath(JoinPath(packageDir, "00_raw-data"), "metadata");
 
     if (!EnsureDirectory(metadataDir, errorMessage)) {
         return false;
@@ -967,7 +970,7 @@ bool ooScientificPackage::WritePackageMetadata(
     const wxString& packageDir,
     wxString& errorMessage)
 {
-    const wxString metadataDir = JoinPath(JoinPath(packageDir, "00_exports"), "metadata");
+    const wxString metadataDir = JoinPath(JoinPath(packageDir, "00_raw-data"), "metadata");
 
     if (!EnsureDirectory(metadataDir, errorMessage)) {
         return false;
@@ -990,7 +993,7 @@ bool ooScientificPackage::WritePackageMetadata(
     file.Write("  \"observationIdField\": \"Observation ID\",\n");
     file.Write("  \"observationIdFallback\": \"Start Timestamp UTC\",\n");
     file.Write("  \"dailyMediaRoot\": \"01_daily_media\",\n");
-    file.Write("  \"exportsRoot\": \"00_exports\",\n");
+    file.Write("  \"rawDataRoot\": \"00_raw-data\",\n");
     file.Write("  \"workingRoot\": \"02_working\"\n");
     file.Write("}\n");
 
@@ -999,7 +1002,7 @@ bool ooScientificPackage::WritePackageMetadata(
 
 bool ooScientificPackage::CopyTemplateUsed(const wxString& packageDir, wxString& errorMessage)
 {
-    const wxString metadataDir = JoinPath(JoinPath(packageDir, "00_exports"), "metadata");
+    const wxString metadataDir = JoinPath(JoinPath(packageDir, "00_raw-data"), "metadata");
 
     if (!EnsureDirectory(metadataDir, errorMessage)) {
         return false;
@@ -1022,18 +1025,35 @@ bool ooScientificPackage::CopyTemplateUsed(const wxString& packageDir, wxString&
         return false;
     }
 
-    file.Write(
+        file.Write(
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-        "<scientific_package_template creator=\"Open Observer for OpenCPN\" file_version=\"1\" name=\"Default\">\n"
-        "  <daily_media_folder name=\"photos\"/>\n"
-        "  <daily_media_folder name=\"audio\"/>\n"
-        "  <daily_media_folder name=\"video\"/>\n"
-        "  <daily_media_folder name=\"tracks\"/>\n"
-        "  <daily_media_folder name=\"samples\"/>\n"
-        "  <daily_media_folder name=\"documents\"/>\n"
-        "  <daily_media_folder name=\"notes\"/>\n"
-        "  <daily_media_folder name=\"other\"/>\n"
-        "</scientific_package_template>\n");
+        "<data_package_template creator=\"Open Observer for OpenCPN\" file_version=\"1\" name=\"Default\">\n"
+        "  <always>\n"
+        "    <folder path=\"00_raw-data\"/>\n"
+        "    <folder path=\"00_raw-data/metadata\"/>\n"
+        "    <folder path=\"00_raw-data/observations\"/>\n"
+        "    <folder path=\"00_raw-data/nmea-recordings\"/>\n"
+        "    <folder path=\"00_raw-data/tracks\"/>\n"
+        "    <folder path=\"01_daily_media\"/>\n"
+        "    <folder path=\"02_working\"/>\n"
+        "  </always>\n"
+        "  <daily_media>\n"
+        "    <folder name=\"photos\" default=\"true\"/>\n"
+        "    <folder name=\"audio\" default=\"true\"/>\n"
+        "    <folder name=\"video\" default=\"true\"/>\n"
+        "    <folder name=\"tracks\" default=\"true\"/>\n"
+        "    <folder name=\"nmea\" default=\"true\"/>\n"
+        "    <folder name=\"samples\" default=\"true\"/>\n"
+        "  </daily_media>\n"
+        "  <raw_data>\n"
+        "    <folder path=\"00_raw-data/observations\" default=\"true\"/>\n"
+        "    <folder path=\"00_raw-data/nmea-recordings\" default=\"true\"/>\n"
+        "    <folder path=\"00_raw-data/tracks\" default=\"true\"/>\n"
+        "  </raw_data>\n"
+        "  <working>\n"
+        "    <folder path=\"02_working\" default=\"true\"/>\n"
+        "  </working>\n"
+        "</data_package_template>\n");
 
     return true;
 }
@@ -1074,8 +1094,8 @@ bool ooScientificPackage::Create(
     if (!EnsureDirectory(packageDir, errorMessage)) return false;
     runSummary.logLines.Add("Package folder ensured: " + packageDir);
 
-    if (!EnsureDirectory(JoinPath(packageDir, "00_exports"), errorMessage)) return false;
-    if (!EnsureDirectory(JoinPath(JoinPath(packageDir, "00_exports"), "metadata"), errorMessage)) return false;
+    if (!EnsureDirectory(JoinPath(packageDir, "00_raw-data"), errorMessage)) return false;
+    if (!EnsureDirectory(JoinPath(JoinPath(packageDir, "00_raw-data"), "metadata"), errorMessage)) return false;
     if (!EnsureDirectory(JoinPath(packageDir, "01_daily_media"), errorMessage)) return false;
 
     wxArrayString dates = GetObservationDates(observations);
@@ -1098,7 +1118,7 @@ bool ooScientificPackage::Create(
     }
 }
 
-if (rawDataFolders.Index("00_exports/raw_data/tracks") != wxNOT_FOUND) {
+if (rawDataFolders.Index("00_raw-data/tracks") != wxNOT_FOUND) {
     ooGpxExportResult gpxResult =
         ooGpxTrackExport::ExportCompiledOpenCpnTrack(
             dates,
@@ -1115,7 +1135,7 @@ if (rawDataFolders.Index("00_exports/raw_data/tracks") != wxNOT_FOUND) {
     }
 }
     if (!CopyNmeaRecordings(observations, packageDir, errorMessage, runSummary)) return false;
-    if (!ExportObservations(observations, packageDir, errorMessage, runSummary)) return false;
+    if (!ExportObservations(observations, packageDir, rawDataFolders, errorMessage, runSummary)) return false;
     if (!WriteGeneratedFilesWarning(packageDir, errorMessage)) return false;
     if (!WriteReadme(observations, packageDir, errorMessage)) return false;
     if (!WriteObservationIds(observations, packageDir, errorMessage)) return false;
@@ -1154,8 +1174,8 @@ bool ooScientificPackage::Update(
         return false;
     }
 
-    if (!EnsureDirectory(JoinPath(packageDir, "00_exports"), errorMessage)) return false;
-    if (!EnsureDirectory(JoinPath(JoinPath(packageDir, "00_exports"), "metadata"), errorMessage)) return false;
+    if (!EnsureDirectory(JoinPath(packageDir, "00_raw-data"), errorMessage)) return false;
+    if (!EnsureDirectory(JoinPath(JoinPath(packageDir, "00_raw-data"), "metadata"), errorMessage)) return false;
     if (!EnsureDirectory(JoinPath(packageDir, "01_daily_media"), errorMessage)) return false;
 
     wxArrayString dates = GetObservationDates(observations);
@@ -1178,7 +1198,7 @@ bool ooScientificPackage::Update(
     }
 }
 
-if (rawDataFolders.Index("00_exports/raw_data/tracks") != wxNOT_FOUND) {
+if (rawDataFolders.Index("00_raw-data/tracks") != wxNOT_FOUND) {
     ooGpxExportResult gpxResult =
         ooGpxTrackExport::ExportCompiledOpenCpnTrack(
             dates,
@@ -1195,7 +1215,7 @@ if (rawDataFolders.Index("00_exports/raw_data/tracks") != wxNOT_FOUND) {
     }
 }
     if (!CopyNmeaRecordings(observations, packageDir, errorMessage, runSummary)) return false;
-    if (!ExportObservations(observations, packageDir, errorMessage, runSummary)) return false;
+    if (!ExportObservations(observations, packageDir, rawDataFolders, errorMessage, runSummary)) return false;
     if (!WriteGeneratedFilesWarning(packageDir, errorMessage)) return false;
     if (!WriteReadme(observations, packageDir, errorMessage)) return false;
     if (!WriteObservationIds(observations, packageDir, errorMessage)) return false;

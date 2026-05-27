@@ -377,7 +377,7 @@ if (filteredTracks.empty()) {
 }
 
     wxFileName outputFile(
-        packageDir + "/00_exports/raw_data/tracks",
+        packageDir + "/00_raw-data/tracks",
         "full_" + projectName + "_tracks.gpx");
 
     wxString errorMessage;
