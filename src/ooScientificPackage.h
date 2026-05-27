@@ -75,6 +75,12 @@ private:
     static bool CopyTemplateUsed(const wxString& packageDir, wxString& errorMessage);
 
     static bool EnsureDirectory(const wxString& path, wxString& errorMessage);
+    static bool CopyFileIfNewOrModified(
+        const wxString& sourcePath,
+        const wxString& destinationPath,
+        const wxString& logLabel,
+        wxString& errorMessage,
+        RunSummary& runSummary);
     static bool IsScientificPackageFolder(ooObservations* observations,const wxString& packageDir);
     
     static bool CreateDailyFolders(

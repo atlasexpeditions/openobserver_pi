@@ -278,6 +278,56 @@ bool ooScientificPackage::EnsureDirectory(const wxString& path, wxString& errorM
     return true;
 }
 
+bool ooScientificPackage::CopyFileIfNewOrModified(
+    const wxString& sourcePath,
+    const wxString& destinationPath,
+    const wxString& logLabel,
+    wxString& errorMessage,
+    RunSummary& runSummary)
+{
+    if (!wxFileExists(sourcePath)) {
+        runSummary.logLines.Add(logLabel + " missing source: " + sourcePath);
+        return true;
+    }
+
+    bool shouldCopy = true;
+
+    if (wxFileExists(destinationPath)) {
+        wxFileName sourceFile(sourcePath);
+        wxFileName destinationFile(destinationPath);
+
+        const wxULongLong sourceSize = sourceFile.GetSize();
+        const wxULongLong destinationSize = destinationFile.GetSize();
+
+        wxDateTime sourceModified;
+        wxDateTime destinationModified;
+
+        sourceFile.GetTimes(NULL, &sourceModified, NULL);
+        destinationFile.GetTimes(NULL, &destinationModified, NULL);
+
+        shouldCopy =
+            sourceSize != destinationSize ||
+            !sourceModified.IsValid() ||
+            !destinationModified.IsValid() ||
+            sourceModified.IsLaterThan(destinationModified);
+    }
+
+    if (!shouldCopy) {
+        runSummary.logLines.Add(logLabel + " unchanged: " + destinationPath);
+        return true;
+    }
+
+    if (!wxCopyFile(sourcePath, destinationPath, true)) {
+        errorMessage = "Unable to copy file to: " + destinationPath;
+        return false;
+    }
+
+    runSummary.nmeaRecordingsCopied++;
+    runSummary.logLines.Add(logLabel + " exported or updated: " + destinationPath);
+
+    return true;
+}
+
 bool ooScientificPackage::IsScientificPackageFolder(
     ooObservations* observations,
     const wxString& packageDir)
@@ -544,7 +594,7 @@ bool ooScientificPackage::ExportObservations(
 
     const wxString exportBaseName = SanitizeFileName(GetProjectName(observations));
 
-    // The project XML stays at the root of the Data Package and is always refreshed.
+    // The project XML stays at the root of the Data Package and is always updated.
     {
         const wxString xmlPath = JoinPath(packageDir, exportBaseName + ".xml");
 
@@ -556,7 +606,7 @@ bool ooScientificPackage::ExportObservations(
 
         observations->SaveToXML(output.GetFile(), true);
         runSummary.exportFilesRefreshed++;
-        runSummary.logLines.Add("Project XML refreshed: " + exportBaseName + ".xml");
+        runSummary.logLines.Add("Project XML updated: " + exportBaseName + ".xml");
     }
 
     // CSV and GeoJSON observation exports are optional and live under 00_raw-data/observations.
@@ -585,7 +635,7 @@ bool ooScientificPackage::ExportObservations(
         observations->SaveToCSV(output.GetFile(), true);
         runSummary.exportFilesRefreshed++;
         runSummary.logLines.Add(
-            "Observation export refreshed: 00_raw-data/observations/" +
+            "Observation export updated: 00_raw-data/observations/" +
             exportBaseName + ".csv");
     }
 
@@ -601,7 +651,7 @@ bool ooScientificPackage::ExportObservations(
         observations->SaveToGeoJSON(output);
         runSummary.exportFilesRefreshed++;
         runSummary.logLines.Add(
-            "Observation export refreshed: 00_raw-data/observations/" +
+            "Observation export updated: 00_raw-data/observations/" +
             exportBaseName + ".geojson");
     }
 
@@ -724,24 +774,22 @@ bool ooScientificPackage::CopyNmeaRecordings(
         const wxString dailyDestination = JoinPath(dailyNmeaDir, recordingName);
         const wxString rawDestination = JoinPath(rawNmeaDir, recordingName);
 
-        bool copiedThisRecording = false;
-
-        if (!wxFileExists(dailyDestination)) {
-            if (wxCopyFile(sourcePath, dailyDestination, false)) {
-                copiedThisRecording = true;
-                runSummary.logLines.Add(
-                    "NMEA copied: 01_daily_media/" + dateValue + "/nmea/" + recordingName);
-            }
+        if (!CopyFileIfNewOrModified(
+                sourcePath,
+                dailyDestination,
+                "NMEA daily export: 01_daily_media/" + dateValue + "/nmea/" + recordingName,
+                errorMessage,
+                runSummary)) {
+            return false;
         }
 
-        if (wxCopyFile(sourcePath, rawDestination, true)) {
-            copiedThisRecording = true;
-            runSummary.logLines.Add(
-                "NMEA copied: 00_raw-data/nmea-recordings/" + recordingName);
-        }
-
-        if (copiedThisRecording) {
-            runSummary.nmeaRecordingsCopied++;
+        if (!CopyFileIfNewOrModified(
+                sourcePath,
+                rawDestination,
+                "NMEA raw export: 00_raw-data/nmea-recordings/" + recordingName,
+                errorMessage,
+                runSummary)) {
+            return false;
         }
     }
 
@@ -778,8 +826,8 @@ bool ooScientificPackage::WriteRunLog(
     file.Write("Summary\n");
     file.Write("-------\n");
     file.Write(wxString::Format("Folders touched: %d\n", runSummary.foldersTouched));
-    file.Write(wxString::Format("NMEA recordings copied: %d\n", runSummary.nmeaRecordingsCopied));
-    file.Write(wxString::Format("Export files refreshed: %d\n", runSummary.exportFilesRefreshed));
+    file.Write(wxString::Format("NMEA recordings exported: %d\n", runSummary.nmeaRecordingsCopied));
+    file.Write(wxString::Format("Export files updated: %d\n", runSummary.exportFilesRefreshed));
     file.Write(wxString::Format("Daily GPX tracks exported: %d\n", runSummary.gpxDailyTracksExported));
     file.Write(wxString::Format("Compiled GPX tracks exported: %d\n", runSummary.gpxCompiledTracksExported));
     file.Write(wxString::Format("GPX track points exported: %d\n\n", runSummary.gpxTrackPointsExported));
@@ -812,7 +860,7 @@ bool ooScientificPackage::WriteGeneratedFilesWarning(
     }
 
     file.Write(
-        "Files in this folder are generated by Open Observer and may be refreshed "
+        "Files in this folder are generated by Open Observer and may be updated "
         "when updating the Data Package.\n\n"
         "If you need to edit exported data manually, please copy the file to "
         "02_working/ first.\n\n"
@@ -845,12 +893,12 @@ bool ooScientificPackage::WriteReadme(
         "Folder structure\n"
         "----------------\n\n"
         "00_raw-data/\n"
-        "  Generated raw data, exports and metadata. These files may be refreshed by\n"
+        "  Generated raw data, exports and metadata. These files may be updated by\n"
         "  Open Observer when creating or updating the package.\n\n"
         "00_raw-data/observations/\n"
         "  Generated CSV and GeoJSON observation exports.\n\n"
         "00_raw-data/nmea-recordings/\n"
-        "  Raw NMEA recording files copied from Open Observer when available.\n\n"
+        "  Raw NMEA recording files exported from Open Observer when available.\n\n"
         "00_raw-data/tracks/\n"
         "  Raw OpenCPN GPX track exports generated by Open Observer when available.\n\n"
         "01_daily_media/\n"

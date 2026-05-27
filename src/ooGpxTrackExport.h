@@ -35,16 +35,18 @@ public:
         const std::vector<ooGpxTrackPoint>& points,
         const wxString& trackName,
         const wxFileName& outputFile,
-        wxString* errorMessage = nullptr);
+        wxString* errorMessage = nullptr,
+        bool* fileChanged = nullptr);
 
     static std::vector<ooGpxTrackPoint> CollectOpenCpnTrackPoints();
     static std::vector<ooGpxTrack> CollectOpenCpnTracks();
 
     static bool WriteTracksToGpx(
-    const std::vector<ooGpxTrack>& tracks,
-    const wxString& documentName,
-    const wxFileName& outputFile,
-    wxString* errorMessage = nullptr);
+        const std::vector<ooGpxTrack>& tracks,
+        const wxString& documentName,
+        const wxFileName& outputFile,
+        wxString* errorMessage = nullptr,
+        bool* fileChanged = nullptr);
     
     static ooGpxExportResult ExportDailyOpenCpnTracks(
         const wxArrayString& dates,

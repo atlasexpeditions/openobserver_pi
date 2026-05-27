@@ -4,14 +4,90 @@
 #include <wx/file.h>
 #include <wx/log.h>
 #include <wx/textfile.h>
+#include <wx/filefn.h>
 #include <memory>
+
+static bool ReadTextFileContent(const wxString& path, wxString& content)
+{
+    content.Clear();
+
+    if (!wxFileExists(path)) {
+        return false;
+    }
+
+    wxTextFile file;
+    if (!file.Open(path)) {
+        return false;
+    }
+
+    for (size_t i = 0; i < file.GetLineCount(); ++i) {
+        content += file.GetLine(i);
+        content += "\n";
+    }
+
+    file.Close();
+    return true;
+}
+
+static bool ReplaceFileOnlyIfChanged(
+    const wxFileName& temporaryFile,
+    const wxFileName& finalFile,
+    bool* fileChanged,
+    wxString* errorMessage)
+{
+    if (fileChanged) {
+        *fileChanged = true;
+    }
+
+    wxString temporaryContent;
+    if (!ReadTextFileContent(temporaryFile.GetFullPath(), temporaryContent)) {
+        if (errorMessage) {
+            *errorMessage = "Failed to read temporary GPX file.";
+        }
+        return false;
+    }
+
+    wxString existingContent;
+    if (ReadTextFileContent(finalFile.GetFullPath(), existingContent) &&
+        existingContent == temporaryContent) {
+        wxRemoveFile(temporaryFile.GetFullPath());
+
+        if (fileChanged) {
+            *fileChanged = false;
+        }
+
+        return true;
+    }
+
+    if (finalFile.FileExists()) {
+        wxRemoveFile(finalFile.GetFullPath());
+    }
+
+    if (!wxRenameFile(temporaryFile.GetFullPath(), finalFile.GetFullPath(), true)) {
+        if (errorMessage) {
+            *errorMessage = "Failed to replace GPX file.";
+        }
+        return false;
+    }
+
+    if (fileChanged) {
+        *fileChanged = true;
+    }
+
+    return true;
+}
 
 bool ooGpxTrackExport::WriteTrackToGpx(
     const std::vector<ooGpxTrackPoint>& points,
     const wxString& trackName,
     const wxFileName& outputFile,
-    wxString* errorMessage)
+    wxString* errorMessage,
+    bool* fileChanged)
 {
+    if (fileChanged) {
+        *fileChanged = false;
+    }
+
     if (points.empty()) {
         if (errorMessage) {
             *errorMessage = "No track points to export.";
@@ -32,14 +108,31 @@ bool ooGpxTrackExport::WriteTrackToGpx(
         }
     }
 
+    wxFileName temporaryFile(
+        outputFile.GetPath(),
+        outputFile.GetName() + ".tmp",
+        outputFile.GetExt());
+
+    if (temporaryFile.FileExists()) {
+        wxRemoveFile(temporaryFile.GetFullPath());
+    }
+
     wxTextFile file;
 
-    if (outputFile.FileExists()) {
-        file.Open(outputFile.GetFullPath());
-        file.Clear();
-    } else {
-        file.Create(outputFile.GetFullPath());
-        file.Open(outputFile.GetFullPath());
+    if (!file.Create(temporaryFile.GetFullPath())) {
+        if (errorMessage) {
+            *errorMessage = "Failed to create temporary GPX file.";
+        }
+
+        return false;
+    }
+
+    if (!file.Open(temporaryFile.GetFullPath())) {
+        if (errorMessage) {
+            *errorMessage = "Failed to open temporary GPX file.";
+        }
+
+        return false;
     }
 
     file.AddLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
@@ -58,7 +151,6 @@ bool ooGpxTrackExport::WriteTrackToGpx(
     file.AddLine("    <trkseg>");
 
     for (const auto& point : points) {
-
         const wxString timestamp =
             point.timestampUtc.FormatISOCombined('T') + "Z";
 
@@ -83,15 +175,24 @@ bool ooGpxTrackExport::WriteTrackToGpx(
     file.Write();
     file.Close();
 
-    return true;
+    return ReplaceFileOnlyIfChanged(
+        temporaryFile,
+        outputFile,
+        fileChanged,
+        errorMessage);
 }
 
 bool ooGpxTrackExport::WriteTracksToGpx(
     const std::vector<ooGpxTrack>& tracks,
     const wxString& documentName,
     const wxFileName& outputFile,
-    wxString* errorMessage)
+    wxString* errorMessage,
+    bool* fileChanged)
 {
+    if (fileChanged) {
+        *fileChanged = false;
+    }
+
     if (tracks.empty()) {
         if (errorMessage) {
             *errorMessage = "No tracks to export.";
@@ -110,14 +211,31 @@ bool ooGpxTrackExport::WriteTracksToGpx(
         }
     }
 
+    wxFileName temporaryFile(
+        outputFile.GetPath(),
+        outputFile.GetName() + ".tmp",
+        outputFile.GetExt());
+
+    if (temporaryFile.FileExists()) {
+        wxRemoveFile(temporaryFile.GetFullPath());
+    }
+
     wxTextFile file;
 
-    if (outputFile.FileExists()) {
-        file.Open(outputFile.GetFullPath());
-        file.Clear();
-    } else {
-        file.Create(outputFile.GetFullPath());
-        file.Open(outputFile.GetFullPath());
+    if (!file.Create(temporaryFile.GetFullPath())) {
+        if (errorMessage) {
+            *errorMessage = "Failed to create temporary GPX file.";
+        }
+
+        return false;
+    }
+
+    if (!file.Open(temporaryFile.GetFullPath())) {
+        if (errorMessage) {
+            *errorMessage = "Failed to open temporary GPX file.";
+        }
+
+        return false;
     }
 
     file.AddLine("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
@@ -171,7 +289,11 @@ bool ooGpxTrackExport::WriteTracksToGpx(
     file.Write();
     file.Close();
 
-    return true;
+    return ReplaceFileOnlyIfChanged(
+        temporaryFile,
+        outputFile,
+        fileChanged,
+        errorMessage);
 }
 
 std::vector<ooGpxTrack>
@@ -312,15 +434,21 @@ ooGpxExportResult ooGpxTrackExport::ExportDailyOpenCpnTracks(
             date + "_openobserver_daily_track.gpx");
 
         wxString errorMessage;
+        bool fileChanged = false;
 
         if (WriteTrackToGpx(
                 dayPoints,
                 "OpenObserver daily track " + date,
                 outputFile,
-                &errorMessage)) {
+                &errorMessage,
+                &fileChanged)) {
 
-            result.exportedTrackCount++;
-            result.exportedPointCount += static_cast<int>(dayPoints.size());
+            if (fileChanged) {
+                result.exportedTrackCount++;
+                result.exportedPointCount += static_cast<int>(dayPoints.size());
+            } else {
+                result.message += "Daily GPX unchanged: " + outputFile.GetFullName() + "\n";
+            }
         } else if (!errorMessage.IsEmpty()) {
             result.message += errorMessage + "\n";
         }
@@ -354,46 +482,52 @@ ooGpxExportResult ooGpxTrackExport::ExportCompiledOpenCpnTrack(
         return result;
     }
 
-const std::vector<ooGpxTrack> allTracks = CollectOpenCpnTracks();
+    const std::vector<ooGpxTrack> allTracks = CollectOpenCpnTracks();
 
-std::vector<ooGpxTrack> filteredTracks;
-int exportedPointCount = 0;
+    std::vector<ooGpxTrack> filteredTracks;
+    int exportedPointCount = 0;
 
-for (const auto& track : allTracks) {
-    ooGpxTrack filteredTrack;
-    filteredTrack.name = track.name;
-    filteredTrack.guid = track.guid;
-    filteredTrack.points = FilterPointsByTimeRange(track.points, startUtc, endUtc);
+    for (const auto& track : allTracks) {
+        ooGpxTrack filteredTrack;
+        filteredTrack.name = track.name;
+        filteredTrack.guid = track.guid;
+        filteredTrack.points = FilterPointsByTimeRange(track.points, startUtc, endUtc);
 
-    if (!filteredTrack.points.empty()) {
-        exportedPointCount += static_cast<int>(filteredTrack.points.size());
-        filteredTracks.push_back(filteredTrack);
+        if (!filteredTrack.points.empty()) {
+            exportedPointCount += static_cast<int>(filteredTrack.points.size());
+            filteredTracks.push_back(filteredTrack);
+        }
     }
-}
 
-if (filteredTracks.empty()) {
-    result.message = "No OpenCPN tracks found for compiled GPX export.";
-    return result;
-}
+    if (filteredTracks.empty()) {
+        result.message = "No OpenCPN tracks found for compiled GPX export.";
+        return result;
+    }
 
     wxFileName outputFile(
         packageDir + "/00_raw-data/tracks",
         "full_" + projectName + "_tracks.gpx");
 
     wxString errorMessage;
+    bool fileChanged = false;
 
-if (WriteTracksToGpx(
-        filteredTracks,
-        "OpenObserver compiled OpenCPN tracks " + firstDate + " to " + lastDate,
-        outputFile,
-        &errorMessage)) {
+    if (WriteTracksToGpx(
+            filteredTracks,
+            "OpenObserver compiled OpenCPN tracks " + firstDate + " to " + lastDate,
+            outputFile,
+            &errorMessage,
+            &fileChanged)) {
 
-    result.success = true;
-    result.exportedTrackCount = static_cast<int>(filteredTracks.size());
-    result.exportedPointCount = exportedPointCount;
-} else {
-    result.message = errorMessage;
-}
+        if (fileChanged) {
+            result.success = true;
+            result.exportedTrackCount = static_cast<int>(filteredTracks.size());
+            result.exportedPointCount = exportedPointCount;
+        } else {
+            result.message = "Compiled GPX unchanged: " + outputFile.GetFullName();
+        }
+    } else {
+        result.message = errorMessage;
+    }
 
     return result;
 }

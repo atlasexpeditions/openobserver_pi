@@ -1618,9 +1618,9 @@ void ooControlDialogImpl::OnButtonClickCreateScientificPackage(wxCommandEvent& e
     wxMessageBox(
         _("Data Package created successfully:\n\n") + createdPackagePath +
         _("\n\nSummary:\n") +
+        wxString::Format(_("• %d export files created\n"), runSummary.exportFilesRefreshed) +
         wxString::Format(_("• %d folders created\n"), runSummary.foldersTouched) +
-        wxString::Format(_("• %d NMEA recordings copied\n"), runSummary.nmeaRecordingsCopied) +
-        wxString::Format(_("• %d export files refreshed\n"), runSummary.exportFilesRefreshed) +
+        wxString::Format(_("• %d NMEA recordings exported\n"), runSummary.nmeaRecordingsCopied) +
         wxString::Format(_("• %d daily GPX tracks exported\n"), runSummary.gpxDailyTracksExported) +
         wxString::Format(_("• %d raw OpenCPN GPX tracks exported\n"), runSummary.gpxCompiledTracksExported) +
         wxString::Format(_("• %d GPX track points exported\n"), runSummary.gpxTrackPointsExported) +
@@ -1675,9 +1675,9 @@ void ooControlDialogImpl::OnButtonClickUpdateScientificPackage(wxCommandEvent& e
     wxMessageBox(
         _("Data Package updated successfully:\n\n") + packageFolder +
         _("\n\nSummary:\n") +
+        wxString::Format(_("• %d export files updated\n"), runSummary.exportFilesRefreshed) +
         wxString::Format(_("• %d folders updated\n"), runSummary.foldersTouched) +
-        wxString::Format(_("• %d NMEA recordings copied\n"), runSummary.nmeaRecordingsCopied) +
-        wxString::Format(_("• %d export files refreshed\n"), runSummary.exportFilesRefreshed) +
+        wxString::Format(_("• %d NMEA recordings exported\n"), runSummary.nmeaRecordingsCopied) +
         wxString::Format(_("• %d daily GPX tracks exported\n"), runSummary.gpxDailyTracksExported) +
         wxString::Format(_("• %d raw OpenCPN GPX tracks exported\n"), runSummary.gpxCompiledTracksExported) +
         wxString::Format(_("• %d GPX track points exported\n"), runSummary.gpxTrackPointsExported) +
