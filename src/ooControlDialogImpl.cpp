@@ -36,6 +36,9 @@
 #include <wx/file.h>
 #include <wx/checklst.h>
 #include <wx/textfile.h>
+#include <wx/filename.h>
+#include <wx/filefn.h>
+#include <wx/dir.h>
 
 #include <wx/xml/xml.h>
 
@@ -57,12 +60,163 @@
 
 extern openobserver_pi *g_openobserver_pi;
 extern wxString *g_pData;
+extern wxString *g_PrivateDataDir;
 
 static bool IsDarkColour(const wxColour& colour);
 static wxColour BlendColour(const wxColour& base, const wxColour& overlay, double ratio);
 static wxColour ContrastTextColour(const wxColour& background);
 static wxColour AlternateRowColour(const wxColour& base);
 static void ApplyStandardBoldGridLabelFont(wxGrid* grid);
+
+static wxString JoinControlPath(const wxString& a, const wxString& b)
+{
+    wxFileName fn(a, b);
+    return fn.GetFullPath();
+}
+
+static int FindObservationColumnByFieldTypeOrLabel(
+    ooObservations* observations,
+    const wxString& fieldType,
+    const wxArrayString& acceptedLabels = wxArrayString())
+{
+    if (!observations) {
+        return wxNOT_FOUND;
+    }
+
+    const int columnCount = observations->GetColsCount();
+    const wxArrayString fieldTypes = observations->GetColFieldTypes();
+    const wxArrayString labels = observations->GetProject().GetColLabels();
+
+    for (int c = 0; c < columnCount; ++c) {
+        if (c < (int)fieldTypes.GetCount() &&
+            fieldTypes[c].IsSameAs(fieldType)) {
+            return c;
+        }
+
+        if (c < (int)labels.GetCount()) {
+            for (size_t i = 0; i < acceptedLabels.GetCount(); ++i) {
+                if (labels[c].IsSameAs(acceptedLabels[i], false)) {
+                    return c;
+                }
+            }
+        }
+    }
+
+    return wxNOT_FOUND;
+}
+
+static wxString FindNmeaRecordingPathByName(const wxString& recordingName)
+{
+    if (!g_PrivateDataDir || g_PrivateDataDir->IsEmpty() || recordingName.IsEmpty()) {
+        return wxEmptyString;
+    }
+
+    wxFileName recordingFile(recordingName);
+    const wxString cleanRecordingName = recordingFile.GetFullName();
+
+    if (!cleanRecordingName.StartsWith("NMEA-") ||
+        !cleanRecordingName.Lower().EndsWith(".nmea") ||
+        cleanRecordingName.Length() < 18) {
+        return wxEmptyString;
+    }
+
+    const wxString compactDate = cleanRecordingName.Mid(5, 8);
+
+    if (compactDate.Length() != 8) {
+        return wxEmptyString;
+    }
+
+    const wxString dayFolderName =
+        compactDate.Mid(0, 4) + "-" +
+        compactDate.Mid(4, 2) + "-" +
+        compactDate.Mid(6, 2);
+
+    const wxString recordingPath = JoinControlPath(
+        JoinControlPath(
+            JoinControlPath(*g_PrivateDataDir, "NMEArecordings"),
+            dayFolderName),
+        cleanRecordingName);
+
+    if (wxFileExists(recordingPath)) {
+        return recordingPath;
+    }
+
+    return wxEmptyString;
+}
+
+static wxArrayString CollectNmeaRecordingPathsForRows(
+    ooObservations* observations,
+    const wxArrayInt& selectedRows)
+{
+    wxArrayString recordingPaths;
+
+    if (!observations || !g_PrivateDataDir || g_PrivateDataDir->IsEmpty()) {
+        return recordingPaths;
+    }
+
+    wxArrayString recordingLabels;
+    recordingLabels.Add("NMEA Recording");
+    recordingLabels.Add("NMEA REC");
+    recordingLabels.Add("NMEA record");
+    recordingLabels.Add("NMEA recording");
+
+    const int recordingCol = FindObservationColumnByFieldTypeOrLabel(
+        observations,
+        "NMEA Recording",
+        recordingLabels);
+
+    if (recordingCol == wxNOT_FOUND) {
+        return recordingPaths;
+    }
+
+    for (int i = 0; i < (int)selectedRows.GetCount(); ++i) {
+        const int row = selectedRows[i];
+
+        if (row < 0 || row >= observations->GetNumberRows()) {
+            continue;
+        }
+
+        wxString recordingValue = observations->GetValue(row, recordingCol);
+        recordingValue.Trim(true);
+        recordingValue.Trim(false);
+
+        if (recordingValue.IsEmpty() ||
+            recordingValue.Lower().StartsWith("no data")) {
+            continue;
+        }
+
+        wxFileName recordingFile(recordingValue);
+        const wxString recordingName = recordingFile.GetFullName();
+
+        if (recordingName.IsEmpty() ||
+            !recordingName.Lower().EndsWith(".nmea")) {
+            continue;
+        }
+
+        const wxString recordingPath = FindNmeaRecordingPathByName(recordingName);
+
+        if (!recordingPath.IsEmpty() &&
+            wxFileExists(recordingPath) &&
+            recordingPaths.Index(recordingPath) == wxNOT_FOUND) {
+            recordingPaths.Add(recordingPath);
+        }
+    }
+
+    return recordingPaths;
+}
+
+static int DeleteExistingFiles(const wxArrayString& filePaths)
+{
+    int deletedCount = 0;
+
+    for (size_t i = 0; i < filePaths.GetCount(); ++i) {
+        if (wxFileExists(filePaths[i]) && wxRemoveFile(filePaths[i])) {
+            deletedCount++;
+        }
+    }
+
+    return deletedCount;
+}
 
 ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent) 
     : ooControlDialogDef(parent),
@@ -1005,8 +1159,7 @@ void ooControlDialogImpl::OnButtonClickNewObservation( wxCommandEvent& event )
 void ooControlDialogImpl::OnButtonClickDeleteObservation( wxCommandEvent& event )
 {
     if (!m_Observations) return;
-
-    
+    if (!m_ObservationsTable) return;
     if (m_Observations->GetNumberRows() <= 0) return;
 
     wxArrayInt selectedRows = m_ObservationsTable->GetSelectedRows();
@@ -1016,15 +1169,38 @@ void ooControlDialogImpl::OnButtonClickDeleteObservation( wxCommandEvent& event 
     if (selectedRows.IsEmpty()) return;
 
     const int response = wxMessageBox(
-        wxString::Format(wxT("Warning: %i selected observations will be deleted. Do you want to "
+        wxString::Format(wxT("Warning: %i selected observation(s) will be deleted. Do you want to "
         "continue?"), selectedRows.GetCount()),
         "Delete observation(s)?", wxYES_NO, this);
     if (response != wxYES) return;
+
+    const wxArrayString nmeaRecordingPaths =
+        CollectNmeaRecordingPathsForRows(m_Observations, selectedRows);
+
+    bool deleteAssociatedNmeaRecordings = false;
+
+    if (!nmeaRecordingPaths.IsEmpty()) {
+        const int nmeaResponse = wxMessageBox(
+            wxString::Format(
+                wxT("%i associated NMEA recording file(s) were found.\n\n"
+                    "Do you also want to delete these original NMEA recording file(s)?"),
+                nmeaRecordingPaths.GetCount()),
+            "Delete associated NMEA recording file(s)?",
+            wxYES_NO | wxICON_QUESTION,
+            this);
+
+        deleteAssociatedNmeaRecordings = (nmeaResponse == wxYES);
+    }
 
     for (int i = 0; i < (int)selectedRows.GetCount(); i++) {
         m_Observations->DeleteMarks(selectedRows[i]);
         m_Observations->DeleteRows(selectedRows[i]);
     }
+
+    if (deleteAssociatedNmeaRecordings) {
+        DeleteExistingFiles(nmeaRecordingPaths);
+    }
+
     RefreshGridAppearance(m_ObservationsTable);
 }
 
