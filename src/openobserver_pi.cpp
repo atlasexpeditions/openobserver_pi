@@ -1188,6 +1188,15 @@ void openobserver_pi::ToggleToolbarIcon()
 {
     if (!m_ooControlDialogImpl || !m_ooMiniDialogImpl) return;
 
+#ifdef __WXOSX__
+    if (m_ooControlDialogImpl->IsShown() &&
+        !m_ooControlDialogImpl->IsIconized()) {
+        SetToolbarItemState(m_openobserver_button_id, true);
+        m_ooControlDialogImpl->Raise();
+        return;
+    }
+#endif
+
     if (m_ooControlDialogImpl->IsShown() || m_ooMiniDialogImpl->IsShown()) {
         SetToolbarItemState(m_openobserver_button_id, false);
         m_ooControlDialogImpl->Hide();
