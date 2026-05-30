@@ -608,7 +608,7 @@ bool ooControlDialogImpl::SaveObservations(const wxString& filename, bool stopOb
 {
     wxString savePath = filename;
     if (savePath.IsEmpty()) {
-        wxFileDialog saveFileDialog(this, _("Save observations to XML file"), "",
+        wxFileDialog saveFileDialog(this, _("Save entire project with observations to XML file"), "",
                                     m_Observations->GetProject().GetName(),
                                     "XML file (*.xml)|*.xml",
                                     wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
@@ -627,7 +627,7 @@ bool ooControlDialogImpl::SaveObservations(const wxString& filename, bool stopOb
     
     wxFileOutputStream output_stream(savePath);
     if (!output_stream.IsOk()) {
-        wxMessageBox("Unable to save observations to file " + savePath + ".",
+        wxMessageBox("Unable to save project to file " + savePath + ".",
             "Error", wxOK, this);
         return false;
     }
@@ -881,10 +881,8 @@ void ooControlDialogImpl::SetPositionFix(time_t fixTime, double lat, double lon)
     m_ObservationsDate->SetValue(dateString);
     m_ObservationsTime->SetValue(timeString);
 
-    m_ObservationsDateLabel1->SetLabel(wxString::Format(
-        wxT("Current Data (%s)"),
-        timeSource));
-    m_ObservationsDateLabel1->GetParent()->Layout();
+    m_ObservationsUtcSource->SetLabel(timeSource);
+    m_ObservationsUtcSource->GetParent()->Layout();
 
     m_ObservationsLat->SetValue(toSDMM_PlugIn(1, lat));
     m_ObservationsLon->SetValue(toSDMM_PlugIn(2, lon));
@@ -968,10 +966,13 @@ void ooControlDialogImpl::ooControlDialogActivate(wxActivateEvent& event)
     inActivate = false;
 }
 
-extern wxString* g_pListingDir;
-void ooControlDialogImpl::OnButtonClickEditListings(wxCommandEvent& event)
+void ooControlDialogImpl::OnButtonClickOpenResourcesFolder(wxCommandEvent& event)
 {
-    wxLaunchDefaultApplication(*g_pListingDir);
+    // Open the main Open Observer user folder, which contains Listings,
+    // NMEArecordings, NMEAFields.xml, templates, icons and user resources.
+    if (!g_PrivateDataDir || g_PrivateDataDir->IsEmpty()) return;
+
+    wxLaunchDefaultApplication(*g_PrivateDataDir);
 }
 
 void ooControlDialogImpl::OnButtonClickRefreshListings(wxCommandEvent& event)
@@ -1919,13 +1920,13 @@ void ooControlDialogImpl::OnButtonClickLoadObservation(wxCommandEvent& event)
     }
 
     wxFileDialog loadObservationsDialog(
-        this, _("Load observations from XML file"), "", "", "XML file (*.xml)|*.xml",
+        this, _("Load entire project with observations from XML file"), "", "", "XML file (*.xml)|*.xml",
         wxFD_OPEN | wxFD_FILE_MUST_EXIST | wxFD_CHANGE_DIR);
     
     if (loadObservationsDialog.ShowModal() == wxID_CANCEL) return;
     
     if (!LoadObservations(loadObservationsDialog.GetPath())) {
-        wxMessageBox("Unable to load observations from file " +
+        wxMessageBox("Unable to load project from file " +
                      loadObservationsDialog.GetPath() + ".",
                      "Error", wxOK, this);
         return;
@@ -2011,8 +2012,7 @@ void ooControlDialogImpl::OnProjectGridSelectionChange()
 {
     const wxArrayInt selectedCols = m_gridProject->GetSelectedCols();
     m_ProjectDeleteColumn->Enable(!selectedCols.IsEmpty());
-    m_ProjectDeleteColumn->SetLabel(
-        selectedCols.GetCount() == 1 ? "Delete column" : "Delete columns");
+    m_ProjectDeleteColumn->SetLabel("Delete Selected");
 }
 
 void ooControlDialogImpl::OnProjectGridCellSelect(wxGridEvent& event)

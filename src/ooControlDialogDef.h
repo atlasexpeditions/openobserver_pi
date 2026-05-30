@@ -66,13 +66,14 @@ class ooControlDialogDef : public wxDialog
 		wxCheckBox* m_checkShowAdvancedNmeaFields;
 		wxStaticText* m_staticText11;
 		wxStaticText* m_staticTextListings;
-		wxButton* m_buttonEditListings;
+		wxButton* m_buttonOpenResourcesFolder;
 		wxButton* m_buttonRefreshListings;
 		wxPanel* m_panelObservations;
 		wxFlexGridSizer* m_fgSizerObservations;
 		wxBoxSizer* bSizerTopButtons;
 		wxStaticLine* m_staticline1;
 		wxStaticText* m_ObservationsDateLabel1;
+		wxStaticText* m_ObservationsUtcSource;
 		wxStaticText* m_ObservationsDateLabel;
 		wxTextCtrl* m_ObservationsDate;
 		wxStaticText* m_ObservationsTimeLabel;
@@ -91,7 +92,6 @@ class ooControlDialogDef : public wxDialog
 		wxButton* m_ObservationsImportObservations;
 		wxButton* m_ObservationsExportObservations;
 		wxButton* m_buttonCreateScientificPackage;
-		wxButton* m_buttonUpdateScientificPackage;
 		wxChoice* m_choiceObservations;
 
 		// Virtual event handlers, override them in your derived class
@@ -106,7 +106,7 @@ class ooControlDialogDef : public wxDialog
 		virtual void OnProjectGridRangeSelect( wxGridRangeSelectEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickScanNmea( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCheckBoxShowAdvancedNmeaFields( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnButtonClickEditListings( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickOpenResourcesFolder( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickRefreshListings( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickNewObservation( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickDeleteObservation( wxCommandEvent& event ) { event.Skip(); }

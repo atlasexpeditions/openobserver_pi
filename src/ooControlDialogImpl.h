@@ -90,7 +90,7 @@ public:
         void OnCheckBoxShowAdvancedNmeaFields(wxCommandEvent& event) override;
         void CommitCurrentObservationsGridEdit();
         void ooControlDialogActivate(wxActivateEvent& event);
-        void OnButtonClickEditListings(wxCommandEvent& event);
+        void OnButtonClickOpenResourcesFolder(wxCommandEvent& event);
         void OnButtonClickRefreshListings(wxCommandEvent& event);
         void OnNotebookPageChanged(wxNotebookEvent& event);
         void OnChoiceObservationsChanged(wxCommandEvent& event);

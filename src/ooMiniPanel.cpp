@@ -78,23 +78,35 @@ bool ooMiniPanel::Create(wxWindow* parent, wxWindowID id, const wxString& msg,
   m_ObservationsDurationLabel->Hide();
   m_ObservationDuration->Hide();
 
-  m_buttonToggleWindow = new wxButton(this, wxID_ANY, _("Toggle Window"),
-                                        wxDefaultPosition, wxDefaultSize, 0);
-  bSizerTopButtons->Add(m_buttonToggleWindow, 0,
-                        wxALIGN_CENTER_VERTICAL | wxALL, 5);
+  m_ProjectLabelPanel =
+      new wxPanel(this, wxID_ANY, wxDefaultPosition, wxSize(-1, 22), wxBORDER_NONE);
+  m_ProjectLabelPanel->SetMinSize(wxSize(-1, 22));
+  m_ProjectLabelPanel->SetBackgroundColour(wxColor(20, 20, 20));
+
+  wxBoxSizer* projectLabelSizer = new wxBoxSizer(wxVERTICAL);
 
   m_ProjectLabel =
-      new wxStaticText(this, wxID_ANY, _("  "),
-                       wxDefaultPosition, wxDefaultSize, 0);
-
-  m_ProjectLabel->SetBackgroundColour(wxColor(20, 20, 20));
+      new wxStaticText(m_ProjectLabelPanel, wxID_ANY, _("  "),
+                       wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER);
   m_ProjectLabel->SetForegroundColour(wxColor(*wxWHITE));
+
   wxFont font = m_ProjectLabel->GetFont();
   font.SetWeight(wxFONTWEIGHT_EXTRABOLD);
   m_ProjectLabel->SetFont(font);
 
-  bSizerTopButtons->Add(m_ProjectLabel, 1,
-                        wxALIGN_CENTER_VERTICAL | wxALIGN_RIGHT | wxALL, 5);
+  projectLabelSizer->AddStretchSpacer();
+  projectLabelSizer->Add(m_ProjectLabel, 0, wxALIGN_CENTER_HORIZONTAL);
+  projectLabelSizer->AddStretchSpacer();
+
+  m_ProjectLabelPanel->SetSizer(projectLabelSizer);
+
+  bSizerTopButtons->Add(m_ProjectLabelPanel, 1,
+                        wxALIGN_CENTER_VERTICAL | wxEXPAND | wxALL, 5);
+
+  m_buttonToggleWindow = new wxButton(this, wxID_ANY, _("Toggle Window"),
+                                      wxDefaultPosition, wxDefaultSize, 0);
+  bSizerTopButtons->Add(m_buttonToggleWindow, 0,
+                        wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
   this->SetSizerAndFit(bSizerTopButtons);
   bSizerTopButtons->SetSizeHints(this);
@@ -141,8 +153,9 @@ void ooMiniPanel::SetProjectInfo(const wxString& projectName,
                                  const wxColor& projectColor)
 {
     m_ProjectLabel->SetLabelText(wxString::Format(" %s ", projectName));
-    m_ProjectLabel->SetBackgroundColour(projectColor);
-    m_ProjectLabel->GetParent()->Layout();
+    m_ProjectLabelPanel->SetBackgroundColour(projectColor);
+    m_ProjectLabelPanel->Layout();
+    m_ProjectLabelPanel->GetParent()->Layout();
 }
 
 void ooMiniPanel::StartOrStopObservation()
