@@ -34,6 +34,8 @@
 #include <wx/wfstream.h>
 #include <wx/msgdlg.h>
 
+#include <vector>
+
 #include "tpUtils.h"
 #include "ocpn_plugin.h"
 #include <openobserver_pi.h>
@@ -1249,30 +1251,105 @@ bool ooObservations::SaveToGeoJSON(wxOutputStream& out)
     return true;
 }
 
+static std::vector<int> BuildColumnMigrationMap(
+    const ooProject& oldProject,
+    const ooProject& newProject)
+{
+    const int oldColCount = oldProject.GetColCount();
+    const int newColCount = newProject.GetColCount();
+
+    std::vector<int> oldToNewCol(oldColCount, -1);
+    std::vector<bool> newColUsed(newColCount, false);
+
+    // First pass: exact match by label and field type.
+    // This preserves columns that were only moved left/right.
+    for (int oldC = 0; oldC < oldColCount; ++oldC) {
+        for (int newC = 0; newC < newColCount; ++newC) {
+            if (newColUsed[newC]) continue;
+
+            if (oldProject.GetColLabels()[oldC].IsSameAs(newProject.GetColLabels()[newC]) &&
+                oldProject.GetColFieldTypes()[oldC].IsSameAs(newProject.GetColFieldTypes()[newC])) {
+                oldToNewCol[oldC] = newC;
+                newColUsed[newC] = true;
+                break;
+            }
+        }
+    }
+
+    // Second pass: fallback match by field type only.
+    // This preserves data when the user renamed a column but kept the same type.
+    for (int oldC = 0; oldC < oldColCount; ++oldC) {
+        if (oldToNewCol[oldC] != -1) continue;
+
+        for (int newC = 0; newC < newColCount; ++newC) {
+            if (newColUsed[newC]) continue;
+
+            if (oldProject.GetColFieldTypes()[oldC].IsSameAs(newProject.GetColFieldTypes()[newC])) {
+                oldToNewCol[oldC] = newC;
+                newColUsed[newC] = true;
+                break;
+            }
+        }
+    }
+
+    return oldToNewCol;
+}
+
 void ooObservations::SetProject(const ooProject& project)
 {
-    bool bMustReset = !m_project.IsUpdatable(project);
+    const ooProject oldProject = m_project;
+    const bool structureChanged = !oldProject.IsUpdatable(project);
+
+    const int oldRowCount = GetNumberRows();
+    const int oldColCount = GetNumberCols();
+    const int newColCount = project.GetColCount();
+
+    std::vector<std::vector<wxString>> oldValues;
+    oldValues.resize(oldRowCount);
+
+    for (int r = 0; r < oldRowCount; ++r) {
+        oldValues[r].resize(oldColCount);
+        for (int c = 0; c < oldColCount; ++c) {
+            oldValues[r][c] = GetValue(r, c);
+        }
+    }
+
+    const std::vector<int> oldToNewCol =
+        BuildColumnMigrationMap(oldProject, project);
+
+    if (structureChanged && IsObserving()) {
+        StopObservation();
+    }
+
+    if (oldRowCount > 0) {
+        DeleteRows(0, oldRowCount);
+    }
+
+    if (oldColCount > 0) {
+        DeleteCols(0, oldColCount);
+    }
 
     m_project = project;
-    const int C = m_project.GetColCount();
 
-    if (bMustReset) {
-        // stop any observation, if one is running
-        StopObservation();
-        
-        // delete table
-        if (GetNumberRows() > 0)
-            DeleteRows(0, GetNumberRows());
-        
-        if (GetNumberCols() > 0)
-            DeleteCols(0, GetNumberCols());
-        
-        // add columns
-        InsertCols(0, C);
+    if (newColCount > 0) {
+        InsertCols(0, newColCount);
+    }
+
+    if (oldRowCount > 0) {
+        InsertRows(0, oldRowCount);
+    }
+
+    for (int oldC = 0; oldC < oldColCount && oldC < static_cast<int>(oldToNewCol.size()); ++oldC) {
+        const int newC = oldToNewCol[oldC];
+        if (newC < 0 || newC >= newColCount) continue;
+
+        for (int r = 0; r < oldRowCount; ++r) {
+            SetValue(r, newC, oldValues[r][oldC]);
+        }
     }
 
     // set the column labels
-    for (int c = 0; c < C; ++c) {
+    for (int c = 0; c < newColCount; ++c) {
         SetColLabelValue(c, m_project.GetColLabels()[c]);
     }
 }

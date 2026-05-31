@@ -1047,19 +1047,31 @@ void ooControlDialogImpl::OnButtonClickProjectEditUse(wxCommandEvent& event)
         EnsureProjectHasFieldType("Start Latitude", "Lat");
         EnsureProjectHasFieldType("Mark GUID", "Mark GUID");
 
-        // second, prompt user to export observations
+        // second, warn user when project structure changes may affect data consistency
         if (m_Observations &&
             m_Observations->GetRowsCount() > 0 &&
             !m_Observations->GetProject().IsUpdatable(GenerateProject()))
         {
             const int response = wxMessageBox(
-              "Warning: your current observations will be cleared. Do you want "
-              "to save them first?",
-              "Save your observations?", wxYES | wxNO | wxCANCEL, this);
-            if (response == wxCANCEL) return;
-            if (response == wxYES)
-            {
-                if (!SaveObservations())
+                "Attention! Your latest edits to the project structure may affect data consistency.\n\n"
+                "It is still time to revert your changes.\n\n"
+                "Are you sure you want to continue?",
+                "Project structure changed",
+                wxYES_NO | wxCANCEL | wxICON_WARNING,
+                this);
+
+            if (response != wxYES) return;
+
+            const int saveResponse = wxMessageBox(
+                "Do you want to keep a safety copy of the current project & observations before applying these changes?",
+                "Save safety copy?",
+                wxYES_NO | wxCANCEL | wxICON_QUESTION,
+                this);
+
+            if (saveResponse == wxCANCEL) return;
+
+            if (saveResponse == wxYES) {
+                if (!SaveObservations(wxString(), false))
                     return;
             }
         }
