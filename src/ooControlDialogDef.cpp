@@ -20,7 +20,7 @@ ooControlDialogDef::ooControlDialogDef( wxWindow* parent, wxWindowID id, const w
 
 bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style )
 {
-	if ( !wxDialog::Create( parent, id, title, pos, size, style ) )
+	if ( !wxFrame::Create( parent, id, title, pos, size, style ) )
 	{
 		return false;
 	}

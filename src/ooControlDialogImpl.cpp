@@ -228,12 +228,11 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
       m_observationsChoiceCount(1),
       m_markIconsLoaded(false)
 {
-#if wxCHECK_VERSION(3,0,0)
-    SetLayoutAdaptationMode(wxDIALOG_ADAPTATION_MODE_ENABLED);
-#endif // wxCHECK_VERSION(3,0,0)
+    // The full Open Observer control window is a wxFrame, like OpenCPN's
+    // Route & Mark Manager. wxDialog layout adaptation is not used here.
 
-// The full control dialog intentionally does not use wxSTAY_ON_TOP.
-// The mini dialog keeps wxSTAY_ON_TOP.
+    // The full control dialog intentionally does not use wxSTAY_ON_TOP.
+    // The mini dialog keeps wxSTAY_ON_TOP.
    
 
     // Make the observations/project switcher wider and easier to read.
