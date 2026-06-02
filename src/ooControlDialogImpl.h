@@ -129,6 +129,7 @@ public:
         ooObservations * m_Observations;
         wxGrid* m_ObservationsTable;
         void ApplyModernGridStyle(wxGrid* grid);
+        void ApplyProjectGridReadabilityStyle(wxGrid* grid);
         void RefreshGridAppearance(wxGrid* grid);
         void UpdateProjectCellEditors();
         int  GetNmeaFieldCount() const;

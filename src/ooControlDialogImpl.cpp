@@ -443,6 +443,8 @@ void ooControlDialogImpl::NewProject()
     m_textProjectDescription->SetValue(wxEmptyString);
     m_colourProject->SetColour(DEFAULT_PROJECT_COLOUR);
     SelectMarkIconOrFallback(DEFAULT_PROJECT_ICON);
+
+    ApplyProjectGridReadabilityStyle(m_gridProject);
 }
 
 void ooControlDialogImpl::UpdateProjectCellEditors()
@@ -484,6 +486,7 @@ bool ooControlDialogImpl::LoadProject(const ooProject& project)
     }
 
     UpdateProjectCellEditors();
+    ApplyProjectGridReadabilityStyle(m_gridProject);
 
     m_CurrentProject = project;
 
@@ -749,6 +752,13 @@ static void ApplyStandardBoldGridLabelFont(wxGrid* grid)
     grid->SetRowLabelAlignment(wxALIGN_CENTER, wxALIGN_CENTER);
 }
 
+static bool IsTextLikeObservationFieldType(const wxString& fieldType)
+{
+    return fieldType.IsSameAs("Text", false) ||
+           fieldType.IsSameAs("Comments", false) ||
+           fieldType.IsSameAs("Notes", false);
+}
+
 void ooControlDialogImpl::RefreshGridAppearance(wxGrid* grid)
 {
     if (!grid) return;
@@ -834,6 +844,80 @@ void ooControlDialogImpl::ApplyModernGridStyle(wxGrid* grid)
     grid->ForceRefresh();
 }
 
+void ooControlDialogImpl::ApplyProjectGridReadabilityStyle(wxGrid* grid)
+{
+    if (!grid) return;
+
+    ApplyStandardBoldGridLabelFont(grid);
+
+    const wxColour baseBackground =
+        wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW);
+    const wxColour alternateBackground =
+        AlternateRowColour(baseBackground);
+
+    const wxColour baseTextColour =
+        ContrastTextColour(baseBackground);
+
+    const wxColour labelBackground =
+        wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE);
+    const wxColour labelTextColour =
+        ContrastTextColour(labelBackground);
+
+    const wxColour selectionBackground =
+        wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHT);
+    const wxColour selectionText =
+        wxSystemSettings::GetColour(wxSYS_COLOUR_HIGHLIGHTTEXT);
+
+    grid->BeginBatch();
+
+    grid->SetDefaultCellFont(GetFont());
+    grid->SetDefaultCellAlignment(wxALIGN_CENTER, wxALIGN_CENTER);
+    grid->SetDefaultRowSize(42, true);
+
+    grid->SetDefaultCellBackgroundColour(baseBackground);
+    grid->SetDefaultCellTextColour(baseTextColour);
+
+    grid->SetLabelBackgroundColour(labelBackground);
+    grid->SetLabelTextColour(labelTextColour);
+
+    grid->SetSelectionBackground(selectionBackground);
+    grid->SetSelectionForeground(selectionText);
+
+    grid->SetRowLabelSize(58);
+    grid->SetRowSize(0, 42);
+    grid->SetRowSize(1, 42);
+
+    const int cols = grid->GetNumberCols();
+
+    for (int col = 0; col < cols; ++col) {
+        const wxColour columnBackground =
+            (col % 2 == 0) ? baseBackground : alternateBackground;
+        const wxColour columnTextColour =
+            ContrastTextColour(columnBackground);
+
+        wxGridCellAttr* attr = new wxGridCellAttr();
+        attr->SetBackgroundColour(columnBackground);
+        attr->SetTextColour(columnTextColour);
+        attr->SetAlignment(wxALIGN_CENTER, wxALIGN_CENTER);
+
+        grid->SetColAttr(col, attr);
+
+        wxFont titleFont = grid->GetDefaultCellFont();
+        if (!titleFont.IsOk()) {
+            titleFont = grid->GetFont();
+        }
+        if (!titleFont.IsOk()) {
+            titleFont = wxSystemSettings::GetFont(wxSYS_DEFAULT_GUI_FONT);
+        }
+        titleFont.SetWeight(wxFONTWEIGHT_BOLD);
+
+        grid->SetCellFont(0, col, titleFont);
+    }
+
+    grid->EndBatch();
+    grid->ForceRefresh();
+}
+
 void ooControlDialogImpl::SetupObservationsForProject()
 {
     if (!m_Observations) return;
@@ -867,6 +951,13 @@ void ooControlDialogImpl::SetupListingEditors()
         } else {
             attr->SetEditor(NULL);
         }
+
+        if (IsTextLikeObservationFieldType(field_type)) {
+            attr->SetAlignment(wxALIGN_LEFT, wxALIGN_CENTER);
+        } else {
+            attr->SetAlignment(wxALIGN_CENTER, wxALIGN_CENTER);
+        }
+
         m_ObservationsTable->SetColAttr(c, attr);
     }
 }
@@ -1145,6 +1236,8 @@ void ooControlDialogImpl::OnButtonClickProjectNewColumn(wxCommandEvent& event)
 
     wxGridCellChoiceEditor *observationFieldTypeEditor = new wxGridCellChoiceEditor(ooObservations::GetObservationFieldTypes());
     m_gridProject->SetCellEditor(1, pos, observationFieldTypeEditor);
+
+    ApplyProjectGridReadabilityStyle(m_gridProject);
 }
 
 void ooControlDialogImpl::OnButtonClickProjectDeleteColumn(wxCommandEvent& event)
@@ -1157,6 +1250,8 @@ void ooControlDialogImpl::OnButtonClickProjectDeleteColumn(wxCommandEvent& event
     for (auto it = selection.rbegin(); it != selection.rend(); it++) {
         m_gridProject->DeleteCols(*it);
     }
+
+    ApplyProjectGridReadabilityStyle(m_gridProject);
 }
 
 void ooControlDialogImpl::OnButtonClickNewObservation( wxCommandEvent& event )
