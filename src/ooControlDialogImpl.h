@@ -72,6 +72,7 @@ public:
         void OnButtonClickProjectNew(wxCommandEvent& event);
 	      void OnButtonClickProjectNewColumn(wxCommandEvent& event);
         void OnButtonClickProjectDeleteColumn(wxCommandEvent& event);
+        void OnProjectColourChanged(wxColourPickerEvent& event);
 
         void OnButtonClickNewObservation( wxCommandEvent& event );
         void OnButtonClickDeleteObservation( wxCommandEvent& event );

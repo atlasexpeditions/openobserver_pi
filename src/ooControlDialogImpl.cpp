@@ -264,6 +264,10 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
     RefreshListings();
     OnProjectGridSelectionChange();
 
+    m_colourProject->Bind(wxEVT_COLOURPICKER_CHANGED,
+                          &ooControlDialogImpl::OnProjectColourChanged,
+                          this);
+
     ApplyStandardBoldGridLabelFont(m_gridProject);
 
     // Do not call GetIconNameArray() here.
@@ -890,10 +894,8 @@ void ooControlDialogImpl::ApplyProjectGridReadabilityStyle(wxGrid* grid)
     const int cols = grid->GetNumberCols();
 
     for (int col = 0; col < cols; ++col) {
-        const wxColour columnBackground =
-            (col % 2 == 0) ? baseBackground : alternateBackground;
-        const wxColour columnTextColour =
-            ContrastTextColour(columnBackground);
+        const wxColour columnBackground = baseBackground;
+        const wxColour columnTextColour = baseTextColour;
 
         wxGridCellAttr* attr = new wxGridCellAttr();
         attr->SetBackgroundColour(columnBackground);
@@ -911,7 +913,21 @@ void ooControlDialogImpl::ApplyProjectGridReadabilityStyle(wxGrid* grid)
         }
         titleFont.SetWeight(wxFONTWEIGHT_BOLD);
 
+        const wxColour titleBackground = m_colourProject->GetColour();
+
+        const wxColour typeBackground =
+            IsDarkColour(columnBackground)
+                ? BlendColour(columnBackground, *wxWHITE, 0.04)
+                : BlendColour(columnBackground, *wxBLACK, 0.025);
+
         grid->SetCellFont(0, col, titleFont);
+        grid->SetCellBackgroundColour(0, col, titleBackground);
+        grid->SetCellTextColour(0, col, ContrastTextColour(titleBackground));
+        grid->SetCellAlignment(0, col, wxALIGN_CENTER, wxALIGN_CENTER);
+
+        grid->SetCellBackgroundColour(1, col, typeBackground);
+        grid->SetCellTextColour(1, col, ContrastTextColour(typeBackground));
+        grid->SetCellAlignment(1, col, wxALIGN_CENTER, wxALIGN_CENTER);
     }
 
     grid->EndBatch();
@@ -1183,6 +1199,12 @@ void ooControlDialogImpl::OnButtonClickProjectEditUse(wxCommandEvent& event)
         // enter edit mode
         SetProjectEditable(true);
     }
+}
+
+void ooControlDialogImpl::OnProjectColourChanged(wxColourPickerEvent& event)
+{
+    ApplyProjectGridReadabilityStyle(m_gridProject);
+    event.Skip();
 }
 
 void ooControlDialogImpl::SetProjectEditable(bool editable)
