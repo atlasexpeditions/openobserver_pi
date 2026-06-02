@@ -61,7 +61,6 @@
 #include "ooControlDialogImpl.h"
 #include "ooMiniDialogImpl.h"
 #include "ooAuiPanel.h"
-#include "ooAuiObservationsPanel.h"
 
 #include "wx/jsonwriter.h"
 
@@ -141,14 +140,11 @@ openobserver_pi::openobserver_pi(void *ppimgr)
       m_ooControlDialogImpl(nullptr),
       m_ooMiniDialogImpl(nullptr),
       m_ooAuiPanel(nullptr),
-      m_ooAuiObservationsPanel(nullptr),
       m_useAuiPanel(false),
-      m_showAuiObservationsPanel(false),
       m_recordNmeaStreamDuringEachObservation(false),
       m_currentProjectName(wxEmptyString),
       m_currentProjectColor(*wxBLACK),
-      m_showMiniPanelItem(-1),
-      m_showObservationsPanelItem(-1)
+      m_showMiniPanelItem(-1)
 {
     // Create the PlugIn icons
     g_ppimgr = ppimgr;
@@ -438,11 +434,6 @@ int openobserver_pi::Init(void)
     m_showMiniPanelItem = AddCanvasContextMenuItem(pmiShowMiniPanel, this);
     SetCanvasContextMenuItemViz(m_showMiniPanelItem, true);
 
-    wxMenuItem* pmiShowObservationsPanel =
-        new wxMenuItem(&dummy_menu, -1, _("Open Observer: show observations table"));
-    m_showObservationsPanelItem =
-        AddCanvasContextMenuItem(pmiShowObservationsPanel, this);
-    SetCanvasContextMenuItemViz(m_showObservationsPanelItem, true);
 
     // Get item into font list in options/user interface
     AddPersistentFontKey( wxT("tp_Label") );
@@ -494,10 +485,6 @@ int openobserver_pi::Init(void)
                              .Show(true));
             aui->Update();
          }
-    }
-
-    if (m_showAuiObservationsPanel) {
-        ShowObservationsPanel();
     }
 
     m_ooControlDialogImpl = new ooControlDialogImpl(m_parent_window);   
@@ -564,17 +551,7 @@ bool openobserver_pi::DeInit(void)
         delete m_ooMiniDialogImpl;
         m_ooMiniDialogImpl = nullptr;
     }
-    if (m_ooAuiObservationsPanel)
-    {
-        wxAuiManager* aui = GetFrameAuiManager();
-        if (aui) {
-            aui->DetachPane(m_ooAuiObservationsPanel);
-            aui->Update();
-        }
-
-        m_ooAuiObservationsPanel->Destroy();
-        m_ooAuiObservationsPanel = nullptr;
-    }    
+ 
     if (m_ooAuiPanel)
     {
         wxAuiManager* aui = GetFrameAuiManager();
@@ -662,11 +639,6 @@ void openobserver_pi::OnContextMenuItemCallback(int id)
 {
     if (id == m_showMiniPanelItem) {
         ShowMiniPanel();
-        return;
-    }
-
-    if (id == m_showObservationsPanelItem) {
-        ShowObservationsPanel();
         return;
     }
 
@@ -770,10 +742,6 @@ void openobserver_pi::RefreshObservationDisplay()
     if (m_ooAuiPanel) {
         m_ooAuiPanel->RefreshObservationDisplay();
     }
-
-    if (m_ooAuiObservationsPanel) {
-        m_ooAuiObservationsPanel->RefreshObservations();
-    }
 }
 
 void openobserver_pi::StartNmeaRecordingIfNeeded()
@@ -847,50 +815,6 @@ void openobserver_pi::UndockAuiPanel()
     m_ooAuiPanel->Show();
     aui->Update();
     m_ooAuiPanel->Raise();
-}
-
-void openobserver_pi::UndockAuiObservationsPanel()
-{
-    if (!m_ooAuiObservationsPanel) return;
-
-    wxAuiManager* aui = GetFrameAuiManager();
-    if (!aui) return;
-
-    wxAuiPaneInfo& pane = aui->GetPane(m_ooAuiObservationsPanel);
-
-    if (pane.IsOk()) {
-        pane.Float()
-            .FloatingPosition(140, 140)
-            .FloatingSize(900, 420)
-            .Show(true);
-    } else {
-        aui->AddPane(m_ooAuiObservationsPanel,
-                     wxAuiPaneInfo()
-                         .Name("OpenObserverAuiObservationsPanel")
-                         .Caption("Open Observer Observations")
-                         .PaneBorder(true)
-                         .CaptionVisible(true)
-                         .Movable(true)
-                         .Resizable(true)
-                         .Floatable(true)
-                         .Dockable(true)
-                         .TopDockable(true)
-                         .BottomDockable(true)
-                         .LeftDockable(true)
-                         .RightDockable(true)
-                         .Float()
-                         .FloatingPosition(140, 140)
-                         .FloatingSize(900, 420)
-                         .CloseButton(true)
-                         .Show(true));
-    }
-
-    m_showAuiObservationsPanel = true;
-    m_ooAuiObservationsPanel->RefreshObservations();
-    m_ooAuiObservationsPanel->Show();
-    aui->Update();
-    m_ooAuiObservationsPanel->Raise();
-    SaveConfig();
 }
 
 void openobserver_pi::ShowMiniPanel()
@@ -970,70 +894,6 @@ void openobserver_pi::ShowMiniPanel()
     SetToolbarItemState(m_openobserver_button_id, true);
 }
 
-void openobserver_pi::ShowObservationsPanel()
-{
-    wxAuiManager* aui = GetFrameAuiManager();
-    if (!aui) return;
-
-    if (!m_ooAuiObservationsPanel) {
-        m_ooAuiObservationsPanel = new ooAuiObservationsPanel(m_parent_window);
-        m_ooAuiObservationsPanel->SetObservations(m_ooObservations);
-
-        aui->AddPane(m_ooAuiObservationsPanel,
-                     wxAuiPaneInfo()
-                         .Name("OpenObserverAuiObservationsPanel")
-                         .Caption("Open Observer Observations")
-                         .PaneBorder(true)
-                         .CaptionVisible(true)
-                         .Movable(true)
-                         .Resizable(true)
-                         .Floatable(true)
-                         .Dockable(true)
-                         .TopDockable(true)
-                         .BottomDockable(true)
-                         .LeftDockable(true)
-                         .RightDockable(true)
-                         .Float()
-                         .FloatingPosition(140, 140)
-                         .FloatingSize(900, 420)
-                         .CloseButton(true)
-                         .Show(true));
-    } else {
-        wxAuiPaneInfo& pane = aui->GetPane(m_ooAuiObservationsPanel);
-
-        if (pane.IsOk()) {
-            pane.Show(true);
-        } else {
-            aui->AddPane(m_ooAuiObservationsPanel,
-                         wxAuiPaneInfo()
-                             .Name("OpenObserverAuiObservationsPanel")
-                             .Caption("Open Observer Observations")
-                             .PaneBorder(true)
-                             .CaptionVisible(true)
-                             .Movable(true)
-                             .Resizable(true)
-                             .Floatable(true)
-                             .Dockable(true)
-                             .TopDockable(true)
-                             .BottomDockable(true)
-                             .LeftDockable(true)
-                             .RightDockable(true)
-                             .Float()
-                             .FloatingPosition(140, 140)
-                             .FloatingSize(900, 420)
-                             .CloseButton(true)
-                             .Show(true));
-        }
-
-        m_ooAuiObservationsPanel->SetObservations(m_ooObservations);
-    }
-
-    m_ooAuiObservationsPanel->RefreshObservations();
-    m_ooAuiObservationsPanel->Show();
-    aui->Update();
-    m_ooAuiObservationsPanel->Raise();
-}
-
 void openobserver_pi::SetProject(const wxString& projectName, const wxColor& projectColor, int observationsIndex)
 {
     m_observationsIndex = observationsIndex;
@@ -1048,12 +908,7 @@ void openobserver_pi::SetProject(const wxString& projectName, const wxColor& pro
     if (m_ooAuiPanel) {
         m_ooAuiPanel->SetProjectInfo(projectName, projectColor);
     }
-    if (m_ooAuiObservationsPanel) {
-        m_ooAuiObservationsPanel->RefreshObservations();
-    }    
 }
-
-
 
 void openobserver_pi::ShowPreferencesDialog(wxWindow *parent)
 {
@@ -1067,23 +922,12 @@ void openobserver_pi::ShowPreferencesDialog(wxWindow *parent)
         new wxCheckBox(&dialog, wxID_ANY, _("Use dockable mini panel"));
     useAuiPanelCheckBox->SetValue(m_useAuiPanel);
 
-    wxCheckBox* showAuiObservationsPanelCheckBox =
-        new wxCheckBox(&dialog, wxID_ANY, _("Use dockable observations table"));
-    showAuiObservationsPanelCheckBox->SetValue(m_showAuiObservationsPanel);
-
     wxCheckBox* recordNmeaStreamCheckBox =
         new wxCheckBox(&dialog, wxID_ANY, _("Record NMEA stream during each observation"));
     recordNmeaStreamCheckBox->SetValue(m_recordNmeaStreamDuringEachObservation);
 
-    wxStaticText* infoText = new wxStaticText(
-        &dialog,
-        wxID_ANY,
-        _("This display mode can be changed immediately."));
-
     topSizer->Add(useAuiPanelCheckBox, 0, wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 10);
-    topSizer->Add(showAuiObservationsPanelCheckBox, 0, wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 10);
     topSizer->Add(recordNmeaStreamCheckBox, 0, wxLEFT | wxRIGHT | wxTOP | wxEXPAND, 10);
-    topSizer->Add(infoText, 0, wxLEFT | wxRIGHT | wxTOP | wxBOTTOM | wxEXPAND, 10);
 
     wxStdDialogButtonSizer* buttonSizer =
         dialog.CreateStdDialogButtonSizer(wxOK | wxCANCEL);
@@ -1096,26 +940,20 @@ void openobserver_pi::ShowPreferencesDialog(wxWindow *parent)
     }
 
     bool newUseAuiPanel = useAuiPanelCheckBox->GetValue();
-    bool newShowAuiObservationsPanel =
-        showAuiObservationsPanelCheckBox->GetValue();
     bool newRecordNmeaStream =
         recordNmeaStreamCheckBox->GetValue();
 
     const bool useAuiPanelChanged = (newUseAuiPanel != m_useAuiPanel);
-    const bool showAuiObservationsPanelChanged =
-        (newShowAuiObservationsPanel != m_showAuiObservationsPanel);
     const bool recordNmeaStreamChanged =
         (newRecordNmeaStream != m_recordNmeaStreamDuringEachObservation);
 
     if (!useAuiPanelChanged &&
-        !showAuiObservationsPanelChanged &&
         !recordNmeaStreamChanged) {
         SaveConfig();
         return;
     }
 
     m_useAuiPanel = newUseAuiPanel;
-    m_showAuiObservationsPanel = newShowAuiObservationsPanel;
     m_recordNmeaStreamDuringEachObservation = newRecordNmeaStream;
 
     if (m_useAuiPanel) {
@@ -1161,23 +999,6 @@ void openobserver_pi::ShowPreferencesDialog(wxWindow *parent)
 
             m_ooAuiPanel->Destroy();
             m_ooAuiPanel = nullptr;
-        }
-    }
-
-    if (showAuiObservationsPanelChanged) {
-        if (m_showAuiObservationsPanel) {
-            ShowObservationsPanel();
-        } else {
-            if (m_ooAuiObservationsPanel) {
-                wxAuiManager* aui = GetFrameAuiManager();
-                if (aui) {
-                    aui->DetachPane(m_ooAuiObservationsPanel);
-                    aui->Update();
-                }
-
-                m_ooAuiObservationsPanel->Destroy();
-                m_ooAuiObservationsPanel = nullptr;
-            }
         }
     }
 
@@ -1252,7 +1073,6 @@ void openobserver_pi::SaveConfig()
     m_pConfig->Write("MiniDialogWidth", m_miniDialogPosition.width);
     m_pConfig->Write("MiniDialogHeight", m_miniDialogPosition.height);
     m_pConfig->Write("UseAuiPanel", m_useAuiPanel);
-    m_pConfig->Write("ShowAuiObservationsPanel", m_showAuiObservationsPanel);
     m_pConfig->Write("RecordNmeaStreamDuringEachObservation",
                      m_recordNmeaStreamDuringEachObservation);
 }
@@ -1286,7 +1106,6 @@ void openobserver_pi::LoadConfig()
     m_pConfig->Read("MiniDialogWidth", &m_miniDialogPosition.width, -1);
     m_pConfig->Read("MiniDialogHeight", &m_miniDialogPosition.height, -1);
     m_pConfig->Read("UseAuiPanel", &m_useAuiPanel, false);
-    m_pConfig->Read("ShowAuiObservationsPanel", &m_showAuiObservationsPanel, false);
     m_pConfig->Read("RecordNmeaStreamDuringEachObservation",
                     &m_recordNmeaStreamDuringEachObservation,
                     false);
