@@ -1385,7 +1385,6 @@ wxArrayString ooObservations::GetObservationFieldTypes()
     observationFieldTypes.Add("End Latitude");
     observationFieldTypes.Add("End Longitude");
     observationFieldTypes.Add("Observation Duration");
-    observationFieldTypes.Add("Mark GUID");
     observationFieldTypes.Add("NMEA Recording");
     observationFieldTypes.Add("Text");
     observationFieldTypes.Add("NMEA AWS");

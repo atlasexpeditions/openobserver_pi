@@ -108,8 +108,11 @@ public:
                                        const wxString& label);
         void ClearCurrentObservationsForNewProject();
         void SetupListingEditors();
+        void HideInternalProjectColumns();
         void HideInternalObservationColumns();
         wxGridSizesInfo GetUserVisibleObservationColSizes() const;
+        bool ObservationMarksArePresent() const;
+        void SyncShowObservationMarksCheckboxWithData();
         void RefreshListings();
         void OnProjectGridSelectionChange();
 

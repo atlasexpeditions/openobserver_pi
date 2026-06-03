@@ -458,6 +458,7 @@ void ooControlDialogImpl::NewProject()
     SelectMarkIconOrFallback(DEFAULT_PROJECT_ICON);
 
     ApplyProjectGridReadabilityStyle(m_gridProject);
+    HideInternalProjectColumns();
 }
 
 void ooControlDialogImpl::UpdateProjectCellEditors()
@@ -467,6 +468,8 @@ void ooControlDialogImpl::UpdateProjectCellEditors()
             new wxGridCellChoiceEditor(ooObservations::GetObservationFieldTypes());
         m_gridProject->SetCellEditor(1, c, observationFieldTypeEditor);
     }
+
+    HideInternalProjectColumns();
 }
 
 bool ooControlDialogImpl::LoadProject(const ooProject& project)
@@ -500,6 +503,7 @@ bool ooControlDialogImpl::LoadProject(const ooProject& project)
 
     UpdateProjectCellEditors();
     ApplyProjectGridReadabilityStyle(m_gridProject);
+    HideInternalProjectColumns();
 
     m_CurrentProject = project;
 
@@ -688,6 +692,8 @@ bool ooControlDialogImpl::LoadObservations(const wxString& filename, bool update
     m_choiceObservations->SetString(m_currentObservationsIndex,
                                     m_Observations->GetProject().GetName());
     m_choiceObservations->GetParent()->Layout();
+
+    SyncShowObservationMarksCheckboxWithData();
 
     SetProjectEditable(false);
 
@@ -977,6 +983,19 @@ void ooControlDialogImpl::HideInternalObservationColumns()
     }
 }
 
+void ooControlDialogImpl::HideInternalProjectColumns()
+{
+    if (!m_gridProject) return;
+
+    for (int c = 0; c < m_gridProject->GetNumberCols(); ++c) {
+        if (!m_gridProject->GetCellValue(1, c).IsSameAs("Mark GUID")) continue;
+
+        // Mark GUID belongs to the chart link, not to the user protocol.
+        // Keep it in the project quietly, but do not ask the user to manage it.
+        m_gridProject->SetColSize(c, 0);
+    }
+}
+
 wxGridSizesInfo ooControlDialogImpl::GetUserVisibleObservationColSizes() const
 {
     if (!m_ObservationsTable) return wxGridSizesInfo();
@@ -1180,11 +1199,15 @@ void ooControlDialogImpl::EnsureProjectHasFieldType(const wxString& field_type, 
     m_gridProject->SetCellValue(0, m_gridProject->GetNumberCols() - 1, label);
     m_gridProject->SetCellValue(1, m_gridProject->GetNumberCols() - 1, field_type);
 
-    wxMessageBox(
-        wxString::Format(
-            wxT("Column \"%s: %s\" has been automatically added to the project."),
-            label, field_type),
-        "Added column", wxOK_DEFAULT, this);
+    if (!field_type.IsSameAs("Mark GUID")) {
+        wxMessageBox(
+            wxString::Format(
+                wxT("Column \"%s: %s\" has been automatically added to the project."),
+                label, field_type),
+            "Added column", wxOK_DEFAULT, this);
+    }
+
+    HideInternalProjectColumns();
   }
 }
 
@@ -1299,7 +1322,10 @@ void ooControlDialogImpl::ClearCurrentObservationsForNewProject()
     if (m_Observations->GetNumberRows() > 0) {
         m_Observations->DeleteRows(0, m_Observations->GetNumberRows());
     }
-
+    m_showObservationMarks = false;
+    if (m_checkShowObservationMarks) {
+        m_checkShowObservationMarks->SetValue(false);
+    }
     RefreshObservationsGrid();
 }
 
@@ -2088,6 +2114,31 @@ void ooControlDialogImpl::OnBackupTimer(wxTimerEvent& event)
     if (!m_Observations) return;
 
     SaveObservations(GetBackupFilename(m_currentObservationsIndex), false);
+}
+
+bool ooControlDialogImpl::ObservationMarksArePresent() const
+{
+    if (!m_Observations) return false;
+
+    const int markCol = m_Observations->GetProject().GetMarkCol();
+    if (markCol == wxNOT_FOUND) return false;
+
+    for (int r = 0; r < m_Observations->GetRowsCount(); ++r) {
+        if (!m_Observations->GetValue(r, markCol).IsEmpty()) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+void ooControlDialogImpl::SyncShowObservationMarksCheckboxWithData()
+{
+    m_showObservationMarks = ObservationMarksArePresent();
+
+    if (m_checkShowObservationMarks) {
+        m_checkShowObservationMarks->SetValue(m_showObservationMarks);
+    }
 }
 
 void ooControlDialogImpl::OnCheckBoxShowObservationMarks(wxCommandEvent& event)
