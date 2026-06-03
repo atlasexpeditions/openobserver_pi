@@ -86,8 +86,7 @@ class ooControlDialogDef : public wxFrame
 		wxStaticLine* m_staticline11;
 		wxButton* m_ObservationsNew;
 		wxButton* m_ObservationsDelete;
-		wxButton* m_ObservationsAddMarks;
-		wxButton* m_ObservationsDeleteMarks;
+		wxCheckBox* m_checkShowObservationMarks;
 		wxButton* m_buttonLoadObs;
 		wxButton* m_buttonSaveObs;
 		wxButton* m_ObservationsImportObservations;
@@ -111,8 +110,7 @@ class ooControlDialogDef : public wxFrame
 		virtual void OnButtonClickRefreshListings( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickNewObservation( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickDeleteObservation( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnButtonClickObservationsAddMarks( wxCommandEvent& event ) { event.Skip(); }
-		virtual void OnButtonClickObservationsDeleteMarks( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnCheckBoxShowObservationMarks( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickLoadObservation( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickSaveObservation( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickImportObservations( wxCommandEvent& event ) { event.Skip(); }

@@ -881,17 +881,10 @@ int ooObservations::UpdateObservationsFromMarks()
                 res++;
             }
         } else {
-            // The waypoint has been deleted
-            const int response = wxMessageBox(
-              wxString::Format(wxT("Warning: mark of observation #%i has been deleted. Do you want "
-              "to delete the corresponding observation?"), r + 1),
-                "Delete observation?", wxYES | wxNO, GetOCPNCanvasWindow());
-            if (response == wxYES) {
-                res++;
-                DeleteRows(r);
-            } else {
-                SetValue(r, markCol, wxEmptyString);
-            }
+            // The chart mark is only the visible handle.
+            // If it disappears, keep the observation safe and simply forget the old link.
+            SetValue(r, markCol, wxEmptyString);
+            res++;
         }
     }
     return res;
@@ -1285,6 +1278,23 @@ static std::vector<int> BuildColumnMigrationMap(
             if (newColUsed[newC]) continue;
 
             if (oldProject.GetColFieldTypes()[oldC].IsSameAs(newProject.GetColFieldTypes()[newC])) {
+                oldToNewCol[oldC] = newC;
+                newColUsed[newC] = true;
+                break;
+            }
+        }
+    }
+
+    // Third pass: fallback match by label only.
+    // The user's column name often carries the real intent. If they change a listing
+    // behind the same label, keep the field notes safe and let them clean values later.
+    for (int oldC = 0; oldC < oldColCount; ++oldC) {
+        if (oldToNewCol[oldC] != -1) continue;
+
+        for (int newC = 0; newC < newColCount; ++newC) {
+            if (newColUsed[newC]) continue;
+
+            if (oldProject.GetColLabels()[oldC].IsSameAs(newProject.GetColLabels()[newC])) {
                 oldToNewCol[oldC] = newC;
                 newColUsed[newC] = true;
                 break;

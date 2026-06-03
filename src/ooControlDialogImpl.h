@@ -81,8 +81,7 @@ public:
         void OnButtonClickCreateScientificPackage( wxCommandEvent& event ) override;
         void OnButtonClickUpdateScientificPackage( wxCommandEvent& event ) override;
         void OnButtonClickImportObservations(wxCommandEvent& event);
-        void OnButtonClickObservationsAddMarks( wxCommandEvent& event );
-        void OnButtonClickObservationsDeleteMarks( wxCommandEvent& event );
+        void OnCheckBoxShowObservationMarks(wxCommandEvent& event) override;
         void OnButtonClickSaveObservation(wxCommandEvent& event);
         void OnButtonClickLoadObservation(wxCommandEvent& event);
         void ooControlCloseClick(wxCommandEvent& event);
@@ -107,11 +106,15 @@ public:
         void OnNmeaFieldUpdate();
         void EnsureProjectHasFieldType(const wxString& field_type,
                                        const wxString& label);
+        void ClearCurrentObservationsForNewProject();
         void SetupListingEditors();
+        void HideInternalObservationColumns();
+        wxGridSizesInfo GetUserVisibleObservationColSizes() const;
         void RefreshListings();
         void OnProjectGridSelectionChange();
 
         bool m_markIconsLoaded;
+        bool m_showObservationMarks;
 
         void EnsureMarkIconChoiceContains(const wxString& iconName);
         void SelectMarkIconOrFallback(const wxString& iconName);

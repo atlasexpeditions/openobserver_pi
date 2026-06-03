@@ -226,7 +226,8 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
       m_isScanningNmea(false),
       m_viewScale(1.0),
       m_observationsChoiceCount(1),
-      m_markIconsLoaded(false)
+      m_markIconsLoaded(false),
+      m_showObservationMarks(false)
 {
     // The full Open Observer control window is a wxFrame, like OpenCPN's
     // Route & Mark Manager. wxDialog layout adaptation is not used here.
@@ -246,6 +247,14 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
     
     std::function<void(wxCommandEvent&)> refreshHandler = [&](wxCommandEvent& event)
     {
+        if (event.GetEventType() == OBSERVATION_STOPPED &&
+            m_showObservationMarks &&
+            m_Observations) {
+            // When the user wants observations on the chart, each completed
+            // observation should quietly receive its mark.
+            m_Observations->AddMarks(0);
+        }
+
         RefreshGridAppearance(m_ObservationsTable);
         event.Skip();
     };
@@ -549,6 +558,7 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
 
     m_ObservationsTable->AssignTable(m_Observations);
     m_ObservationsTable->SetColSizes(m_Observations->GetColSizes());
+    HideInternalObservationColumns();
 
 	// Grid
 	m_ObservationsTable->EnableEditing( true );
@@ -638,8 +648,8 @@ bool ooControlDialogImpl::SaveObservations(const wxString& filename, bool stopOb
         return false;
     }
 
-    // Update the col size
-    m_Observations->SetColSizes(m_ObservationsTable->GetColSizes());
+    // Update the user-visible column sizes without saving hidden technical columns.
+    m_Observations->SetColSizes(GetUserVisibleObservationColSizes());
 
     if (stopObservation) {
         m_Observations->StopObservation();
@@ -946,8 +956,46 @@ void ooControlDialogImpl::SetupObservationsForProject()
 
     // update column sizes of table to match
     m_ObservationsTable->SetColSizes(m_Observations->GetColSizes());
+    HideInternalObservationColumns();
 
     SetupListingEditors();
+}
+
+void ooControlDialogImpl::HideInternalObservationColumns()
+{
+    if (!m_Observations) return;
+    if (!m_ObservationsTable) return;
+
+    const wxArrayString& fieldTypes = m_Observations->GetColFieldTypes();
+
+    for (int c = 0; c < (int)fieldTypes.GetCount(); ++c) {
+        if (!fieldTypes[c].IsSameAs("Mark GUID")) continue;
+
+        // Mark GUID is our quiet bridge to OpenCPN marks.
+        // It keeps observations linked to the chart without asking the user to care about IDs.
+        m_ObservationsTable->SetColSize(c, 0);
+    }
+}
+
+wxGridSizesInfo ooControlDialogImpl::GetUserVisibleObservationColSizes() const
+{
+    if (!m_ObservationsTable) return wxGridSizesInfo();
+    if (!m_Observations) return m_ObservationsTable->GetColSizes();
+
+    wxGridSizesInfo colSizes = m_ObservationsTable->GetColSizes();
+
+    const wxArrayString& fieldTypes = m_Observations->GetColFieldTypes();
+    const wxGridSizesInfo& storedSizes = m_Observations->GetColSizes();
+
+    for (int c = 0; c < (int)fieldTypes.GetCount(); ++c) {
+        if (!fieldTypes[c].IsSameAs("Mark GUID")) continue;
+
+        // Keep the technical column hidden on screen, but do not save that hidden width
+        // as if it were a user layout choice.
+        colSizes.m_customSizes[c] = storedSizes.GetSize(c);
+    }
+
+    return colSizes;
 }
 
 void ooControlDialogImpl::SetupListingEditors()
@@ -1240,12 +1288,35 @@ void ooControlDialogImpl::SetProjectEditable(bool editable)
     }
 }
 
+void ooControlDialogImpl::ClearCurrentObservationsForNewProject()
+{
+    if (!m_Observations) return;
+
+    // A new project should start with a clear deck.
+    // Project edits may preserve rows, but replacing the project should not carry old observations along.
+    m_Observations->DeleteMarks();
+
+    if (m_Observations->GetNumberRows() > 0) {
+        m_Observations->DeleteRows(0, m_Observations->GetNumberRows());
+    }
+
+    RefreshObservationsGrid();
+}
+
 void ooControlDialogImpl::OnButtonClickProjectNew(wxCommandEvent& event)
 {
-    const int response = wxMessageBox("Warning: your current project will be cleared. Do you want to continue?", "Warning", wxYES_NO, this);
-    
-    if (response == wxYES)
-        NewProject();
+    const int response = wxMessageBox(
+        "Warning: your current project and observations will be cleared.\n\n"
+        "Do you want to continue?",
+        "New project",
+        wxYES_NO | wxICON_WARNING,
+        this);
+
+    if (response != wxYES) return;
+
+    ClearCurrentObservationsForNewProject();
+    NewProject();
+    UseProject();
 }
 
 void ooControlDialogImpl::OnButtonClickProjectNewColumn(wxCommandEvent& event)
@@ -2019,22 +2090,23 @@ void ooControlDialogImpl::OnBackupTimer(wxTimerEvent& event)
     SaveObservations(GetBackupFilename(m_currentObservationsIndex), false);
 }
 
-void ooControlDialogImpl::OnButtonClickObservationsAddMarks( wxCommandEvent& event )
+void ooControlDialogImpl::OnCheckBoxShowObservationMarks(wxCommandEvent& event)
 {
     if (!m_Observations) return;
 
-    m_Observations->AddMarks();
+    m_showObservationMarks = m_checkShowObservationMarks->GetValue();
+
+    if (m_showObservationMarks) {
+        // The checkbox expresses an intention: observations should be visible on the chart.
+        // Missing marks can be recreated safely from the observation rows.
+        m_Observations->AddMarks();
+    } else {
+        // Keep the chart calm without touching the observation data.
+        m_Observations->DeleteMarks();
+    }
 
     m_ObservationsTable->ForceRefresh();
-}
-
-void ooControlDialogImpl::OnButtonClickObservationsDeleteMarks( wxCommandEvent& event )
-{
-    if (!m_Observations) return;
-
-    m_Observations->DeleteMarks();
-
-    m_ObservationsTable->ForceRefresh();
+    event.Skip();
 }
 
 void ooControlDialogImpl::OnButtonClickLoadObservation(wxCommandEvent& event)
@@ -2092,6 +2164,7 @@ void ooControlDialogImpl::OnChoiceObservationsChanged(wxCommandEvent& event)
     if (wxFile::Exists(filename)) {
         LoadObservations(filename);
     } else {
+        ClearCurrentObservationsForNewProject();
         NewProject();
         UseProject();
     }
