@@ -143,6 +143,7 @@ std::cout << x  << std::endl ; } while (0)
 #include "ooObservations.h"
 #include "ooAuiPanel.h"
 #include "ooNmeaRecorder.h"
+#include "ooObservationHighlight.h"
 #include "globals.h"
 
 //----------------------------------------------------------------------------------------------------------
@@ -186,8 +187,13 @@ public:
     void SetPositionFix(PlugIn_Position_Fix &pfix);
     void SetNMEASentence(wxString& sentence);
     void SetCurrentViewPort(PlugIn_ViewPort& vp);
+    bool RenderOverlayMultiCanvas(wxDC& dc, PlugIn_ViewPort* vp, int canvas_ix, int priority) override;
+    bool RenderGLOverlayMultiCanvas(wxGLContext* pcontext, PlugIn_ViewPort* vp, int canvas_ix, int priority) override;
+    bool RenderOverlay(wxDC& dc, PlugIn_ViewPort* vp) override;
     
     void SetProject(const wxString& projectName, const wxColor& projectColor, int observationsIndex);
+    void HighlightObservationOnChart(double lat, double lon, const wxColour& colour);
+    void JumpToObservationOnChart(double lat, double lon);
     void RefreshObservationDisplay();
     void StartNmeaRecordingIfNeeded();
     void StopNmeaRecordingIfNeeded();
@@ -233,6 +239,9 @@ public:
 
     double  m_cursor_lat;
     double  m_cursor_lon;
+    ooObservationHighlight m_observationHighlight;
+    PlugIn_ViewPort m_lastViewPort;
+    bool m_hasLastViewPort;
     double  m_click_lat;
     double  m_click_lon;
 };

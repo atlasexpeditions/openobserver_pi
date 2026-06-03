@@ -2,6 +2,7 @@ src/openobserver_pi.cpp
 src/ooObservations.cpp
 src/ooScientificPackage.cpp
 src/ooGpxTrackExport.cpp
+src/ooObservationHighlight.cpp
 src/ooControlDialogDef.cpp
 src/ooControlDialogImpl.cpp
 src/ooMiniDialogDef.cpp
@@ -13,6 +14,7 @@ src/tpicons.cpp
 src/tpUtils.cpp
 src/openobserver_pi.h
 src/ooObservations.h
+src/ooObservationHighlight.h
 src/ooControlDialogDef.h
 src/ooControlDialogImpl.h
 src/ooMiniDialogDef.h

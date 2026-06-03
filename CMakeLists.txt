@@ -180,6 +180,7 @@ set(SRCS
     src/ooObservations.cpp
     src/ooScientificPackage.cpp
     src/ooGpxTrackExport.cpp
+    src/ooObservationHighlight.cpp
     src/ooControlDialogDef.cpp 
     src/ooControlDialogImpl.cpp
     src/ooMiniDialogDef.cpp 
@@ -194,6 +195,7 @@ set(SRCS
 set(HDRS
     src/openobserver_pi.h
     src/ooObservations.h
+    src/ooObservationHighlight.h
     src/ooControlDialogDef.h
     src/ooControlDialogImpl.h
     src/ooMiniDialogDef.h

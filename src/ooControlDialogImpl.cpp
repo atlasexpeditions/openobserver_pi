@@ -2186,7 +2186,18 @@ void ooControlDialogImpl::OnObservationsGridCellSelect(wxGridEvent& event)
         if (lat_col != wxNOT_FOUND && lon_col != wxNOT_FOUND) {
             const double lat = fromDMM_Plugin(m_Observations->GetValue(row, lat_col));
             const double lon = fromDMM_Plugin(m_Observations->GetValue(row, lon_col));
-            JumpToPosition(lat, lon, m_viewScale);
+            if (g_openobserver_pi) {
+                g_openobserver_pi->JumpToObservationOnChart(lat, lon);
+            } else {
+                JumpToPosition(lat, lon, m_viewScale);
+            }
+
+            if (g_openobserver_pi) {
+                g_openobserver_pi->HighlightObservationOnChart(
+                    lat,
+                    lon,
+                    m_Observations->GetProject().GetColor());
+            }
         }
     }
 

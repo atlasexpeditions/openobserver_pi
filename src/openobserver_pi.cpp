@@ -398,6 +398,7 @@ int openobserver_pi::Init(void)
     m_click_lon = 0.0;
     m_observationsIndex = -1;
     m_observationsChoiceCount = -1;
+    m_hasLastViewPort = false;
 
     // Adds local language support for the plugin to OCPN
     AddLocaleCatalog(PLUGIN_CATALOG_NAME);
@@ -506,6 +507,8 @@ int openobserver_pi::Init(void)
 
 
     return (
+        WANTS_OVERLAY_CALLBACK    |
+        WANTS_OPENGL_OVERLAY_CALLBACK |
         WANTS_CURSOR_LATLON       |
         WANTS_TOOLBAR_CALLBACK    |
         INSTALLS_TOOLBAR_TOOL     |
@@ -724,8 +727,64 @@ void openobserver_pi::SetNMEASentence(wxString& sentence)
 
 void openobserver_pi::SetCurrentViewPort(PlugIn_ViewPort& vp)
 {
+    m_lastViewPort = vp;
+    m_hasLastViewPort = true;
+
     if (m_ooControlDialogImpl)
         m_ooControlDialogImpl->SetViewScale(vp.view_scale_ppm);
+}
+
+void openobserver_pi::JumpToObservationOnChart(double lat, double lon)
+{
+    if (!m_hasLastViewPort || !m_lastViewPort.bValid) {
+        JumpToPosition(lat, lon, 0.0);
+        return;
+    }
+
+    wxPoint observationPixel;
+    GetCanvasPixLL(&m_lastViewPort, &observationPixel, lat, lon);
+
+    const int desiredY = static_cast<int>(m_lastViewPort.pix_height * 0.25);
+    const int centerY = m_lastViewPort.pix_height / 2;
+
+    wxPoint adjustedCenterPixel(
+        observationPixel.x,
+        observationPixel.y + (centerY - desiredY));
+
+    double adjustedLat = lat;
+    double adjustedLon = lon;
+    GetCanvasLLPix(&m_lastViewPort, adjustedCenterPixel, &adjustedLat, &adjustedLon);
+
+    JumpToPosition(adjustedLat, adjustedLon, m_lastViewPort.view_scale_ppm);
+}
+
+void openobserver_pi::HighlightObservationOnChart(double lat, double lon, const wxColour& colour)
+{
+    m_observationHighlight.Show(lat, lon, colour);
+    RequestRefresh(GetOCPNCanvasWindow());
+}
+
+bool openobserver_pi::RenderOverlayMultiCanvas(
+    wxDC& dc,
+    PlugIn_ViewPort* vp,
+    int canvas_ix,
+    int priority)
+{
+    return m_observationHighlight.Render(dc, vp);
+}
+
+bool openobserver_pi::RenderGLOverlayMultiCanvas(
+    wxGLContext* pcontext,
+    PlugIn_ViewPort* vp,
+    int canvas_ix,
+    int priority)
+{
+    return m_observationHighlight.RenderGL(vp);
+}
+
+bool openobserver_pi::RenderOverlay(wxDC& dc, PlugIn_ViewPort* vp)
+{
+    return m_observationHighlight.Render(dc, vp);
 }
 
 wxBitmap *openobserver_pi::GetPlugInBitmap()
