@@ -1967,7 +1967,7 @@ static bool ShowDataPackageFolderDialog(
         createMode ? _("Create a new Data Package") : _("Update an existing Data Package"),
         wxDefaultPosition,
         wxDefaultSize,
-        wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
+        wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER | wxFRAME_FLOAT_ON_PARENT | wxSTAY_ON_TOP);
 
     dialog.SetMinSize(wxSize(560, 620));
 
@@ -2237,7 +2237,7 @@ void ooControlDialogImpl::OnButtonClickDataPackage(wxCommandEvent& event)
         _("Data Package"),
         wxDefaultPosition,
         wxDefaultSize,
-        wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
+        wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER | wxFRAME_FLOAT_ON_PARENT | wxSTAY_ON_TOP);
 
     wxBoxSizer* mainSizer = new wxBoxSizer(wxVERTICAL);
 

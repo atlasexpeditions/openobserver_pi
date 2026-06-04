@@ -1055,7 +1055,7 @@ void openobserver_pi::ShowPreferencesDialog(wxWindow *parent)
 {
     wxDialog dialog(parent, wxID_ANY, _("Open Observer Preferences"),
                     wxDefaultPosition, wxDefaultSize,
-                    wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER);
+                    wxDEFAULT_DIALOG_STYLE | wxRESIZE_BORDER | wxFRAME_FLOAT_ON_PARENT | wxSTAY_ON_TOP);
 
     wxBoxSizer* topSizer = new wxBoxSizer(wxVERTICAL);
 
