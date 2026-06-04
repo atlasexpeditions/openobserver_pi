@@ -265,6 +265,86 @@ openobserver_pi::openobserver_pi(void *ppimgr)
             }
         }
     }
+
+    // Copy packaged project templates.
+    // Do not overwrite user-customized templates.
+    //
+    // Project templates live next to Listings in the user's Open Observer data folder.
+    // The default template is used by the New Project action when available.
+    wxString projectTemplatesDir = *g_PrivateDataDir;
+    projectTemplatesDir.Append(wxT("ProjectTemplates"));
+    appendOSDirSlash(&projectTemplatesDir);
+
+    if (!wxDir::Exists(projectTemplatesDir)) {
+        wxMkdir(projectTemplatesDir);
+    }
+
+    wxArrayString possiblePackagedProjectTemplatePaths;
+
+    if (!pluginDataDir.IsEmpty()) {
+        possiblePackagedProjectTemplatePaths.Add(
+            wxString::Format(wxT("%s%c%s%c%s"),
+                pluginDataDir,
+                sep, wxT("data"),
+                sep, wxT("ProjectTemplates")));
+
+        possiblePackagedProjectTemplatePaths.Add(
+            wxString::Format(wxT("%s%c%s"),
+                pluginDataDir,
+                sep, wxT("ProjectTemplates")));
+    }
+
+#ifdef __WXOSX__
+    const wxString macUserProjectTemplatesPath =
+        wxString::Format(
+            wxT("%s%cLibrary%cApplication Support%cOpenCPN%cContents%cSharedSupport%cplugins%copenobserver_pi%cdata%cProjectTemplates"),
+            wxGetHomeDir(),
+            sep, sep, sep, sep, sep, sep, sep, sep, sep);
+
+    possiblePackagedProjectTemplatePaths.Add(macUserProjectTemplatesPath);
+#endif
+
+    possiblePackagedProjectTemplatePaths.Add(
+        wxString::Format(wxT("%s%c%s%c%s%c%s%c%s"),
+            wxFileName(exePath).GetPath(),
+            sep, wxT("plugins"),
+            sep, wxT("openobserver_pi"),
+            sep, wxT("data"),
+            sep, wxT("ProjectTemplates")));
+
+    for (const auto& packagedProjectTemplatesPath : possiblePackagedProjectTemplatePaths) {
+        if (!wxDir::Exists(packagedProjectTemplatesPath)) {
+            continue;
+        }
+
+        wxString sourceRoot = packagedProjectTemplatesPath;
+        appendOSDirSlash(&sourceRoot);
+
+        wxArrayString allPackagedProjectTemplates;
+        wxDir::GetAllFiles(sourceRoot, &allPackagedProjectTemplates, wxT("*.xml"));
+
+        for (const auto& f : allPackagedProjectTemplates) {
+            wxFileName relativeFile(f);
+
+            if (!relativeFile.MakeRelativeTo(sourceRoot)) {
+                continue;
+            }
+
+            const wxString relativePath = relativeFile.GetFullPath();
+            const wxString targetPath = wxString::Format(wxT("%s%s"), projectTemplatesDir, relativePath);
+
+            wxFileName targetFile(targetPath);
+
+            if (!wxDir::Exists(targetFile.GetPath())) {
+                wxFileName::Mkdir(targetFile.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+            }
+
+            if (!wxFile::Exists(targetFile.GetFullPath())) {
+                wxCopyFile(f, targetFile.GetFullPath());
+            }
+        }
+    }
+
     // Copy packaged user icons.
     // Do not overwrite user-customized icons.
     //

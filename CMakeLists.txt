@@ -356,6 +356,10 @@ if (APPLE)
     DESTINATION OpenCPN.app/Contents/SharedSupport/plugins/openobserver_pi/data
   )
   install(
+    DIRECTORY data/ProjectTemplates
+    DESTINATION OpenCPN.app/Contents/SharedSupport/plugins/openobserver_pi/data
+  )
+  install(
     DIRECTORY data/UserIcons
     DESTINATION OpenCPN.app/Contents/SharedSupport/plugins/openobserver_pi/data
   )
@@ -365,12 +369,20 @@ elseif (WIN32)
     DESTINATION plugins/openobserver_pi/data
   )
   install(
+    DIRECTORY data/ProjectTemplates
+    DESTINATION plugins/openobserver_pi/data
+  )
+  install(
     DIRECTORY data/UserIcons
     DESTINATION plugins/openobserver_pi/data
   )
 else()
   install(
     DIRECTORY data/Listings
+    DESTINATION share/opencpn/plugins/openobserver_pi/data
+  )
+  install(
+    DIRECTORY data/ProjectTemplates
     DESTINATION share/opencpn/plugins/openobserver_pi/data
   )
   install(

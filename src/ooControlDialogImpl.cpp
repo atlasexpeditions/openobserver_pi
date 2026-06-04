@@ -68,6 +68,55 @@ static wxColour ContrastTextColour(const wxColour& background);
 static wxColour AlternateRowColour(const wxColour& base);
 static void ApplyStandardBoldGridLabelFont(wxGrid* grid);
 
+static wxString GetDefaultProjectTemplatePath()
+{
+    if (!g_PrivateDataDir || g_PrivateDataDir->IsEmpty()) {
+        return wxEmptyString;
+    }
+
+    wxFileName templateFile(*g_PrivateDataDir, wxEmptyString);
+    templateFile.AppendDir("ProjectTemplates");
+    templateFile.SetFullName("Default.xml");
+
+    return templateFile.GetFullPath();
+}
+
+static ooProject CreateFallbackDefaultProject()
+{
+    wxArrayString labels;
+    wxArrayString fieldTypes;
+    wxGridSizesInfo colSizes;
+
+    labels.Add("Start timestamp");
+    fieldTypes.Add("Start Timestamp UTC");
+    colSizes.m_customSizes[0] = 200;
+
+    labels.Add("Lat");
+    fieldTypes.Add("Start Latitude");
+    colSizes.m_customSizes[1] = 90;
+
+    labels.Add("Lon");
+    fieldTypes.Add("Start Longitude");
+    colSizes.m_customSizes[2] = 90;
+
+    labels.Add("Notes");
+    fieldTypes.Add("Text");
+    colSizes.m_customSizes[3] = 240;
+
+    labels.Add("Mark GUID");
+    fieldTypes.Add("Mark GUID");
+    colSizes.m_customSizes[4] = 0;
+
+    return ooProject(
+        "Default Project",
+        "Minimal fallback project used when the external Default project template is not available.",
+        colSizes,
+        fieldTypes,
+        labels,
+        DEFAULT_PROJECT_COLOUR,
+        DEFAULT_PROJECT_ICON);
+}
+
 static wxString JoinControlPath(const wxString& a, const wxString& b)
 {
     wxFileName fn(a, b);
@@ -673,68 +722,33 @@ void ooControlDialogImpl::LoadMarkIconsIfNeeded(const wxString& preferredIconNam
 
 void ooControlDialogImpl::NewProject()
 {
-    // TODO: it would be nicer,
-    //       > instead of having this function that initializes UI components with default values,
-    //       > to have a function that initializes a default Project and then calls the standard LoadProject function.
-    // It would avoid some code duplication.
+    // Prefer the user-editable default project template.
+    // This keeps the first Open Observer experience welcoming without hiding
+    // the project structure inside C++ code.
+    const wxString templatePath = GetDefaultProjectTemplatePath();
 
-    // delete columns
-    if (m_gridProject->GetNumberCols() > 0)
-        m_gridProject->DeleteCols(0, m_gridProject->GetNumberCols());
+    if (!templatePath.IsEmpty() && wxFileExists(templatePath)) {
+        int fileVersion = 0;
+        wxXmlDocument xmlDoc;
+        wxXmlNode* root = nullptr;
+        ooProject templateProject;
 
-    // add columns
-    m_gridProject->InsertCols(0, 9);
-
-    // set the column sizes
-    wxArrayInt allColSizes;
-    allColSizes.Add(200);
-    allColSizes.Add(90);
-    allColSizes.Add(90);
-    allColSizes.Add(200);
-    allColSizes.Add(150);
-    allColSizes.Add(140);
-    allColSizes.Add(120);
-    allColSizes.Add(70);
-    allColSizes.Add(120);
-
-    wxGridSizesInfo colSizes = wxGridSizesInfo(70, allColSizes);
-    m_gridProject->SetColSizes(colSizes);
-
-    // set the column labels and cell editors
-    for (int c = 0; c < m_gridProject->GetNumberCols(); ++c)
-    {
-        m_gridProject->SetColLabelValue(c, "");
+        if (ooObservations::ReadFromXML(
+                templatePath,
+                fileVersion,
+                templateProject,
+                xmlDoc,
+                root,
+                CreateFallbackDefaultProject())) {
+            LoadProject(templateProject);
+            return;
+        }
     }
 
-    UpdateProjectCellEditors();
-
-    // fill the table
-    m_gridProject->SetCellValue(0, 0, "Start timestamp");
-    m_gridProject->SetCellValue(1, 0, "Start Timestamp UTC");
-    m_gridProject->SetCellValue(0, 1, "Lat");
-    m_gridProject->SetCellValue(1, 1, "Start Latitude");
-    m_gridProject->SetCellValue(0, 2, "Lon");
-    m_gridProject->SetCellValue(1, 2, "Start Longitude");
-    m_gridProject->SetCellValue(0, 3, "Species");
-    m_gridProject->SetCellValue(1, 3, "Ocean species");
-    m_gridProject->SetCellValue(0, 4, "Animal count");
-    m_gridProject->SetCellValue(1, 4, "Animal count");
-    m_gridProject->SetCellValue(0, 5, "Behaviour");
-    m_gridProject->SetCellValue(1, 5, "Animal behaviour");
-    m_gridProject->SetCellValue(0, 6, "Image Ref");
-    m_gridProject->SetCellValue(1, 6, "Text");
-    m_gridProject->SetCellValue(0, 7, "Notes");
-    m_gridProject->SetCellValue(1, 7, "Text");
-    m_gridProject->SetCellValue(0, 8, "Mark GUID");
-    m_gridProject->SetCellValue(1, 8, "Mark GUID");
-
-    m_textProjectName->SetValue(wxString::Format(wxT("Default Project %i"), m_currentObservationsIndex + 1));
-    m_textProjectDescription->SetValue(wxEmptyString);
-    m_colourProject->SetColour(DEFAULT_PROJECT_COLOUR);
-    SelectMarkIconOrFallback(DEFAULT_PROJECT_ICON);
-
-    ApplyProjectGridReadabilityStyle(m_gridProject);
-    HideInternalProjectColumns();
+    // Keep a tiny, dependable fallback in code.
+    // It is not meant to be beautiful; it only keeps New Project usable if the
+    // external template is missing, damaged, or not copied yet.
+    LoadProject(CreateFallbackDefaultProject());
 }
 
 void ooControlDialogImpl::UpdateProjectCellEditors()

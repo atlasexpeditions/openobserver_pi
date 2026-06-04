@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 
-<listing creator="OpenObserver for OpenCPN" file_version="1">
+<listing creator="Open Observer for OpenCPN" file_version="1">
 
-<item label="Environmental parameters" icon="Info-Info"/>
+<item label="Environmental parameters" icon="Page-info"/>
 <item label="Acoustic recording - Hydrophone" icon="Circle"/>
-<item label="Whale watching boat" icon="Campfire"/>
+<item label="Whale watching boat" icon="Motor-boat"/>
 <item label="Motor boat" icon="Motor-boat"/>
 <item label="Fishing activity" icon="Fishing"/>
-<item label="Pollution" icon="Pollution"/>
+<item label="Pollution" icon="Hazard-Pollution-Oil"/>
 
 <item label=" "/>
 <item label="Baleen whale (Mysticeti) Mysticète" icon="Whale"/>
