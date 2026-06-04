@@ -32,6 +32,7 @@
  */
 
 #include <wx/grid.h>
+#include <wx/srchctrl.h>
 
 #include "ooControlDialogDef.h"
 
@@ -101,6 +102,7 @@ public:
         void OnProjectGridRangeSelect(wxGridRangeSelectEvent& event);
         void OnProjectGridCellChange(wxGridEvent& event);
         void OnObservationsGridCellChange(wxGridEvent& event);
+        void OnObservationSearchText(wxCommandEvent& event);
 
       private:
         void OnBackupTimer(wxTimerEvent& event);
@@ -137,6 +139,8 @@ public:
 
         ooObservations * m_Observations;
         wxGrid* m_ObservationsTable;
+        wxSearchCtrl* m_observationsSearchCtrl;
+        wxStaticText* m_observationsSearchStatus;
         void ApplyModernGridStyle(wxGrid* grid);
         void ApplyProjectGridReadabilityStyle(wxGrid* grid);
         void RefreshGridAppearance(wxGrid* grid);

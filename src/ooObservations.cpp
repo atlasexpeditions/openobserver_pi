@@ -1412,6 +1412,7 @@ wxArrayString ooObservations::GetObservationFieldTypes()
     observationFieldTypes.Add("End Longitude");
     observationFieldTypes.Add("Observation Duration");
     observationFieldTypes.Add("NMEA Recording");
+    observationFieldTypes.Add("Checkbox");
     observationFieldTypes.Add("Text");
 
     observationFieldTypes.Add(" ");
