@@ -544,8 +544,6 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
       m_MiniPanel(nullptr),
       m_Observations(nullptr),
       m_ObservationsTable(nullptr),
-      m_observationsSearchCtrl(nullptr),
-      m_observationsSearchStatus(nullptr),
       m_isScanningNmea(false),
       m_viewScale(1.0),
       m_observationsChoiceCount(1),
@@ -890,49 +888,8 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
     wxGridCellAutoWrapStringRenderer *renderer = new wxGridCellAutoWrapStringRenderer();
     m_ObservationsTable->SetDefaultRenderer(renderer);
 
-    wxBoxSizer* observationsTableSizer = new wxBoxSizer(wxVERTICAL);
-    wxBoxSizer* searchSizer = new wxBoxSizer(wxHORIZONTAL);
-
-    m_observationsSearchStatus = new wxStaticText(
-        m_panelObservations,
-        wxID_ANY,
-        wxEmptyString);
-
-    m_observationsSearchCtrl = new wxSearchCtrl(
-        m_panelObservations,
-        wxID_ANY,
-        wxEmptyString,
-        wxDefaultPosition,
-        wxSize(240, -1),
-        wxTE_PROCESS_ENTER);
-
-    m_observationsSearchCtrl->ShowSearchButton(true);
-    m_observationsSearchCtrl->ShowCancelButton(true);
-    m_observationsSearchCtrl->SetDescriptiveText(_("Search observations"));
-
-    m_observationsSearchCtrl->Bind(
-        wxEVT_TEXT,
-        &ooControlDialogImpl::OnObservationSearchText,
-        this);
-
-    m_observationsSearchCtrl->Bind(
-        wxEVT_SEARCHCTRL_CANCEL_BTN,
-        [this](wxCommandEvent&) {
-            if (m_observationsSearchCtrl) {
-                m_observationsSearchCtrl->SetValue(wxEmptyString);
-            }
-        });
-
-    searchSizer->Add(m_observationsSearchStatus, 0, wxALIGN_CENTER_VERTICAL | wxLEFT, 5);
-    searchSizer->AddStretchSpacer();
-    searchSizer->Add(m_observationsSearchCtrl, 0, wxALIGN_CENTER_VERTICAL | wxRIGHT, 5);
-
-    observationsTableSizer->Add(searchSizer, 0, wxEXPAND | wxLEFT | wxRIGHT | wxTOP, 5);
-
-    // m_ObservationsTable is a wxGrid, ultimately derived from wxWindow.
-    observationsTableSizer->Add(m_ObservationsTable, 1, wxALL | wxEXPAND, 5);
-
-    m_fgSizerObservations->Add(observationsTableSizer, 1, wxEXPAND, 0);
+    // m_ObservationsTable is a wxGrid, ultimately derived from wxWindow
+    m_fgSizerObservations->Add(m_ObservationsTable, 1, wxALL|wxEXPAND, 5);
 
     m_ObservationsTable->EnableDragColSize(true);
     ApplyModernGridStyle(m_ObservationsTable);
@@ -2707,60 +2664,6 @@ void ooControlDialogImpl::OnProjectGridCellChange(wxGridEvent& event)
         }
     }
 
-    event.Skip();
-}
-
-void ooControlDialogImpl::OnObservationSearchText(wxCommandEvent& event)
-{
-    if (!m_Observations || !m_ObservationsTable || !m_observationsSearchCtrl) {
-        event.Skip();
-        return;
-    }
-
-    wxString query = m_observationsSearchCtrl->GetValue();
-    query.Trim(true);
-    query.Trim(false);
-    query.MakeLower();
-
-    int visibleCount = 0;
-    const int rowCount = m_Observations->GetNumberRows();
-    const int colCount = m_Observations->GetNumberCols();
-
-    for (int r = 0; r < rowCount; ++r) {
-        bool matches = query.IsEmpty();
-
-        if (!matches) {
-            for (int c = 0; c < colCount; ++c) {
-                wxString value = m_Observations->GetValue(r, c);
-                value.MakeLower();
-
-                if (value.Find(query) != wxNOT_FOUND) {
-                    matches = true;
-                    break;
-                }
-            }
-        }
-
-        if (matches) {
-            m_ObservationsTable->ShowRow(r);
-            visibleCount++;
-        } else {
-            m_ObservationsTable->HideRow(r);
-        }
-    }
-
-    if (m_observationsSearchStatus) {
-        if (query.IsEmpty()) {
-            m_observationsSearchStatus->SetLabel(wxEmptyString);
-        } else {
-            m_observationsSearchStatus->SetLabel(
-                wxString::Format(_("%i / %i visible"), visibleCount, rowCount));
-        }
-
-        m_observationsSearchStatus->GetParent()->Layout();
-    }
-
-    m_ObservationsTable->ForceRefresh();
     event.Skip();
 }
 
