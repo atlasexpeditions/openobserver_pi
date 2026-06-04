@@ -1800,14 +1800,6 @@ static bool ShowDataPackageFolderDialog(
         mainSizer->Add(listsSizer, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 14);
     }
 
-    wxStaticText* safetyText = new wxStaticText(
-        &dialog,
-        wxID_ANY,
-        _("Open Observer will not delete your existing media or working files."));
-
-    safetyText->Wrap(520);
-    mainSizer->Add(safetyText, 0, wxLEFT | wxRIGHT | wxBOTTOM, 14);
-
     wxBoxSizer* buttonSizer = new wxBoxSizer(wxHORIZONTAL);
 
     wxButton* actionButton = new wxButton(
@@ -1939,14 +1931,6 @@ void ooControlDialogImpl::OnButtonClickDataPackage(wxCommandEvent& event)
 
     mainSizer->Add(createButton, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxALIGN_CENTER_HORIZONTAL, 14);
     mainSizer->Add(updateButton, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxALIGN_CENTER_HORIZONTAL, 14);
-
-    wxStaticText* safetyText = new wxStaticText(
-        &dialog,
-        wxID_ANY,
-        _("Open Observer will not delete your existing media or working files."));
-
-    safetyText->Wrap(420);
-    mainSizer->Add(safetyText, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxALIGN_CENTER_HORIZONTAL, 14);
 
     wxButton* cancelButton = new wxButton(
         &dialog,

@@ -299,7 +299,7 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 	m_ObservationsNew = new wxButton( m_panelObservations, wxID_ANY, _("Add Observation"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizerObservationsButtons->Add( m_ObservationsNew, 0, wxALL, 5 );
 
-	m_ObservationsDelete = new wxButton( m_panelObservations, wxID_ANY, _("Delete Observation(s)"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_ObservationsDelete = new wxButton( m_panelObservations, wxID_ANY, _("Delete selected"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizerObservationsButtons->Add( m_ObservationsDelete, 0, wxALL, 5 );
 
 	m_checkShowObservationMarks = new wxCheckBox( m_panelObservations, wxID_ANY, _("Show Observation Marks"), wxDefaultPosition, wxDefaultSize, 0 );
