@@ -430,7 +430,7 @@ ooGpxExportResult ooGpxTrackExport::ExportDailyOpenCpnTracks(
         }
 
         wxFileName outputFile(
-            packageDir + "/01_daily_media/" + date + "/tracks",
+            packageDir + "/01_daily-media/" + date + "/tracks",
             date + "_openobserver_daily_track.gpx");
 
         wxString errorMessage;

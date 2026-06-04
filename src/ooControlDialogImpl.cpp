@@ -1507,22 +1507,25 @@ void ooControlDialogImpl::RefreshListings()
 
 void ooControlDialogImpl::UseProject()
 {
-    g_openobserver_pi->SetProject(m_textProjectName->GetValue(),
-                                  m_colourProject->GetColour(),
+    const ooProject project = GenerateProject();
+
+    g_openobserver_pi->SetProject(project.GetName(),
+                                  project.GetColor(),
                                   m_currentObservationsIndex);
-    m_MiniPanel->SetProjectInfo(m_textProjectName->GetValue(),
-                                m_colourProject->GetColour());
+    m_MiniPanel->SetProjectInfo(project.GetName(),
+                                project.GetColor());
+
+    m_Observations->SetProject(project);
+    m_CurrentProject = project;
 
     // update the project tab interface
     SetProjectEditable(false);
-
-    m_Observations->SetProject(GenerateProject());
 
     // setup observations for the project
     SetupObservationsForProject();
 
     m_choiceObservations->SetString(m_currentObservationsIndex,
-                                    m_textProjectName->GetValue());
+                                    project.GetName());
     m_choiceObservations->GetParent()->Layout();
 }
 
@@ -2037,7 +2040,7 @@ static bool ShowDataPackageFolderDialog(
     wxStaticText* projectInfo = new wxStaticText(
         &dialog,
         wxID_ANY,
-        _("✓ project XML at package root"));
+        _("✓ project XML in 00_raw-data/project"));
 
     wxStaticText* exportsTitle = new wxStaticText(
         &dialog,
@@ -2061,7 +2064,7 @@ static bool ShowDataPackageFolderDialog(
     wxStaticText* dailyTitle = new wxStaticText(
         &dialog,
         wxID_ANY,
-        _("01_daily_media"));
+        _("01_daily-media"));
 
     dailyTitle->SetFont(sectionFont);
 
@@ -2530,6 +2533,23 @@ void ooControlDialogImpl::ooControlDialogDefOnClose(wxCloseEvent& event)
 
 void ooControlDialogImpl::OnNotebookPageChanged(wxNotebookEvent& event)
 {
+    if (event.GetSelection() == 0 &&
+        m_Observations &&
+        m_ObservationsTable &&
+        m_gridProject &&
+        !m_gridProject->IsEnabled()) {
+        m_Observations->SetColSizes(GetUserVisibleObservationColSizes());
+
+        const wxGridSizesInfo& colSizes = m_Observations->GetColSizes();
+
+        for (int c = 0; c < m_gridProject->GetNumberCols(); ++c) {
+            m_gridProject->SetColSize(c, colSizes.GetSize(c));
+        }
+
+        HideInternalProjectColumns();
+        m_gridProject->ForceRefresh();
+    }
+
     event.Skip();
 }
 

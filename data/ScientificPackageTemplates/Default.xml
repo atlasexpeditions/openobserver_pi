@@ -8,14 +8,15 @@
   <always>
     <folder path="00_raw-data"/>
     <folder path="00_raw-data/metadata"/>
+    <folder path="00_raw-data/project"/>
     <folder path="00_raw-data/observations"/>
     <folder path="00_raw-data/nmea-recordings"/>
     <folder path="00_raw-data/tracks"/>
-    <folder path="01_daily_media"/>
+    <folder path="01_daily-media"/>
     <folder path="02_working"/>
   </always>
 
-  <!-- Created once per observation day under 01_daily_media/YYYY-MM-DD/. -->
+  <!-- Created once per observation day under 01_daily-media/YYYY-MM-DD/. -->
   <daily_media>
     <folder name="photos" default="true"/>
     <folder name="audio" default="true"/>
