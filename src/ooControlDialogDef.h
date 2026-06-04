@@ -88,6 +88,9 @@ class ooControlDialogDef : public wxFrame
 		wxButton* m_ObservationsNew;
 		wxButton* m_ObservationsDelete;
 		wxCheckBox* m_checkShowObservationMarks;
+		wxTextCtrl* m_textFilterObservations;
+		wxButton* m_buttonFilterObservations;
+		wxButton* m_buttonClearObservationFilter;
 		wxButton* m_buttonLoadObs;
 		wxButton* m_buttonSaveObs;
 		wxButton* m_ObservationsImportObservations;

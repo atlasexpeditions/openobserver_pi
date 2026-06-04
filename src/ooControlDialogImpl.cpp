@@ -601,6 +601,20 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
     m_gridProject->Bind(wxEVT_GRID_CELL_CHANGED,
                           &ooControlDialogImpl::OnProjectGridCellChange,
                           this);
+    m_buttonFilterObservations->Bind(
+        wxEVT_BUTTON,
+        &ooControlDialogImpl::OnButtonClickFilterObservations,
+        this);
+
+    m_buttonClearObservationFilter->Bind(
+        wxEVT_BUTTON,
+        &ooControlDialogImpl::OnButtonClickClearObservationFilter,
+        this);
+
+    m_textFilterObservations->Bind(
+        wxEVT_TEXT_ENTER,
+        &ooControlDialogImpl::OnButtonClickFilterObservations,
+        this);
 
     ApplyStandardBoldGridLabelFont(m_gridProject);
 
@@ -1728,6 +1742,127 @@ void ooControlDialogImpl::OnButtonClickNewObservation( wxCommandEvent& event )
 
     m_MiniPanel->StartOrStopObservation();
     m_MiniPanel->StartOrStopObservation();
+}
+
+void ooControlDialogImpl::ApplyObservationTextFilter(const wxString& rawQuery)
+{
+    if (!m_Observations || !m_ObservationsTable) return;
+
+    wxString query = rawQuery;
+    query.Trim(true);
+    query.Trim(false);
+    query.MakeLower();
+
+    const wxArrayString orGroups = wxSplit(query, ',');
+
+    const int rowCount = m_Observations->GetNumberRows();
+    const int colCount = m_Observations->GetNumberCols();
+
+    m_ObservationsTable->Freeze();
+
+    int visibleCount = 0;
+
+    for (int r = 0; r < rowCount; ++r) {
+        wxString rowText;
+
+        for (int c = 0; c < colCount; ++c) {
+            rowText += " ";
+            rowText += m_Observations->GetValue(r, c);
+        }
+
+        rowText.MakeLower();
+
+        bool matches = query.IsEmpty();
+
+        for (size_t g = 0; !matches && g < orGroups.GetCount(); ++g) {
+            wxString group = orGroups[g];
+            group.Trim(true);
+            group.Trim(false);
+
+            if (group.IsEmpty()) {
+                continue;
+            }
+
+            const wxArrayString andTerms = wxSplit(group, '+');
+            bool groupMatches = true;
+
+            for (size_t t = 0; t < andTerms.GetCount(); ++t) {
+                wxString term = andTerms[t];
+                term.Trim(true);
+                term.Trim(false);
+
+                if (term.IsEmpty()) {
+                    continue;
+                }
+
+                if (rowText.Find(term) == wxNOT_FOUND) {
+                    groupMatches = false;
+                    break;
+                }
+            }
+
+            if (groupMatches) {
+                matches = true;
+            }
+        }
+
+        const bool currentlyShown = m_ObservationsTable->IsRowShown(r);
+
+        if (matches) {
+            if (!currentlyShown) {
+                m_ObservationsTable->ShowRow(r);
+            }
+            visibleCount++;
+        } else if (currentlyShown) {
+            m_ObservationsTable->HideRow(r);
+        }
+    }
+
+    m_ObservationsTable->Thaw();
+    m_ObservationsTable->ForceRefresh();
+
+    wxLogMessage(
+        "OpenObserver: observation filter applied, %d/%d visible",
+        visibleCount,
+        rowCount);
+}
+
+void ooControlDialogImpl::ClearObservationTextFilter()
+{
+    if (!m_ObservationsTable || !m_Observations) return;
+
+    const int rowCount = m_Observations->GetNumberRows();
+
+    m_ObservationsTable->Freeze();
+
+    for (int r = 0; r < rowCount; ++r) {
+        if (!m_ObservationsTable->IsRowShown(r)) {
+            m_ObservationsTable->ShowRow(r);
+        }
+    }
+
+    m_ObservationsTable->Thaw();
+    m_ObservationsTable->ForceRefresh();
+
+    wxLogMessage("OpenObserver: observation filter cleared");
+}
+
+void ooControlDialogImpl::OnButtonClickFilterObservations(wxCommandEvent& event)
+{
+    if (!m_textFilterObservations) return;
+
+    ApplyObservationTextFilter(m_textFilterObservations->GetValue());
+    event.Skip();
+}
+
+void ooControlDialogImpl::OnButtonClickClearObservationFilter(wxCommandEvent& event)
+{
+    if (m_textFilterObservations) {
+        m_textFilterObservations->SetValue(wxEmptyString);
+    }
+
+    ClearObservationTextFilter();
+    event.Skip();
 }
 
 void ooControlDialogImpl::OnButtonClickDeleteObservation( wxCommandEvent& event )

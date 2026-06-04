@@ -76,6 +76,8 @@ public:
 
         void OnButtonClickNewObservation( wxCommandEvent& event );
         void OnButtonClickDeleteObservation( wxCommandEvent& event );
+        void OnButtonClickFilterObservations(wxCommandEvent& event);
+        void OnButtonClickClearObservationFilter(wxCommandEvent& event);
         void OnButtonClickExportObservations( wxCommandEvent& event );
         void OnButtonClickDataPackage( wxCommandEvent& event ) override;
         void OnButtonClickCreateScientificPackage( wxCommandEvent& event ) override;
@@ -112,6 +114,8 @@ public:
         void SetupListingEditors();
         void HideInternalProjectColumns();
         void HideInternalObservationColumns();
+        void ApplyObservationTextFilter(const wxString& query);
+        void ClearObservationTextFilter();
         wxGridSizesInfo GetUserVisibleObservationColSizes() const;
         bool ObservationMarksArePresent() const;
         void SyncShowObservationMarksCheckboxWithData();

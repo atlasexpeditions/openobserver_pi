@@ -294,10 +294,8 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 	m_staticline11 = new wxStaticLine( m_panelObservations, wxID_ANY, wxDefaultPosition, wxDefaultSize, wxLI_HORIZONTAL );
 	m_fgSizerObservations->Add( m_staticline11, 0, wxEXPAND | wxALL, 5 );
 
-	wxFlexGridSizer* fgSizerObservationsButtons;
-	fgSizerObservationsButtons = new wxFlexGridSizer( 1, 6, 0, 0 );
-	fgSizerObservationsButtons->SetFlexibleDirection( wxBOTH );
-	fgSizerObservationsButtons->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+	wxBoxSizer* fgSizerObservationsButtons;
+	fgSizerObservationsButtons = new wxBoxSizer( wxHORIZONTAL );
 
 	m_ObservationsNew = new wxButton( m_panelObservations, wxID_ANY, _("Add Observation"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizerObservationsButtons->Add( m_ObservationsNew, 0, wxALL, 5 );
@@ -307,6 +305,17 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 
 	m_checkShowObservationMarks = new wxCheckBox( m_panelObservations, wxID_ANY, _("Show Observation Marks"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizerObservationsButtons->Add( m_checkShowObservationMarks, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+
+	fgSizerObservationsButtons->AddStretchSpacer();
+
+	m_textFilterObservations = new wxTextCtrl( m_panelObservations, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 220,-1 ), wxTE_PROCESS_ENTER );
+	fgSizerObservationsButtons->Add( m_textFilterObservations, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+
+	m_buttonFilterObservations = new wxButton( m_panelObservations, wxID_ANY, _("Filter"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizerObservationsButtons->Add( m_buttonFilterObservations, 0, wxALL, 5 );
+
+	m_buttonClearObservationFilter = new wxButton( m_panelObservations, wxID_ANY, _("Clear"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizerObservationsButtons->Add( m_buttonClearObservationFilter, 0, wxALL, 5 );
 
 	m_fgSizerObservations->Add( fgSizerObservationsButtons, 0, wxEXPAND, 5 );
 
