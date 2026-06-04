@@ -601,6 +601,22 @@ void ooObservations::StopObservation()
     m_IsObserving = false;
 }
 
+bool ooObservations::HasNmeaRecordingField()
+{
+    const int C = GetNumberCols();
+    if (m_project.GetColCount() != C) {
+        return false;
+    }
+
+    for (int c = 0; c < C; ++c) {
+        if (m_project.GetColFieldTypes()[c].IsSameAs("NMEA Recording")) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 void ooObservations::SetCurrentObservationNmeaRecording(const wxString& recordingPath)
 {
     if (recordingPath.IsEmpty()) return;

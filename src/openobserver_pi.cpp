@@ -808,6 +808,8 @@ void openobserver_pi::StartNmeaRecordingIfNeeded()
     if (!m_recordNmeaStreamDuringEachObservation) return;
     if (!m_ooObservations) return;
     if (!m_ooObservations->IsObserving()) return;
+
+    if (!m_ooObservations->HasNmeaRecordingField()) return;
     if (!g_PrivateDataDir) return;
 
     m_nmeaRecorder.StartRecording(*g_PrivateDataDir);
