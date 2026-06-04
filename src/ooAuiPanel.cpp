@@ -28,7 +28,7 @@ ooAuiPanel::ooAuiPanel(wxWindow* parent)
     wxBoxSizer* sizer = new wxBoxSizer(wxVERTICAL);
 
     m_titleText = new wxStaticText(this, wxID_ANY, _("Open Observer"));
-    m_projectText = new wxStaticText(this, wxID_ANY, _("Project: —"));
+    m_projectText = new wxStaticText(this, wxID_ANY, wxEmptyString);
     m_buttonStartStop = new wxButton(this, wxID_ANY, _("Start Observation"));
     m_timerText = new wxStaticText(this, wxID_ANY, _("00:00:00"));
     m_utcText = new wxStaticText(this, wxID_ANY, _("UTC: --:--:--"));
@@ -77,7 +77,7 @@ ooAuiPanel::ooAuiPanel(wxWindow* parent)
 void ooAuiPanel::SetProjectInfo(const wxString& projectName,
                                 const wxColor& projectColor)
 {
-    m_projectText->SetLabel(wxString::Format(_("Project: %s"), projectName));
+    m_projectText->SetLabel(projectName);
     m_projectText->SetBackgroundColour(projectColor);
     m_projectText->SetForegroundColour(*wxWHITE);
 
