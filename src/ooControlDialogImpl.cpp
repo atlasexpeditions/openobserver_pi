@@ -74,6 +74,22 @@ static wxString JoinControlPath(const wxString& a, const wxString& b)
     return fn.GetFullPath();
 }
 
+static wxXmlNode* FindControlXmlChild(wxXmlNode* parent, const wxString& name)
+{
+    if (!parent) return nullptr;
+
+    wxXmlNode* child = parent->GetChildren();
+    while (child) {
+        if (child->GetName() == name) {
+            return child;
+        }
+
+        child = child->GetNext();
+    }
+
+    return nullptr;
+}
+
 static int FindObservationColumnByFieldTypeOrLabel(
     ooObservations* observations,
     const wxString& fieldType,
@@ -216,6 +232,262 @@ static int DeleteExistingFiles(const wxArrayString& filePaths)
     }
 
     return deletedCount;
+}
+
+static void AddReferencedNmeaRecordingName(
+    const wxString& value,
+    wxArrayString& recordingNames)
+{
+    wxString cleanedValue = value;
+    cleanedValue.Trim(true);
+    cleanedValue.Trim(false);
+
+    if (cleanedValue.IsEmpty() || cleanedValue.Lower().StartsWith("no data")) {
+        return;
+    }
+
+    wxFileName recordingFile(cleanedValue);
+    const wxString recordingName = recordingFile.GetFullName();
+
+    if (!recordingName.IsEmpty() &&
+        recordingName.Lower().EndsWith(".nmea") &&
+        recordingNames.Index(recordingName) == wxNOT_FOUND) {
+        recordingNames.Add(recordingName);
+    }
+}
+
+static void CollectReferencedNmeaRecordingNamesFromTable(
+    ooObservations* observations,
+    wxArrayString& recordingNames)
+{
+    if (!observations) return;
+
+    wxArrayString recordingLabels;
+    recordingLabels.Add("NMEA Recording");
+    recordingLabels.Add("NMEA REC");
+    recordingLabels.Add("NMEA record");
+    recordingLabels.Add("NMEA recording");
+
+    const int recordingCol = FindObservationColumnByFieldTypeOrLabel(
+        observations,
+        "NMEA Recording",
+        recordingLabels);
+
+    if (recordingCol == wxNOT_FOUND) return;
+
+    for (int row = 0; row < observations->GetNumberRows(); ++row) {
+        AddReferencedNmeaRecordingName(
+            observations->GetValue(row, recordingCol),
+            recordingNames);
+    }
+}
+
+static void CollectReferencedNmeaRecordingNamesFromXml(
+    const wxString& xmlPath,
+    wxArrayString& recordingNames)
+{
+    wxXmlDocument xmlDoc;
+    if (!xmlDoc.Load(xmlPath)) return;
+
+    wxXmlNode* root = xmlDoc.GetRoot();
+    if (!root || root->GetName() != "observations") return;
+
+    wxXmlNode* projectNode = FindControlXmlChild(root, "project");
+    if (!projectNode) return;
+
+    wxArrayInt recordingFieldIds;
+
+    wxXmlNode* projectField = projectNode->GetChildren();
+    while (projectField) {
+        if (projectField->GetName() == "field" &&
+            projectField->GetAttribute("field_type").IsSameAs("NMEA Recording")) {
+            long id = -1;
+            if (projectField->GetAttribute("id").ToLong(&id) && id >= 0) {
+                recordingFieldIds.Add((int)id);
+            }
+        }
+
+        projectField = projectField->GetNext();
+    }
+
+    if (recordingFieldIds.IsEmpty()) return;
+
+    wxXmlNode* dataNode = FindControlXmlChild(root, "data");
+    if (!dataNode) {
+        dataNode = root;
+    }
+
+    wxXmlNode* observationNode = dataNode->GetChildren();
+    while (observationNode) {
+        if (observationNode->GetName() == "observation") {
+            wxXmlNode* fieldNode = observationNode->GetChildren();
+
+            while (fieldNode) {
+                if (fieldNode->GetName() == "field" && fieldNode->GetChildren()) {
+                    long id = -1;
+                    if (fieldNode->GetAttribute("id").ToLong(&id) &&
+                        recordingFieldIds.Index((int)id) != wxNOT_FOUND) {
+                        AddReferencedNmeaRecordingName(
+                            fieldNode->GetChildren()->GetContent(),
+                            recordingNames);
+                    }
+                }
+
+                fieldNode = fieldNode->GetNext();
+            }
+        }
+
+        observationNode = observationNode->GetNext();
+    }
+}
+
+static void CollectObservationXmlFiles(
+    const wxString& folder,
+    wxArrayString& xmlPaths)
+{
+    wxDir dir(folder);
+    if (!dir.IsOpened()) return;
+
+    wxString itemName;
+    bool hasItem = dir.GetFirst(&itemName, wxEmptyString, wxDIR_FILES | wxDIR_DIRS);
+
+    while (hasItem) {
+        const wxString itemPath = JoinControlPath(folder, itemName);
+
+        if (wxDirExists(itemPath)) {
+            CollectObservationXmlFiles(itemPath, xmlPaths);
+        } else if (itemName.StartsWith("observations") &&
+                   itemName.Lower().EndsWith(".xml") &&
+                   xmlPaths.Index(itemPath) == wxNOT_FOUND) {
+            xmlPaths.Add(itemPath);
+        }
+
+        hasItem = dir.GetNext(&itemName);
+    }
+}
+
+static wxArrayString CollectReferencedNmeaRecordingNames(
+    ooObservations* currentObservations)
+{
+    wxArrayString recordingNames;
+
+    CollectReferencedNmeaRecordingNamesFromTable(currentObservations, recordingNames);
+
+    if (!g_PrivateDataDir || g_PrivateDataDir->IsEmpty()) {
+        return recordingNames;
+    }
+
+    wxArrayString xmlPaths;
+    CollectObservationXmlFiles(*g_PrivateDataDir, xmlPaths);
+
+    for (size_t i = 0; i < xmlPaths.GetCount(); ++i) {
+        CollectReferencedNmeaRecordingNamesFromXml(xmlPaths[i], recordingNames);
+    }
+    return recordingNames;
+}
+
+static void CollectLocalNmeaRecordingFiles(
+    const wxString& folder,
+    wxArrayString& recordingPaths)
+{
+    wxDir dir(folder);
+    if (!dir.IsOpened()) return;
+
+    wxString fileName;
+    bool hasFile = dir.GetFirst(&fileName, wxEmptyString, wxDIR_FILES | wxDIR_DIRS);
+
+    while (hasFile) {
+        const wxString path = JoinControlPath(folder, fileName);
+
+        if (wxDirExists(path)) {
+            CollectLocalNmeaRecordingFiles(path, recordingPaths);
+        } else if (fileName.Lower().EndsWith(".nmea")) {
+            recordingPaths.Add(path);
+        }
+
+        hasFile = dir.GetNext(&fileName);
+    }
+}
+
+static bool IsFolderEmptyExceptDsStore(const wxString& folder)
+{
+    wxDir dir(folder);
+    if (!dir.IsOpened()) return false;
+
+    wxString itemName;
+    bool hasItem = dir.GetFirst(&itemName, wxEmptyString, wxDIR_FILES | wxDIR_DIRS);
+
+    while (hasItem) {
+        if (itemName != ".DS_Store") {
+            return false;
+        }
+
+        hasItem = dir.GetNext(&itemName);
+    }
+
+    return true;
+}
+
+static int DeleteEmptyFoldersRecursively(const wxString& folder)
+{
+    wxDir dir(folder);
+    if (!dir.IsOpened()) return 0;
+
+    int deletedCount = 0;
+
+    wxString itemName;
+    bool hasItem = dir.GetFirst(&itemName, wxEmptyString, wxDIR_DIRS);
+
+    while (hasItem) {
+        const wxString childFolder = JoinControlPath(folder, itemName);
+        deletedCount += DeleteEmptyFoldersRecursively(childFolder);
+
+        if (IsFolderEmptyExceptDsStore(childFolder)) {
+            const wxString dsStorePath = JoinControlPath(childFolder, ".DS_Store");
+            if (wxFileExists(dsStorePath)) {
+                wxRemoveFile(dsStorePath);
+            }
+
+            if (wxFileName::Rmdir(childFolder)) {
+                deletedCount++;
+            }
+        }
+
+        hasItem = dir.GetNext(&itemName);
+    }
+
+    return deletedCount;
+}
+
+static wxArrayString CollectOrphanNmeaRecordingFiles(ooObservations* observations)
+{
+    wxArrayString orphanPaths;
+
+    if (!g_PrivateDataDir || g_PrivateDataDir->IsEmpty()) {
+        return orphanPaths;
+    }
+
+    const wxString recordingsRoot = JoinControlPath(*g_PrivateDataDir, "NMEArecordings");
+
+    if (!wxDirExists(recordingsRoot)) {
+        return orphanPaths;
+    }
+
+    const wxArrayString referencedNames = CollectReferencedNmeaRecordingNames(observations);
+
+    wxArrayString localRecordings;
+    CollectLocalNmeaRecordingFiles(recordingsRoot, localRecordings);
+
+    for (size_t i = 0; i < localRecordings.GetCount(); ++i) {
+        wxFileName recordingFile(localRecordings[i]);
+        const wxString recordingName = recordingFile.GetFullName();
+
+        if (referencedNames.Index(recordingName) == wxNOT_FOUND) {
+            orphanPaths.Add(localRecordings[i]);
+        }
+    }
+
+    return orphanPaths;
 }
 
 ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent) 
@@ -1103,6 +1375,57 @@ void ooControlDialogImpl::OnNmeaFieldUpdate()
 {
     m_staticTextNMEA->SetLabel(
       wxString::Format(wxT("%i fields"), GetNmeaFieldCount()));
+}
+
+void ooControlDialogImpl::OnButtonClickCleanNmeaRecordings(wxCommandEvent& event)
+{
+    if (m_Observations && m_Observations->IsObserving()) {
+        wxMessageBox(
+            _("Please stop the current observation before cleaning NMEA recordings."),
+            _("Clean NMEA recordings"),
+            wxOK | wxICON_INFORMATION,
+            this);
+        return;
+    }
+
+    const wxArrayString orphanRecordings =
+        CollectOrphanNmeaRecordingFiles(m_Observations);
+
+    if (orphanRecordings.IsEmpty()) {
+        wxMessageBox(
+            _("No orphan NMEA recordings found."),
+            _("Clean NMEA recordings"),
+            wxOK | wxICON_INFORMATION,
+            this);
+        return;
+    }
+
+    const int response = wxMessageBox(
+        wxString::Format(
+            _("Found %i orphan NMEA recording(s).\n\nDelete orphan recordings?"),
+            (int)orphanRecordings.GetCount()),
+        _("Clean NMEA recordings"),
+        wxYES_NO | wxNO_DEFAULT | wxICON_WARNING,
+        this);
+
+    if (response != wxYES) return;
+
+    const int deletedCount = DeleteExistingFiles(orphanRecordings);
+
+    int deletedFolderCount = 0;
+    if (g_PrivateDataDir && !g_PrivateDataDir->IsEmpty()) {
+        const wxString recordingsRoot = JoinControlPath(*g_PrivateDataDir, "NMEArecordings");
+        deletedFolderCount = DeleteEmptyFoldersRecursively(recordingsRoot);
+    }
+
+    wxMessageBox(
+        wxString::Format(
+            _("Deleted %i orphan NMEA recording(s).\nRemoved %i empty folder(s)."),
+            deletedCount,
+            deletedFolderCount),
+        _("Clean NMEA recordings"),
+        wxOK | wxICON_INFORMATION,
+        this);
 }
 
 void ooControlDialogImpl::OnButtonClickScanNmea(wxCommandEvent& event)

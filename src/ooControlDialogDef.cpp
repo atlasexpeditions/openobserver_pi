@@ -186,6 +186,9 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 	m_buttonScanNmea = new wxButton( m_panelProject, wxID_ANY, _("Start NMEA Scan"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer9->Add( m_buttonScanNmea, 0, wxALL, 5 );
 
+	m_buttonCleanNmeaRecordings = new wxButton( m_panelProject, wxID_ANY, _("Clean NMEA recordings"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizer9->Add( m_buttonCleanNmeaRecordings, 0, wxALL, 5 );
+
 	m_checkShowAdvancedNmeaFields = new wxCheckBox(
     	m_panelProject,
     	wxID_ANY,
@@ -372,6 +375,7 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 	m_gridProject->Connect( wxEVT_GRID_SELECT_CELL, wxGridEventHandler( ooControlDialogDef::OnProjectGridSelect ), NULL, this );
 	m_gridProject->Connect( wxEVT_GRID_RANGE_SELECT, wxGridRangeSelectEventHandler( ooControlDialogDef::OnProjectGridRangeSelect ), NULL, this );
 	m_buttonScanNmea->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickScanNmea ), NULL, this );
+	m_buttonCleanNmeaRecordings->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickCleanNmeaRecordings ), NULL, this );
 	m_checkShowAdvancedNmeaFields->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnCheckBoxShowAdvancedNmeaFields ), NULL, this );
 	m_buttonOpenResourcesFolder->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickOpenResourcesFolder ), NULL, this );
 	m_buttonRefreshListings->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickRefreshListings ), NULL, this );
@@ -401,6 +405,7 @@ ooControlDialogDef::~ooControlDialogDef()
 	m_gridProject->Disconnect( wxEVT_GRID_SELECT_CELL, wxGridEventHandler( ooControlDialogDef::OnProjectGridSelect ), NULL, this );
 	m_gridProject->Disconnect( wxEVT_GRID_RANGE_SELECT, wxGridRangeSelectEventHandler( ooControlDialogDef::OnProjectGridRangeSelect ), NULL, this );
 	m_buttonScanNmea->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickScanNmea ), NULL, this );
+	m_buttonCleanNmeaRecordings->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickCleanNmeaRecordings ), NULL, this );
 	m_checkShowAdvancedNmeaFields->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnCheckBoxShowAdvancedNmeaFields ), NULL, this );
 	m_buttonOpenResourcesFolder->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickOpenResourcesFolder ), NULL, this );
 	m_buttonRefreshListings->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickRefreshListings ), NULL, this );

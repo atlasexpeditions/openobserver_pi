@@ -87,6 +87,7 @@ public:
         void ooControlCloseClick(wxCommandEvent& event);
         void ooControlDialogDefOnClose(wxCloseEvent& event);
         void OnButtonClickScanNmea(wxCommandEvent& event);
+        void OnButtonClickCleanNmeaRecordings(wxCommandEvent& event) override;
         void OnCheckBoxShowAdvancedNmeaFields(wxCommandEvent& event) override;
         void CommitCurrentObservationsGridEdit();
         void ooControlDialogActivate(wxActivateEvent& event);

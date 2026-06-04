@@ -64,6 +64,7 @@ class ooControlDialogDef : public wxFrame
 		wxStaticText* m_staticText7;
 		wxStaticText* m_staticTextNMEA;
 		wxButton* m_buttonScanNmea;
+		wxButton* m_buttonCleanNmeaRecordings;
 		wxCheckBox* m_checkShowAdvancedNmeaFields;
 		wxStaticText* m_staticText11;
 		wxStaticText* m_staticTextListings;
@@ -105,6 +106,7 @@ class ooControlDialogDef : public wxFrame
 		virtual void OnProjectGridSelect( wxGridEvent& event ) { event.Skip(); }
 		virtual void OnProjectGridRangeSelect( wxGridRangeSelectEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickScanNmea( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickCleanNmeaRecordings( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCheckBoxShowAdvancedNmeaFields( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickOpenResourcesFolder( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickRefreshListings( wxCommandEvent& event ) { event.Skip(); }
