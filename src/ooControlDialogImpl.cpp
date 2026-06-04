@@ -277,6 +277,10 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
                           &ooControlDialogImpl::OnProjectColourChanged,
                           this);
 
+    m_gridProject->Bind(wxEVT_GRID_CELL_CHANGED,
+                          &ooControlDialogImpl::OnProjectGridCellChange,
+                          this);
+
     ApplyStandardBoldGridLabelFont(m_gridProject);
 
     // Do not call GetIconNameArray() here.
@@ -975,7 +979,7 @@ void ooControlDialogImpl::HideInternalObservationColumns()
     const wxArrayString& fieldTypes = m_Observations->GetColFieldTypes();
 
     for (int c = 0; c < (int)fieldTypes.GetCount(); ++c) {
-        if (!fieldTypes[c].IsSameAs("Mark GUID")) continue;
+        if (!ooObservations::IsInternalObservationFieldType(fieldTypes[c])) continue;
 
         // Mark GUID is our quiet bridge to OpenCPN marks.
         // It keeps observations linked to the chart without asking the user to care about IDs.
@@ -988,7 +992,8 @@ void ooControlDialogImpl::HideInternalProjectColumns()
     if (!m_gridProject) return;
 
     for (int c = 0; c < m_gridProject->GetNumberCols(); ++c) {
-        if (!m_gridProject->GetCellValue(1, c).IsSameAs("Mark GUID")) continue;
+        if (!ooObservations::IsInternalObservationFieldType(
+                m_gridProject->GetCellValue(1, c))) continue;
 
         // Mark GUID belongs to the chart link, not to the user protocol.
         // Keep it in the project quietly, but do not ask the user to manage it.
@@ -1007,7 +1012,7 @@ wxGridSizesInfo ooControlDialogImpl::GetUserVisibleObservationColSizes() const
     const wxGridSizesInfo& storedSizes = m_Observations->GetColSizes();
 
     for (int c = 0; c < (int)fieldTypes.GetCount(); ++c) {
-        if (!fieldTypes[c].IsSameAs("Mark GUID")) continue;
+        if (!ooObservations::IsInternalObservationFieldType(fieldTypes[c])) continue;
 
         // Keep the technical column hidden on screen, but do not save that hidden width
         // as if it were a user layout choice.
@@ -1199,7 +1204,7 @@ void ooControlDialogImpl::EnsureProjectHasFieldType(const wxString& field_type, 
     m_gridProject->SetCellValue(0, m_gridProject->GetNumberCols() - 1, label);
     m_gridProject->SetCellValue(1, m_gridProject->GetNumberCols() - 1, field_type);
 
-    if (!field_type.IsSameAs("Mark GUID")) {
+    if (!ooObservations::IsInternalObservationFieldType(field_type)) {
         wxMessageBox(
             wxString::Format(
                 wxT("Column \"%s: %s\" has been automatically added to the project."),
@@ -2287,6 +2292,34 @@ void ooControlDialogImpl::OnProjectGridCellSelect(wxGridEvent& event)
 void ooControlDialogImpl::OnProjectGridRangeSelect(wxGridRangeSelectEvent& event)
 {
     OnProjectGridSelectionChange();
+    event.Skip();
+}
+
+void ooControlDialogImpl::OnProjectGridCellChange(wxGridEvent& event)
+{
+    const int row = event.GetRow();
+    const int col = event.GetCol();
+
+    if (row == 1) {
+        const wxString value = m_gridProject->GetCellValue(row, col);
+
+        wxString trimmedValue = value;
+        trimmedValue.Trim(true);
+        trimmedValue.Trim(false);
+
+        if (trimmedValue.IsEmpty() || trimmedValue.EndsWith(":")) {
+            // Category titles and blank separators help the eye,
+            // but they are not real project fields.
+            m_gridProject->SetCellValue(row, col, wxEmptyString);
+
+            wxMessageBox(
+                _("Please choose a valid field type."),
+                _("Field type category"),
+                wxOK | wxICON_INFORMATION,
+                this);
+        }
+    }
+
     event.Skip();
 }
 

@@ -164,6 +164,7 @@ public:
     double HaversineDistance(double lat1, double lon1, double lat2,double lon2);
     double DegToRad(double deg);
     static wxArrayString GetObservationFieldTypes();
+    static bool IsInternalObservationFieldType(const wxString& fieldType);
     static void AddListing(const wxString& listing, const wxArrayString& items);
     static bool GetListing(const wxString& listing, wxArrayString& items);
     static const std::unordered_map<wxString, wxArrayString>& GetListings();

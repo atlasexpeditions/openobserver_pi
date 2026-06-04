@@ -918,7 +918,7 @@ void ooObservations::SaveToCSV(wxFile *file, bool stripMarkGuid)
 
     if (stripMarkGuid && m_project.GetColCount() == C) {
         for (int c = 0; c < C; ++c) {
-            if (m_project.GetColFieldTypes()[c].IsSameAs("Mark GUID")) {
+            if (IsInternalObservationFieldType(m_project.GetColFieldTypes()[c])) {
                 markGuidCol = c;
                 break;
             }
@@ -1028,7 +1028,7 @@ void ooObservations::SaveToXML(wxFile *file, bool stripMarkGuid)
 
     if (stripMarkGuid && m_project.GetColCount() == C) {
         for (int c = 0; c < C; ++c) {
-            if (m_project.GetColFieldTypes()[c].IsSameAs("Mark GUID")) {
+            if (IsInternalObservationFieldType(m_project.GetColFieldTypes()[c])) {
                 markGuidCol = c;
                 break;
             }
@@ -1219,7 +1219,7 @@ bool ooObservations::SaveToGeoJSON(wxOutputStream& out)
 
         for (int c = 0; c < C; c++) {
             const wxString field_type = m_project.GetColFieldTypes()[c];
-            if (field_type.IsSameAs("Mark GUID") ||
+            if (IsInternalObservationFieldType(field_type) ||
                 field_type.IsSameAs("End Date") ||
                 field_type.IsSameAs("End Time") ||
                 field_type.IsSameAs("End Timestamp UTC") ||
@@ -1372,6 +1372,16 @@ const ooProject& ooObservations::GetProject() const
 wxArrayString ooObservations::GetObservationFieldTypes()
 {
     wxArrayString observationFieldTypes;
+
+    // Keep one simple field type list for the project grid, but make it readable.
+    // The category titles and blank lines are visual helpers only; the project
+    // editor refuses them if the user selects them by mistake.
+    //
+    // Internal fields, such as Mark GUID, are intentionally not listed here.
+    // They are kept quietly in the project when needed, hidden from the user,
+    // and handled through IsInternalObservationFieldType().
+    observationFieldTypes.Add("Common fields :");
+    observationFieldTypes.Add(" ");
     observationFieldTypes.Add("Observation ID");
     observationFieldTypes.Add("Start Date");
     observationFieldTypes.Add("Start Time");
@@ -1387,6 +1397,22 @@ wxArrayString ooObservations::GetObservationFieldTypes()
     observationFieldTypes.Add("Observation Duration");
     observationFieldTypes.Add("NMEA Recording");
     observationFieldTypes.Add("Text");
+
+    observationFieldTypes.Add(" ");
+    observationFieldTypes.Add("Listings :");
+    observationFieldTypes.Add(" ");
+    wxArrayString listingNames;
+    for (auto it : m_listings) {
+        listingNames.Add(it.first);
+    }
+    listingNames.Sort();
+    for (const auto& listingName : listingNames) {
+        observationFieldTypes.Add(listingName);
+    }
+
+    observationFieldTypes.Add(" ");
+    observationFieldTypes.Add("Standard NMEA :");
+    observationFieldTypes.Add(" ");
     observationFieldTypes.Add("NMEA AWS");
     observationFieldTypes.Add("NMEA AWA");
     observationFieldTypes.Add("NMEA TWS");
@@ -1394,16 +1420,28 @@ wxArrayString ooObservations::GetObservationFieldTypes()
     observationFieldTypes.Add("NMEA COG");
     observationFieldTypes.Add("NMEA SOG");
 
-    for (auto it : m_listings)
-    {
-      observationFieldTypes.Add(it.first);
+    observationFieldTypes.Add(" ");
+    observationFieldTypes.Add("Detected NMEA :");
+    observationFieldTypes.Add(" ");
+    wxArrayString detectedNmeaFields;
+    for (const auto& item : ooObservations::m_nmeaFields) {
+        if (m_showAdvancedNMEAFields || IsSimpleNMEAField(item)) {
+            detectedNmeaFields.Add(item.m_description);
+        }
     }
-    for (auto it : ooObservations::m_nmeaFields) {
-    if (m_showAdvancedNMEAFields || IsSimpleNMEAField(it)) {
-        observationFieldTypes.Add(it.m_description);
+    detectedNmeaFields.Sort();
+    for (const auto& fieldName : detectedNmeaFields) {
+        observationFieldTypes.Add(fieldName);
     }
-}
+
     return observationFieldTypes;
+}
+
+bool ooObservations::IsInternalObservationFieldType(const wxString& fieldType)
+{
+    // Internal fields quietly keep Open Observer linked to OpenCPN.
+    // They are stored when needed, but are not part of the user protocol.
+    return fieldType.IsSameAs("Mark GUID");
 }
 
 void ooObservations::ClearListings()

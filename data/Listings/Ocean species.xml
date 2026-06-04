@@ -2,6 +2,13 @@
 
 <listing creator="OpenObserver for OpenCPN" file_version="1">
 
+<item label="Environmental parameters" icon="Info-Info"/>
+<item label="Acoustic recording - Hydrophone" icon="Circle"/>
+<item label="Whale watching boat" icon="Campfire"/>
+<item label="Motor boat" icon="Motor-boat"/>
+<item label="Fishing activity" icon="Fishing"/>
+<item label="Pollution" icon="Pollution"/>
+
 <item label=" "/>
 <item label="Baleen whale (Mysticeti) Mysticète" icon="Whale"/>
 <item label="Common minke whale (Balaenoptera acutorostrata) Baleine de Minke" icon="Whale"/>
@@ -54,6 +61,7 @@
 
 <item label=" "/>
 <item label="Shark sp. (species) Requin sp." icon="Shark"/>
+<item label="Basking shark (Cetorhinus maximus) Requin pèlerin" icon="Basking-shark"/>
 <item label="Blue shark (Prionace glauca) Requin bleu" icon="Shark"/>
 <item label="Whale shark (Rhincodon typus) Requin-baleine" icon="Shark"/>
 
