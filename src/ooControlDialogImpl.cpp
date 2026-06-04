@@ -39,6 +39,7 @@
 #include <wx/filename.h>
 #include <wx/filefn.h>
 #include <wx/dir.h>
+#include <wx/utils.h>
 
 #include <wx/xml/xml.h>
 
@@ -268,6 +269,30 @@ static wxArrayString CollectNmeaRecordingPathsForRows(
     }
 
     return recordingPaths;
+}
+
+static void ShowFileInFileManager(const wxString& filePath)
+{
+    if (filePath.IsEmpty() || !wxFileExists(filePath)) {
+        return;
+    }
+
+#ifdef __WXOSX__
+    wxString escapedPath = filePath;
+    escapedPath.Replace("\"", "\\\"");
+
+    // On macOS, reveal the recording in Finder instead of opening the raw text file.
+    wxExecute("open -R \"" + escapedPath + "\"", wxEXEC_ASYNC);
+#else
+    wxFileName file(filePath);
+    const wxString folderPath = file.GetPath();
+
+    if (!folderPath.IsEmpty() && wxDirExists(folderPath)) {
+        wxLaunchDefaultApplication(folderPath);
+    } else {
+        wxLaunchDefaultApplication(filePath);
+    }
+#endif
 }
 
 static int DeleteExistingFiles(const wxArrayString& filePaths)
@@ -861,6 +886,91 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                                  wxGridEventHandler(ooControlDialogImpl::OnObservationsGridCellChange),
                                  NULL,
                            this);
+
+    m_ObservationsTable->Bind(
+        wxEVT_GRID_CELL_RIGHT_CLICK,
+        [this](wxGridEvent& event)
+        {
+            if (!m_Observations || !m_ObservationsTable) {
+                event.Skip();
+                return;
+            }
+
+            const int row = event.GetRow();
+
+            if (row < 0 || row >= m_Observations->GetNumberRows()) {
+                event.Skip();
+                return;
+            }
+
+            m_ObservationsTable->ClearSelection();
+            m_ObservationsTable->SelectRow(row);
+
+            wxMenu menu;
+            const int showNmeaRecordingId = wxWindow::NewControlId();
+
+            menu.Append(showNmeaRecordingId, _("Show NMEA recording"));
+
+            menu.Bind(
+                wxEVT_MENU,
+                [this, row](wxCommandEvent&)
+                {
+                    wxArrayString recordingLabels;
+                    recordingLabels.Add("NMEA Recording");
+                    recordingLabels.Add("NMEA REC");
+                    recordingLabels.Add("NMEA record");
+                    recordingLabels.Add("NMEA recording");
+
+                    const int recordingCol = FindObservationColumnByFieldTypeOrLabel(
+                        m_Observations,
+                        "NMEA Recording",
+                        recordingLabels);
+
+                    if (recordingCol == wxNOT_FOUND) {
+                        wxMessageBox(
+                            _("This project has no NMEA Recording field."),
+                            _("Show NMEA recording"),
+                            wxOK | wxICON_INFORMATION,
+                            this);
+                        return;
+                    }
+
+                    wxString recordingValue = m_Observations->GetValue(row, recordingCol);
+                    recordingValue.Trim(true);
+                    recordingValue.Trim(false);
+
+                    if (recordingValue.IsEmpty() ||
+                        recordingValue.Lower().StartsWith("no data")) {
+                        wxMessageBox(
+                            _("No NMEA recording is linked to this observation."),
+                            _("Show NMEA recording"),
+                            wxOK | wxICON_INFORMATION,
+                            this);
+                        return;
+                    }
+
+                    wxFileName recordingFile(recordingValue);
+                    const wxString recordingName = recordingFile.GetFullName();
+
+                    const wxString recordingPath = FindNmeaRecordingPathByName(recordingName);
+
+                    if (recordingPath.IsEmpty()) {
+                        wxMessageBox(
+                            wxString::Format(
+                                _("The linked NMEA recording could not be found:\n\n%s"),
+                                recordingName),
+                            _("Show NMEA recording"),
+                            wxOK | wxICON_WARNING,
+                            this);
+                        return;
+                    }
+
+                    ShowFileInFileManager(recordingPath);
+                },
+                showNmeaRecordingId);
+
+            m_ObservationsTable->PopupMenu(&menu);
+        });
 
     m_ObservationsTable->SetMinSize(wxSize(1, 1));
 
