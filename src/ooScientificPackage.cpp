@@ -9,12 +9,17 @@
 #include "ooGpxTrackExport.h"
 #include "ooObservations.h"
 
+#include "ocpn_plugin.h"
+
 #include <wx/filename.h>
 #include <wx/file.h>
 #include <wx/wfstream.h>
 #include <wx/sstream.h>
 #include <wx/xml/xml.h>
 #include <wx/datetime.h>
+#include <wx/txtstrm.h>
+
+#include <cmath>
 
 extern wxString* g_PrivateDataDir;
 
@@ -581,6 +586,351 @@ bool ooScientificPackage::CreateStaticFolders(
     return true;
 }
 
+static int FindColumnByFieldTypeOrLabel(
+    ooObservations* observations,
+    const wxArrayString& acceptedNames)
+{
+    if (!observations) {
+        return -1;
+    }
+
+    const int columnCount = observations->GetProject().GetColCount();
+
+    for (int c = 0; c < columnCount; ++c) {
+        wxString fieldType = observations->GetProject().GetColFieldTypes()[c];
+        wxString label = observations->GetProject().GetColLabels()[c];
+
+        fieldType.MakeLower();
+        label.MakeLower();
+
+        for (size_t i = 0; i < acceptedNames.GetCount(); ++i) {
+            wxString accepted = acceptedNames[i];
+            accepted.MakeLower();
+
+            if (fieldType.IsSameAs(accepted) ||
+                label.IsSameAs(accepted) ||
+                fieldType.Contains(accepted) ||
+                label.Contains(accepted)) {
+                return c;
+            }
+        }
+    }
+
+    return -1;
+}
+
+static wxString FormatDmsCoordinate(double value, bool latitude)
+{
+    const double absoluteValue = std::fabs(value);
+    const int degrees = (int)absoluteValue;
+    const double minutesFull = (absoluteValue - degrees) * 60.0;
+    const int minutes = (int)minutesFull;
+    const double seconds = (minutesFull - minutes) * 60.0;
+
+    const wxString hemisphere = latitude
+        ? (value < 0.0 ? "S" : "N")
+        : (value < 0.0 ? "W" : "E");
+
+    return wxString::Format(
+        "%d°%02d'%.1f\" %s",
+        degrees,
+        minutes,
+        seconds,
+        hemisphere);
+}
+
+static void AddUniqueCleanValue(wxArrayString& values, const wxString& value)
+{
+    wxString cleaned = value;
+    cleaned.Trim(true);
+    cleaned.Trim(false);
+
+    if (!cleaned.IsEmpty() && values.Index(cleaned) == wxNOT_FOUND) {
+        values.Add(cleaned);
+    }
+}
+
+static wxArrayString SplitImageReferences(const wxString& value)
+{
+    wxString normalized = value;
+    normalized.Replace("\r", " ");
+    normalized.Replace("\n", " ");
+    normalized.Replace("\t", " ");
+    normalized.Replace(",", " ");
+    normalized.Replace(";", " ");
+
+    wxArrayString references = wxSplit(normalized, ' ');
+
+    wxArrayString cleanedReferences;
+
+    for (size_t i = 0; i < references.GetCount(); ++i) {
+        AddUniqueCleanValue(cleanedReferences, references[i]);
+    }
+
+    return cleanedReferences;
+}
+
+static wxString ExtractImageNumber(const wxString& imageReference)
+{
+    wxFileName fileName(imageReference);
+    wxString baseName = fileName.GetName();
+
+    if (baseName.IsEmpty()) {
+        baseName = imageReference;
+    }
+
+    wxString bestRun;
+    wxString currentRun;
+
+    for (size_t i = 0; i < baseName.Length(); ++i) {
+        const wxChar ch = baseName[i];
+
+        if (ch >= '0' && ch <= '9') {
+            currentRun += ch;
+        } else {
+            if (currentRun.Length() >= bestRun.Length()) {
+                bestRun = currentRun;
+            }
+
+            currentRun.Clear();
+        }
+    }
+
+    if (currentRun.Length() >= bestRun.Length()) {
+        bestRun = currentRun;
+    }
+
+    if (bestRun.Length() < 3) {
+        return wxEmptyString;
+    }
+
+    return bestRun;
+}
+
+static wxString GenerateObservationIdFromTimestamp(const wxString& timestamp, int row)
+{
+    wxString digits;
+
+    for (size_t i = 0; i < timestamp.Length(); ++i) {
+        const wxChar ch = timestamp[i];
+
+        if (ch >= '0' && ch <= '9') {
+            digits += ch;
+        }
+    }
+
+    if (digits.Length() < 8) {
+        return wxString::Format("OBS-UNKNOWN-%03d", row + 1);
+    }
+
+    const wxString yymmdd =
+        digits.Mid(2, 2) +
+        digits.Mid(4, 2) +
+        digits.Mid(6, 2);
+
+    return wxString::Format("OBS-%s-%03d", yymmdd, row + 1);
+}
+
+static bool WriteImageReferenceHelperTextFile(
+    ooObservations* observations,
+    const wxString& observationsDir,
+    const wxString& exportBaseName,
+    wxString& errorMessage,
+    ooScientificPackage::RunSummary& runSummary)
+{
+    if (!observations) {
+        return true;
+    }
+
+    wxArrayString observationIdNames;
+    observationIdNames.Add("Observation ID");
+
+    wxArrayString timestampNames;
+    timestampNames.Add("Start Timestamp UTC");
+    timestampNames.Add("Timestamp UTC");
+    timestampNames.Add("UTC Timestamp");
+
+    wxArrayString latitudeNames;
+    latitudeNames.Add("Start Latitude");
+    latitudeNames.Add("Start LAT");
+    latitudeNames.Add("Start Lat");
+    latitudeNames.Add("Latitude");
+    latitudeNames.Add("Lat");
+
+    wxArrayString longitudeNames;
+    longitudeNames.Add("Start Longitude");
+    longitudeNames.Add("Start LON");
+    longitudeNames.Add("Start Lon");
+    longitudeNames.Add("Longitude");
+    longitudeNames.Add("Lon");
+
+    wxArrayString imageRefNames;
+    imageRefNames.Add("Image Ref");
+    imageRefNames.Add("Image Reference");
+    imageRefNames.Add("Image references");
+    imageRefNames.Add("Photo Ref");
+    imageRefNames.Add("Photo Reference");
+    imageRefNames.Add("Picture Ref");
+
+    const int observationIdCol = FindColumnByFieldTypeOrLabel(observations, observationIdNames);
+    const int timestampCol = FindColumnByFieldTypeOrLabel(observations, timestampNames);
+    const int latitudeCol = FindColumnByFieldTypeOrLabel(observations, latitudeNames);
+    const int longitudeCol = FindColumnByFieldTypeOrLabel(observations, longitudeNames);
+    const int imageRefCol = FindColumnByFieldTypeOrLabel(observations, imageRefNames);
+
+    if (imageRefCol < 0) {
+        runSummary.logLines.Add("Image reference helper skipped: no image reference field.");
+        return true;
+    }
+
+    wxString content;
+
+    for (int r = 0; r < observations->GetNumberRows(); ++r) {
+        wxString imageValue = observations->GetValue(r, imageRefCol);
+        imageValue.Trim(true);
+        imageValue.Trim(false);
+
+        if (imageValue.IsEmpty()) {
+            continue;
+        }
+
+        wxArrayString imageReferences = SplitImageReferences(imageValue);
+
+        if (imageReferences.IsEmpty()) {
+            continue;
+        }
+
+        wxString observationId;
+
+        if (observationIdCol >= 0) {
+            observationId = observations->GetValue(r, observationIdCol);
+        }
+        observationId.Trim(true);
+        observationId.Trim(false);
+
+        wxString timestamp;
+
+        if (timestampCol >= 0) {
+            timestamp = observations->GetValue(r, timestampCol);
+        }
+        timestamp.Trim(true);
+        timestamp.Trim(false);
+
+        if (timestamp.IsEmpty()) {
+            timestamp = "(not available)";
+        } else {
+            timestamp.Replace("T", " ");
+            timestamp.Replace("Z", " UTC");
+        }
+
+        if (observationId.IsEmpty()) {
+            observationId = GenerateObservationIdFromTimestamp(timestamp, r);
+        }
+
+        wxString latitudeValue;
+
+        if (latitudeCol >= 0) {
+            latitudeValue = observations->GetValue(r, latitudeCol);
+        }
+        wxString longitudeValue;
+
+        if (longitudeCol >= 0) {
+            longitudeValue = observations->GetValue(r, longitudeCol);
+        }
+
+        latitudeValue.Trim(true);
+        latitudeValue.Trim(false);
+        longitudeValue.Trim(true);
+        longitudeValue.Trim(false);
+
+        double latitude = 0.0;
+        double longitude = 0.0;
+        const bool hasLatitude = !latitudeValue.IsEmpty();
+        const bool hasLongitude = !longitudeValue.IsEmpty();
+
+        if (hasLatitude) {
+            latitude = fromDMM_Plugin(latitudeValue);
+        }
+
+        if (hasLongitude) {
+            longitude = fromDMM_Plugin(longitudeValue);
+        }
+
+        wxArrayString imageNumbers;
+
+        for (size_t i = 0; i < imageReferences.GetCount(); ++i) {
+            AddUniqueCleanValue(imageNumbers, ExtractImageNumber(imageReferences[i]));
+        }
+
+        content += observationId + "\n";
+        content += timestamp + "\n\n";
+
+        if (hasLatitude && hasLongitude) {
+            content += "Position (decimal): " +
+                       wxString::Format("%.6f", latitude) +
+                       ", " +
+                       wxString::Format("%.6f", longitude) +
+                       "\n";
+
+            content += "Position (DMS): " +
+                       FormatDmsCoordinate(latitude, true) +
+                       " " +
+                       FormatDmsCoordinate(longitude, false) +
+                       "\n\n";
+        } else {
+            content += "Position: (not available)\n\n";
+        }
+
+        content += "Image references:\n";
+
+        for (size_t i = 0; i < imageReferences.GetCount(); ++i) {
+            content += imageReferences[i] + "\n";
+        }
+
+        if (!imageNumbers.IsEmpty()) {
+            content += "\nFile numbers only:\n";
+
+            for (size_t i = 0; i < imageNumbers.GetCount(); ++i) {
+                if (i > 0) {
+                    content += ", ";
+                }
+
+                content += imageNumbers[i];
+            }
+
+            content += "\n";
+        }
+
+        content += "\n--------------------------------------------------\n\n";
+    }
+
+    if (content.IsEmpty()) {
+        runSummary.logLines.Add("Image reference helper skipped: no image references found.");
+        return true;
+    }
+
+    const wxString helperPath = JoinPath(
+        observationsDir,
+        exportBaseName + "_image_references.txt");
+
+    wxFileOutputStream output(helperPath);
+
+    if (!output.IsOk()) {
+        errorMessage = "Unable to write " + exportBaseName + "_image_references.txt";
+        return false;
+    }
+
+    wxTextOutputStream text(output);
+    text.WriteString(content);
+
+    runSummary.exportFilesRefreshed++;
+    runSummary.logLines.Add(
+        "Image reference helper updated: 00_raw-data/observations/" +
+        exportBaseName + "_image_references.txt");
+
+    return true;
+}
+
 bool ooScientificPackage::ExportObservations(
     ooObservations* observations,
     const wxString& packageDir,
@@ -663,6 +1013,15 @@ bool ooScientificPackage::ExportObservations(
         runSummary.logLines.Add(
             "Observation export updated: 00_raw-data/observations/" +
             exportBaseName + ".geojson");
+    }
+
+    if (!WriteImageReferenceHelperTextFile(
+            observations,
+            observationsDir,
+            exportBaseName,
+            errorMessage,
+            runSummary)) {
+        return false;
     }
 
     return true;
