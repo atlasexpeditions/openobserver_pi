@@ -892,11 +892,18 @@ void openobserver_pi::CreateMarkForCompletedObservationIfRequested()
 
 void openobserver_pi::StartNmeaRecordingIfNeeded()
 {
-    if (!m_recordNmeaStreamDuringEachObservation) return;
     if (!m_ooObservations) return;
     if (!m_ooObservations->IsObserving()) return;
-
     if (!m_ooObservations->HasNmeaRecordingField()) return;
+
+    if (!m_recordNmeaStreamDuringEachObservation) {
+        // Keep the NMEA Recording column explicit even when recording is disabled.
+        // This makes exports and field checks easier to read later.
+        m_ooObservations->SetCurrentObservationNmeaRecording("no data");
+        RefreshObservationDisplay();
+        return;
+    }
+
     if (!g_PrivateDataDir) return;
 
     m_nmeaRecorder.StartRecording(*g_PrivateDataDir);
