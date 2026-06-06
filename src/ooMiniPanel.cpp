@@ -269,9 +269,15 @@ void ooMiniPanel::UpdateObservationDuration()
   m_ObservationDuration->SetLabel(durationString);
 }
 
-void ooMiniPanel::OnObservationDurationTimer(wxTimerEvent& event) {
-  UpdateObservationStatus();
-  UpdateObservationDuration();
+void ooMiniPanel::OnObservationDurationTimer(wxTimerEvent& event)
+{
+  if (!g_openobserver_pi || !g_openobserver_pi->m_ooObservations) return;
+
+  // The timer only updates the visible duration.
+  // Start/Stop state changes are synchronized by explicit observation actions.
+  if (g_openobserver_pi->m_ooObservations->IsObserving()) {
+    UpdateObservationDuration();
+  }
 }
 
 void ooMiniPanel::OnToggleWindowClick(wxCommandEvent& event) {

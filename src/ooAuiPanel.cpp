@@ -160,9 +160,18 @@ void ooAuiPanel::OnStartStop(wxCommandEvent& event)
 
 void ooAuiPanel::OnTimer(wxTimerEvent& event)
 {
-    UpdateObservationStatus();
-    UpdateObservationDuration();
+    if (!g_openobserver_pi || !g_openobserver_pi->m_ooObservations) {
+        return;
+    }
+
+    // Keep the periodic timer lightweight.
+    // Observation state is synchronized by explicit Start/Stop actions.
+    if (g_openobserver_pi->m_ooObservations->IsObserving()) {
+        UpdateObservationDuration();
+    }
+
     UpdateUtcDisplay();
+
     event.Skip();
 }
 
@@ -218,29 +227,36 @@ void ooAuiPanel::UpdateObservationDuration()
     const unsigned int minutes = (duration_ms % 3600000) / 60000;
     const unsigned int seconds = (duration_ms % 60000) / 1000;
 
-    m_timerText->SetLabel(
-        wxString::Format("%02u:%02u:%02u", hours, minutes, seconds));
+    const wxString label =
+        wxString::Format("%02u:%02u:%02u", hours, minutes, seconds);
 
+    if (m_timerText->GetLabel() == label) {
+        return;
+    }
+
+    m_timerText->SetLabel(label);
     Layout();
 }
 
 void ooAuiPanel::UpdateUtcDisplay()
 {
-    if (!g_openobserver_pi || !g_openobserver_pi->m_ooObservations) {
-        m_utcText->SetLabel(_("UTC: --:--:--"));
+    wxString label = _("UTC: --:--:--");
+
+    if (g_openobserver_pi && g_openobserver_pi->m_ooObservations) {
+        const wxString utcTime =
+            g_openobserver_pi->m_ooObservations->GetUtcTimeFromNMEA(
+                ooObservations::UTC_TIME_TIME);
+
+        const wxString utcSource =
+            g_openobserver_pi->m_ooObservations->GetUtcTimeSourceLabel();
+
+        label = wxString::Format(_("UTC: %s %s"), utcTime, utcSource);
+    }
+
+    if (m_utcText->GetLabel() == label) {
         return;
     }
 
-    const wxString utcTime =
-        g_openobserver_pi->m_ooObservations->GetUtcTimeFromNMEA(
-            ooObservations::UTC_TIME_TIME);
-
-    const wxString utcSource =
-        g_openobserver_pi->m_ooObservations->GetUtcTimeSourceLabel();
-
-    m_utcText->SetLabel(wxString::Format(_("UTC: %s %s"),
-                                         utcTime,
-                                         utcSource));
-
+    m_utcText->SetLabel(label);
     Layout();
 }

@@ -1069,6 +1069,32 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                                  NULL,
                            this);
     m_ObservationsTable->Bind(
+        wxEVT_GRID_LABEL_LEFT_CLICK,
+        [this](wxGridEvent& event)
+        {
+            if (!m_ObservationsTable) {
+                event.Skip();
+                return;
+            }
+
+            const int row = event.GetRow();
+
+            if (row >= 0) {
+                if (event.ShiftDown() || event.ControlDown() || event.CmdDown()) {
+                    event.Skip();
+                    return;
+                }
+
+                m_ObservationsTable->ClearSelection();
+                m_ObservationsTable->SelectRow(row);
+                m_ObservationsDelete->Enable(true);
+                GoToObservationMarkForRow(row);
+                return;
+            }
+
+            event.Skip();
+        }); 
+    m_ObservationsTable->Bind(
         wxEVT_KEY_DOWN,
         [this](wxKeyEvent& event)
         {
@@ -1198,11 +1224,14 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
             }
 
             wxMenu menu;
+            const int goToMarkId = wxWindow::NewControlId();
             const int copyId = wxWindow::NewControlId();
             const int pasteId = wxWindow::NewControlId();
             const int undoPasteId = wxWindow::NewControlId();
             const int showNmeaRecordingId = wxWindow::NewControlId();
 
+            menu.Append(goToMarkId, _("Go to observation mark"));
+            menu.AppendSeparator();
             menu.Append(copyId, _("Copy"));
             menu.Append(pasteId, _("Paste"));
             menu.Append(undoPasteId, _("Undo paste"));
@@ -1211,6 +1240,13 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
 
             menu.Enable(undoPasteId, m_hasObservationPasteUndo);
 
+            menu.Bind(
+                wxEVT_MENU,
+                [this, row](wxCommandEvent&)
+                {
+                    GoToObservationMarkForRow(row);
+                },
+                goToMarkId);
             menu.Bind(
                 wxEVT_MENU,
                 [this](wxCommandEvent&)
@@ -1448,12 +1484,11 @@ bool ooControlDialogImpl::SaveObservations(const wxString& filename, bool stopOb
         }
     }
     
-    wxFileOutputStream output_stream(savePath);
-    if (!output_stream.IsOk()) {
-        wxMessageBox("Unable to save project to file " + savePath + ".",
-            "Error", wxOK, this);
-        return false;
-    }
+    wxFileName finalFileName(savePath);
+    const wxString tempPath =
+        finalFileName.GetPathWithSep() +
+        finalFileName.GetName() +
+        ".tmp-save.xml";
 
     // Update the user-visible column sizes without saving hidden technical columns.
     m_Observations->SetColSizes(GetUserVisibleObservationColSizes());
@@ -1461,9 +1496,37 @@ bool ooControlDialogImpl::SaveObservations(const wxString& filename, bool stopOb
     if (stopObservation) {
         m_Observations->StopObservation();
     }
+
     const bool stripMarkGuid = filename.IsEmpty();
 
-    m_Observations->SaveToXML(output_stream.GetFile(), stripMarkGuid);
+    {
+        wxFileOutputStream output_stream(tempPath);
+        if (!output_stream.IsOk()) {
+            wxMessageBox("Unable to save temporary project file " + tempPath + ".",
+                "Error", wxOK, this);
+            return false;
+        }
+
+        m_Observations->SaveToXML(output_stream.GetFile(), stripMarkGuid);
+    }
+
+    if (!wxFileExists(tempPath)) {
+        wxMessageBox("Temporary project save file was not created:\n" + tempPath,
+            "Error", wxOK, this);
+        return false;
+    }
+
+    if (!wxRenameFile(tempPath, savePath, true)) {
+        wxMessageBox(
+            "Unable to replace project file safely.\n\n"
+            "The previous file was kept unchanged.\n"
+            "Temporary save file:\n" + tempPath,
+            "Error",
+            wxOK,
+            this);
+        return false;
+    }
+
     return true;
 }
 
@@ -1505,15 +1568,20 @@ bool ooControlDialogImpl::LoadObservations(const wxString& filename, bool update
 
 bool ooControlDialogImpl::RestoreBackupObservations(int observationsIndex)
 {
-    wxString backupFilename = GetBackupFilename(observationsIndex);
     if (observationsIndex < 0 ||
-        observationsIndex >= (int)m_choiceObservations->GetCount())
+        observationsIndex >= (int)m_choiceObservations->GetCount()) {
         observationsIndex = 0;
+    }
+
+    const wxString backupFilename = GetBackupFilename(observationsIndex);
 
     m_currentObservationsIndex = observationsIndex;
     m_choiceObservations->SetSelection(observationsIndex);
-    bool result = (wxFile::Exists(backupFilename) && // We do not want to show an error if the file does not exists.
-                   LoadObservations(backupFilename, false));   
+
+    const bool result =
+        wxFile::Exists(backupFilename) && // No error if the backup file does not exist yet.
+        LoadObservations(backupFilename, false);
+
     return result;
 }
 
@@ -3143,9 +3211,15 @@ void ooControlDialogImpl::OnButtonClickLoadObservation(wxCommandEvent& event)
         const int response = wxMessageBox(
             "Warning: your current observations will be cleared. Do you want to continue?",
             "Warning", wxYES_NO, this);
-        
+
         if (response != wxYES) return;
     }
+
+    CommitCurrentObservationsGridEdit();
+
+    // Before loading an external file, preserve the current slot.
+    // This keeps the user's current work recoverable even after confirming the load action.
+    SaveObservations(GetBackupFilename(m_currentObservationsIndex), false);
 
     wxFileDialog loadObservationsDialog(
         this, _("Load entire project with observations from XML file"), "", "", "XML file (*.xml)|*.xml",
@@ -3399,35 +3473,42 @@ static bool PasteClipboardTextIntoGrid(wxGrid* grid,
     return true;
 }
 
-void ooControlDialogImpl::OnObservationsGridCellSelect(wxGridEvent& event)
+void ooControlDialogImpl::GoToObservationMarkForRow(int row)
 {
-    int lat_col = m_Observations->GetProject().GetLatCol();
-    int lon_col = m_Observations->GetProject().GetLonCol();
-    int mark_col = m_Observations->GetProject().GetMarkCol();
+    if (!m_Observations) return;
+    if (row < 0 || row >= m_Observations->GetNumberRows()) return;
 
-    int col = event.GetCol();
-    int row = event.GetRow();
-    bool hasMark = (mark_col != wxNOT_FOUND &&
-                    !m_Observations->GetValue(row, mark_col).IsEmpty());
-    if (hasMark) {
-        if (lat_col != wxNOT_FOUND && lon_col != wxNOT_FOUND) {
-            const double lat = fromDMM_Plugin(m_Observations->GetValue(row, lat_col));
-            const double lon = fromDMM_Plugin(m_Observations->GetValue(row, lon_col));
-            if (g_openobserver_pi) {
-                g_openobserver_pi->JumpToObservationOnChart(lat, lon);
-            } else {
-                JumpToPosition(lat, lon, m_viewScale);
-            }
+    const int latCol = m_Observations->GetProject().GetLatCol();
+    const int lonCol = m_Observations->GetProject().GetLonCol();
+    const int markCol = m_Observations->GetProject().GetMarkCol();
 
-            if (g_openobserver_pi) {
-                g_openobserver_pi->HighlightObservationOnChart(
-                    lat,
-                    lon,
-                    m_Observations->GetProject().GetColor());
-            }
-        }
+    if (latCol == wxNOT_FOUND || lonCol == wxNOT_FOUND || markCol == wxNOT_FOUND) {
+        return;
     }
 
+    if (m_Observations->GetValue(row, markCol).IsEmpty()) {
+        return;
+    }
+
+    const double lat = fromDMM_Plugin(m_Observations->GetValue(row, latCol));
+    const double lon = fromDMM_Plugin(m_Observations->GetValue(row, lonCol));
+
+    if (g_openobserver_pi) {
+        g_openobserver_pi->JumpToObservationOnChart(lat, lon);
+        g_openobserver_pi->HighlightObservationOnChart(
+            lat,
+            lon,
+            m_Observations->GetProject().GetColor());
+    } else {
+        JumpToPosition(lat, lon, m_viewScale);
+    }
+}
+
+void ooControlDialogImpl::OnObservationsGridCellSelect(wxGridEvent& event)
+{
+    // Keep ordinary cell selection lightweight.
+    // Moving the chart can trigger heavy OpenCPN chart loading, especially for distant marks.
+    // Direct navigation is handled by explicit row-level actions instead.
     m_ObservationsDelete->Enable(!m_ObservationsTable->GetSelectedRows().IsEmpty());
 
     event.Skip();

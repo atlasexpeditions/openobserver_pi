@@ -122,6 +122,7 @@ public:
         void SyncShowObservationMarksCheckboxWithData();
         void RefreshListings();
         void OnProjectGridSelectionChange();
+        void GoToObservationMarkForRow(int row);
 
         bool m_markIconsLoaded;
         bool m_showObservationMarks;
