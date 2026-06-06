@@ -60,6 +60,8 @@
 
 #include <wx/fontdlg.h>
 #include <wx/settings.h>
+#include <wx/clipbrd.h>
+#include <wx/dataobj.h>
 
 extern openobserver_pi *g_openobserver_pi;
 extern wxString *g_pData;
@@ -70,6 +72,13 @@ static wxColour BlendColour(const wxColour& base, const wxColour& overlay, doubl
 static wxColour ContrastTextColour(const wxColour& background);
 static wxColour AlternateRowColour(const wxColour& base);
 static void ApplyStandardBoldGridLabelFont(wxGrid* grid);
+static wxString BuildGridClipboardText(wxGrid* grid);
+static bool PasteClipboardTextIntoGrid(wxGrid* grid,
+                                       const wxString& text,
+                                       wxWindow* parent = nullptr,
+                                       wxString* undoText = nullptr,
+                                       int* undoRow = nullptr,
+                                       int* undoCol = nullptr);
 
 static wxString GetDefaultProjectTemplatePath()
 {
@@ -572,6 +581,9 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
       m_Observations(nullptr),
       m_ObservationsTable(nullptr),
       m_isScanningNmea(false),
+      m_hasObservationPasteUndo(false),
+      m_observationPasteUndoRow(wxNOT_FOUND),
+      m_observationPasteUndoCol(wxNOT_FOUND),
       m_viewScale(1.0),
       m_observationsChoiceCount(1),
       m_markIconsLoaded(false),
@@ -994,9 +1006,10 @@ bool ooControlDialogImpl::LoadProject(const ooProject& project)
         m_gridProject->SetCellValue(1, c, project.GetColFieldTypes()[c]);
     }
 
-    // set the column labels and cell editors
+    // The small downward triangle makes the wxGrid column header look clickable
+    // without repeating a heavy label above every project field.
     for (int c = 0; c < m_gridProject->GetNumberCols(); ++c) {
-        m_gridProject->SetColLabelValue(c, "");
+        m_gridProject->SetColLabelValue(c, wxString::FromUTF8("▾"));
     }
 
     UpdateProjectCellEditors();
@@ -1055,7 +1068,113 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                                  wxGridEventHandler(ooControlDialogImpl::OnObservationsGridCellChange),
                                  NULL,
                            this);
+    m_ObservationsTable->Bind(
+        wxEVT_KEY_DOWN,
+        [this](wxKeyEvent& event)
+        {
+#ifdef __WXMAC__
+            const bool copyShortcut =
+                event.GetModifiers() == wxMOD_CMD && event.GetKeyCode() == 'C';
+            const bool pasteShortcut =
+                event.GetModifiers() == wxMOD_CMD && event.GetKeyCode() == 'V';
+            const bool undoShortcut =
+                event.GetModifiers() == wxMOD_CMD && event.GetKeyCode() == 'Z';
+#else
+            const bool copyShortcut =
+                event.ControlDown() && event.GetKeyCode() == 'C';
+            const bool pasteShortcut =
+                event.ControlDown() && event.GetKeyCode() == 'V';
+            const bool undoShortcut =
+                event.ControlDown() && event.GetKeyCode() == 'Z';
+#endif
 
+            if ((!copyShortcut && !pasteShortcut && !undoShortcut) ||
+                !m_ObservationsTable) {
+                event.Skip();
+                return;
+            }
+
+            if (copyShortcut) {
+                const wxString clipboardText =
+                    BuildGridClipboardText(m_ObservationsTable);
+
+                if (clipboardText.IsEmpty()) {
+                    return;
+                }
+
+                if (wxTheClipboard->Open()) {
+                    wxTheClipboard->SetData(new wxTextDataObject(clipboardText));
+                    wxTheClipboard->Close();
+                }
+
+                return;
+            }
+
+            if (pasteShortcut) {
+                if (!wxTheClipboard->Open()) {
+                    return;
+                }
+
+                if (!wxTheClipboard->IsSupported(wxDF_TEXT)) {
+                    wxTheClipboard->Close();
+                    return;
+                }
+
+                wxTextDataObject data;
+                wxTheClipboard->GetData(data);
+                wxTheClipboard->Close();
+
+                wxString undoText;
+                int undoRow = wxNOT_FOUND;
+                int undoCol = wxNOT_FOUND;
+
+                if (PasteClipboardTextIntoGrid(
+                        m_ObservationsTable,
+                        data.GetText(),
+                        this,
+                        &undoText,
+                        &undoRow,
+                        &undoCol)) {
+
+                    m_hasObservationPasteUndo = true;
+                    m_observationPasteUndoText = undoText;
+                    m_observationPasteUndoRow = undoRow;
+                    m_observationPasteUndoCol = undoCol;
+                }
+
+                if (g_openobserver_pi) {
+                    g_openobserver_pi->RefreshObservationDisplay();
+                } else {
+                    m_ObservationsTable->ForceRefresh();
+                }
+
+                return;
+            }
+
+            if (undoShortcut &&
+                m_hasObservationPasteUndo &&
+                m_observationPasteUndoRow != wxNOT_FOUND &&
+                m_observationPasteUndoCol != wxNOT_FOUND) {
+
+                m_ObservationsTable->SetGridCursor(
+                    m_observationPasteUndoRow,
+                    m_observationPasteUndoCol);
+
+                PasteClipboardTextIntoGrid(
+                    m_ObservationsTable,
+                    m_observationPasteUndoText);
+
+                m_hasObservationPasteUndo = false;
+
+                if (g_openobserver_pi) {
+                    g_openobserver_pi->RefreshObservationDisplay();
+                } else {
+                    m_ObservationsTable->ForceRefresh();
+                }
+
+                return;
+            }
+        });
     m_ObservationsTable->Bind(
         wxEVT_GRID_CELL_RIGHT_CLICK,
         [this](wxGridEvent& event)
@@ -1072,13 +1191,114 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                 return;
             }
 
-            m_ObservationsTable->ClearSelection();
-            m_ObservationsTable->SelectRow(row);
+            const int col = event.GetCol();
+
+            if (col >= 0 && col < m_Observations->GetNumberCols()) {
+                m_ObservationsTable->SetGridCursor(row, col);
+            }
 
             wxMenu menu;
+            const int copyId = wxWindow::NewControlId();
+            const int pasteId = wxWindow::NewControlId();
+            const int undoPasteId = wxWindow::NewControlId();
             const int showNmeaRecordingId = wxWindow::NewControlId();
 
+            menu.Append(copyId, _("Copy"));
+            menu.Append(pasteId, _("Paste"));
+            menu.Append(undoPasteId, _("Undo paste"));
+            menu.AppendSeparator();
             menu.Append(showNmeaRecordingId, _("Show NMEA recording"));
+
+            menu.Enable(undoPasteId, m_hasObservationPasteUndo);
+
+            menu.Bind(
+                wxEVT_MENU,
+                [this](wxCommandEvent&)
+                {
+                    const wxString clipboardText =
+                        BuildGridClipboardText(m_ObservationsTable);
+
+                    if (clipboardText.IsEmpty()) {
+                        return;
+                    }
+
+                    if (wxTheClipboard->Open()) {
+                        wxTheClipboard->SetData(new wxTextDataObject(clipboardText));
+                        wxTheClipboard->Close();
+                    }
+                },
+                copyId);
+
+            menu.Bind(
+                wxEVT_MENU,
+                [this](wxCommandEvent&)
+                {
+                    if (!wxTheClipboard->Open()) {
+                        return;
+                    }
+
+                    if (!wxTheClipboard->IsSupported(wxDF_TEXT)) {
+                        wxTheClipboard->Close();
+                        return;
+                    }
+
+                    wxTextDataObject data;
+                    wxTheClipboard->GetData(data);
+                    wxTheClipboard->Close();
+
+                    wxString undoText;
+                    int undoRow = wxNOT_FOUND;
+                    int undoCol = wxNOT_FOUND;
+
+                    if (PasteClipboardTextIntoGrid(
+                            m_ObservationsTable,
+                            data.GetText(),
+                            this,
+                            &undoText,
+                            &undoRow,
+                            &undoCol)) {
+
+                        m_hasObservationPasteUndo = true;
+                        m_observationPasteUndoText = undoText;
+                        m_observationPasteUndoRow = undoRow;
+                        m_observationPasteUndoCol = undoCol;
+                    }
+
+                    if (g_openobserver_pi) {
+                        g_openobserver_pi->RefreshObservationDisplay();
+                    } else {
+                        m_ObservationsTable->ForceRefresh();
+                    }
+                },
+                pasteId);
+
+            menu.Bind(
+                wxEVT_MENU,
+                [this](wxCommandEvent&)
+                {
+                    if (!m_hasObservationPasteUndo ||
+                        m_observationPasteUndoRow == wxNOT_FOUND ||
+                        m_observationPasteUndoCol == wxNOT_FOUND) {
+                        return;
+                    }
+
+                    m_ObservationsTable->SetGridCursor(
+                        m_observationPasteUndoRow,
+                        m_observationPasteUndoCol);
+
+                    PasteClipboardTextIntoGrid(
+                        m_ObservationsTable,
+                        m_observationPasteUndoText);
+
+                    m_hasObservationPasteUndo = false;
+
+                    if (g_openobserver_pi) {
+                        g_openobserver_pi->RefreshObservationDisplay();
+                    } else {
+                        m_ObservationsTable->ForceRefresh();
+                    }
+                },
+                undoPasteId);
 
             menu.Bind(
                 wxEVT_MENU,
@@ -1486,6 +1706,7 @@ void ooControlDialogImpl::ApplyProjectGridReadabilityStyle(wxGrid* grid)
     grid->SetSelectionBackground(selectionBackground);
     grid->SetSelectionForeground(selectionText);
 
+    grid->SetColLabelSize(28);
     grid->SetRowLabelSize(58);
     grid->SetRowSize(0, 42);
     grid->SetRowSize(1, 42);
@@ -1836,7 +2057,7 @@ void ooControlDialogImpl::EnsureProjectHasFieldType(const wxString& field_type, 
   }
   if (!has_field_type_col) {
     m_gridProject->AppendCols();
-    m_gridProject->SetColLabelValue(m_gridProject->GetNumberCols() - 1, "");
+    m_gridProject->SetColLabelValue(m_gridProject->GetNumberCols() - 1, wxString::FromUTF8("▾"));
     m_gridProject->SetCellValue(0, m_gridProject->GetNumberCols() - 1, label);
     m_gridProject->SetCellValue(1, m_gridProject->GetNumberCols() - 1, field_type);
 
@@ -1992,7 +2213,7 @@ void ooControlDialogImpl::OnButtonClickProjectNewColumn(wxCommandEvent& event)
     int pos = (selection.IsEmpty() ? 0 : selection[0]);
 
     m_gridProject->InsertCols(pos, 1);
-    m_gridProject->SetColLabelValue(pos, "");
+    m_gridProject->SetColLabelValue(pos, wxString::FromUTF8("▾"));
 
     wxGridCellChoiceEditor *observationFieldTypeEditor = new wxGridCellChoiceEditor(ooObservations::GetObservationFieldTypes());
     m_gridProject->SetCellEditor(1, pos, observationFieldTypeEditor);
@@ -2994,6 +3215,188 @@ void ooControlDialogImpl::OnChoiceObservationsChanged(wxCommandEvent& event)
     }
 
     event.Skip();
+}
+
+static wxString BuildGridClipboardText(wxGrid* grid)
+{
+    if (!grid) return wxEmptyString;
+
+    const wxArrayInt selectedRows = grid->GetSelectedRows();
+    const wxArrayInt selectedCols = grid->GetSelectedCols();
+
+    int top = wxNOT_FOUND;
+    int bottom = wxNOT_FOUND;
+    int left = wxNOT_FOUND;
+    int right = wxNOT_FOUND;
+
+    const wxGridCellCoordsArray blockTopLeft = grid->GetSelectionBlockTopLeft();
+    const wxGridCellCoordsArray blockBottomRight = grid->GetSelectionBlockBottomRight();
+
+    if (!blockTopLeft.IsEmpty() && !blockBottomRight.IsEmpty()) {
+        top = blockTopLeft[0].GetRow();
+        left = blockTopLeft[0].GetCol();
+        bottom = blockBottomRight[0].GetRow();
+        right = blockBottomRight[0].GetCol();
+    } else if (!selectedRows.IsEmpty()) {
+        top = selectedRows[0];
+        bottom = selectedRows.Last();
+        left = 0;
+        right = grid->GetNumberCols() - 1;
+    } else if (!selectedCols.IsEmpty()) {
+        top = 0;
+        bottom = grid->GetNumberRows() - 1;
+        left = selectedCols[0];
+        right = selectedCols.Last();
+    } else {
+        top = grid->GetGridCursorRow();
+        bottom = top;
+        left = grid->GetGridCursorCol();
+        right = left;
+    }
+
+    if (top == wxNOT_FOUND || bottom == wxNOT_FOUND ||
+        left == wxNOT_FOUND || right == wxNOT_FOUND) {
+        return wxEmptyString;
+    }
+
+    wxString text;
+
+    for (int row = top; row <= bottom; ++row) {
+        if (!grid->IsRowShown(row)) continue;
+
+        bool firstCell = true;
+
+        for (int col = left; col <= right; ++col) {
+            if (!grid->IsColShown(col)) continue;
+
+            if (!firstCell) {
+                text += "\t";
+            }
+
+            text += grid->GetCellValue(row, col);
+            firstCell = false;
+        }
+
+        text += "\n";
+    }
+
+    return text;
+}
+
+static bool PasteClipboardTextIntoGrid(wxGrid* grid,
+                                       const wxString& text,
+                                       wxWindow* parent,
+                                       wxString* undoText,
+                                       int* undoRow,
+                                       int* undoCol)
+{
+    if (!grid || text.IsEmpty()) return false;
+
+    int startRow = grid->GetGridCursorRow();
+    int startCol = grid->GetGridCursorCol();
+
+    if (startRow < 0 || startCol < 0) return false;
+
+    wxArrayString rows = wxSplit(text, '\n');
+
+    // Many spreadsheet apps add a trailing newline. Avoid creating a phantom row.
+    while (!rows.IsEmpty() && rows.Last().IsEmpty()) {
+        rows.RemoveAt(rows.GetCount() - 1);
+    }
+
+    if (rows.IsEmpty()) return false;
+
+    if (undoText) {
+        undoText->Clear();
+
+        for (size_t r = 0; r < rows.GetCount(); ++r) {
+            const int targetRow = startRow + static_cast<int>(r);
+            if (targetRow >= grid->GetNumberRows()) break;
+            if (!grid->IsRowShown(targetRow)) continue;
+
+            wxArrayString cols = wxSplit(rows[r], '\t');
+
+            bool firstCell = true;
+
+            for (size_t c = 0; c < cols.GetCount(); ++c) {
+                const int targetCol = startCol + static_cast<int>(c);
+                if (targetCol >= grid->GetNumberCols()) break;
+                if (!grid->IsColShown(targetCol)) continue;
+
+                if (!firstCell) {
+                    *undoText += "\t";
+                }
+
+                *undoText += grid->GetCellValue(targetRow, targetCol);
+                firstCell = false;
+            }
+
+            *undoText += "\n";
+        }
+
+        if (undoRow) *undoRow = startRow;
+        if (undoCol) *undoCol = startCol;
+    }
+
+    bool wouldOverwriteData = false;
+
+    for (size_t r = 0; r < rows.GetCount() && !wouldOverwriteData; ++r) {
+        const int targetRow = startRow + static_cast<int>(r);
+        if (targetRow >= grid->GetNumberRows()) break;
+        if (!grid->IsRowShown(targetRow)) continue;
+
+        wxArrayString cols = wxSplit(rows[r], '\t');
+
+        for (size_t c = 0; c < cols.GetCount(); ++c) {
+            const int targetCol = startCol + static_cast<int>(c);
+            if (targetCol >= grid->GetNumberCols()) break;
+            if (!grid->IsColShown(targetCol)) continue;
+
+            wxString existingValue = grid->GetCellValue(targetRow, targetCol);
+            existingValue.Trim(true);
+            existingValue.Trim(false);
+
+            if (!existingValue.IsEmpty()) {
+                wouldOverwriteData = true;
+                break;
+            }
+        }
+    }
+
+    if (wouldOverwriteData && parent) {
+        const int answer = wxMessageBox(
+            _("Some target cells already contain data.\n\nOverwrite existing values?"),
+            _("Paste observations data"),
+            wxYES_NO | wxNO_DEFAULT | wxICON_WARNING,
+            parent);
+
+        if (answer != wxYES) {
+            return false;
+        }
+    }
+
+    grid->BeginBatch();
+
+    for (size_t r = 0; r < rows.GetCount(); ++r) {
+        const int targetRow = startRow + static_cast<int>(r);
+        if (targetRow >= grid->GetNumberRows()) break;
+        if (!grid->IsRowShown(targetRow)) continue;
+
+        wxArrayString cols = wxSplit(rows[r], '\t');
+
+        for (size_t c = 0; c < cols.GetCount(); ++c) {
+            const int targetCol = startCol + static_cast<int>(c);
+            if (targetCol >= grid->GetNumberCols()) break;
+            if (!grid->IsColShown(targetCol)) continue;
+
+            grid->SetCellValue(targetRow, targetCol, cols[c]);
+        }
+    }
+
+    grid->EndBatch();
+    grid->ForceRefresh();
+
+    return true;
 }
 
 void ooControlDialogImpl::OnObservationsGridCellSelect(wxGridEvent& event)

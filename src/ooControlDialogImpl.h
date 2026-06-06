@@ -140,6 +140,11 @@ public:
         bool m_isScanningNmea;
         std::unordered_map<wxString, std::set<int>> m_scannedNmeaFields;
 
+        bool m_hasObservationPasteUndo;
+        int m_observationPasteUndoRow;
+        int m_observationPasteUndoCol;
+        wxString m_observationPasteUndoText;
+
         ooObservations * m_Observations;
         wxGrid* m_ObservationsTable;
         void ApplyModernGridStyle(wxGrid* grid);
