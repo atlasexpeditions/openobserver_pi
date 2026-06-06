@@ -36,6 +36,19 @@
 
 extern openobserver_pi* g_openobserver_pi;
 
+static bool IsDarkColour(const wxColour& colour)
+{
+  const int brightness =
+      (colour.Red() * 299 + colour.Green() * 587 + colour.Blue() * 114) / 1000;
+
+  return brightness < 128;
+}
+
+static wxColour ContrastTextColour(const wxColour& background)
+{
+  return IsDarkColour(background) ? *wxWHITE : *wxBLACK;
+}
+
 wxDEFINE_EVENT(OBSERVATION_STARTED, wxCommandEvent);
 wxDEFINE_EVENT(OBSERVATION_STOPPED, wxCommandEvent);
 
@@ -63,15 +76,15 @@ bool ooMiniPanel::Create(wxWindow* parent, wxWindowID id, const wxString& msg,
                         wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
   m_ObservationsDurationLabel =
-      new wxStaticText(this, wxID_ANY, _("Observation Duration"),
+      new wxStaticText(this, wxID_ANY, _("Observation running:"),
                        wxDefaultPosition, wxDefaultSize, 0);
   m_ObservationsDurationLabel->Wrap(-1);
   bSizerTopButtons->Add(m_ObservationsDurationLabel, 0,
                         wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
   m_ObservationDuration =
-      new wxTextCtrl(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
-                     wxDefaultSize, wxTE_READONLY);
+      new wxStaticText(this, wxID_ANY, wxEmptyString, wxDefaultPosition,
+                       wxSize(90, -1), wxALIGN_CENTER);
   bSizerTopButtons->Add(m_ObservationDuration, 0,
                         wxALIGN_CENTER_VERTICAL | wxALL, 5);
 
@@ -88,7 +101,8 @@ bool ooMiniPanel::Create(wxWindow* parent, wxWindowID id, const wxString& msg,
   m_ProjectLabel =
       new wxStaticText(m_ProjectLabelPanel, wxID_ANY, _("  "),
                        wxDefaultPosition, wxDefaultSize, wxALIGN_CENTER);
-  m_ProjectLabel->SetForegroundColour(wxColor(*wxWHITE));
+  m_ProjectLabel->SetForegroundColour(
+      ContrastTextColour(m_ProjectLabelPanel->GetBackgroundColour()));
 
   wxFont font = m_ProjectLabel->GetFont();
   font.SetWeight(wxFONTWEIGHT_EXTRABOLD);
@@ -154,6 +168,7 @@ void ooMiniPanel::SetProjectInfo(const wxString& projectName,
 {
     m_ProjectLabel->SetLabelText(wxString::Format(" %s ", projectName));
     m_ProjectLabelPanel->SetBackgroundColour(projectColor);
+    m_ProjectLabel->SetForegroundColour(ContrastTextColour(projectColor));
     m_ProjectLabelPanel->Layout();
     m_ProjectLabelPanel->GetParent()->Layout();
 }
@@ -219,6 +234,7 @@ void ooMiniPanel::UpdateObservationStatus()
     m_ObservationDuration->Show();
 
     m_ObservationDuration->SetBackgroundColour(*wxRED);
+    m_ObservationDuration->SetForegroundColour(*wxWHITE);
     m_ObservationDuration->Refresh();
 
     Layout();
@@ -227,7 +243,7 @@ void ooMiniPanel::UpdateObservationStatus()
     } else {
     m_StartStopObservation->SetLabel("Start Observation");
 
-    m_ObservationDuration->SetValue(wxEmptyString);
+    m_ObservationDuration->SetLabel(wxEmptyString);
     m_ObservationsDurationLabel->Hide();
     m_ObservationDuration->Hide();
 
@@ -250,7 +266,7 @@ void ooMiniPanel::UpdateObservationDuration()
   char durationString[16];
   sprintf(durationString, "%02u:%02u:%02u", hours, minutes, seconds);
 
-  m_ObservationDuration->SetValue(durationString);
+  m_ObservationDuration->SetLabel(durationString);
 }
 
 void ooMiniPanel::OnObservationDurationTimer(wxTimerEvent& event) {

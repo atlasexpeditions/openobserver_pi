@@ -74,7 +74,7 @@ protected:
 
   wxButton* m_StartStopObservation;
   wxStaticText* m_ObservationsDurationLabel;
-  wxTextCtrl* m_ObservationDuration;
+  wxStaticText* m_ObservationDuration;
   wxButton* m_buttonToggleWindow;
   wxPanel* m_ProjectLabelPanel;
   wxStaticText* m_ProjectLabel;

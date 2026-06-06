@@ -10,6 +10,19 @@
 
 extern openobserver_pi* g_openobserver_pi;
 
+static bool IsDarkColour(const wxColour& colour)
+{
+    const int brightness =
+        (colour.Red() * 299 + colour.Green() * 587 + colour.Blue() * 114) / 1000;
+
+    return brightness < 128;
+}
+
+static wxColour ContrastTextColour(const wxColour& background)
+{
+    return IsDarkColour(background) ? *wxWHITE : *wxBLACK;
+}
+
 enum
 {
     ID_OO_AUI_UNDOCK_PANEL = wxID_HIGHEST + 3100
@@ -58,6 +71,7 @@ ooAuiPanel::ooAuiPanel(wxWindow* parent)
 
     SetSizer(outerSizer);
     SetMinSize(wxSize(280, 180));
+    ApplyThemeColours();
     Layout();
 
     UpdateObservationStatus();
@@ -74,12 +88,26 @@ ooAuiPanel::ooAuiPanel(wxWindow* parent)
     Bind(wxEVT_MENU, &ooAuiPanel::OnUndockPanel, this, ID_OO_AUI_UNDOCK_PANEL);
 }
 
+void ooAuiPanel::ApplyThemeColours()
+{
+    const wxColour backgroundColour =
+        wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE);
+    const wxColour textColour =
+        wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT);
+
+    SetBackgroundColour(backgroundColour);
+
+    if (m_titleText) m_titleText->SetForegroundColour(textColour);
+    if (m_timerText) m_timerText->SetForegroundColour(textColour);
+    if (m_utcText) m_utcText->SetForegroundColour(textColour);
+}
+
 void ooAuiPanel::SetProjectInfo(const wxString& projectName,
                                 const wxColor& projectColor)
 {
     m_projectText->SetLabel(projectName);
     m_projectText->SetBackgroundColour(projectColor);
-    m_projectText->SetForegroundColour(*wxWHITE);
+    m_projectText->SetForegroundColour(ContrastTextColour(projectColor));
 
     wxFont projectFont = m_projectText->GetFont();
     projectFont.SetWeight(wxFONTWEIGHT_BOLD);
@@ -140,6 +168,7 @@ void ooAuiPanel::OnTimer(wxTimerEvent& event)
 
 void ooAuiPanel::OnShow(wxShowEvent& event)
 {
+    ApplyThemeColours();
     RefreshObservationDisplay();
     event.Skip();
 }

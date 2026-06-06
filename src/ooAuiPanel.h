@@ -20,6 +20,7 @@ private:
     void OnShow(wxShowEvent& event);
     void OnContextMenu(wxContextMenuEvent& event);
     void OnUndockPanel(wxCommandEvent& event);
+    void ApplyThemeColours();
     void UpdateObservationStatus();
     void UpdateObservationDuration();
     void UpdateUtcDisplay();
