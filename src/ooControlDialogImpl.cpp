@@ -40,6 +40,8 @@
 #include <wx/filefn.h>
 #include <wx/dir.h>
 #include <wx/utils.h>
+#include <wx/statbmp.h>
+#include <wx/hyperlink.h>
 
 #include <wx/xml/xml.h>
 
@@ -611,6 +613,181 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
     bSizerTopButtons->Add(m_MiniPanel, 1, wxEXPAND, 5);
     m_panelObservations->Layout();
     m_fgSizerObservations->Fit(m_panelObservations);
+
+    wxPanel* panelAbout = new wxPanel(
+        m_notebookControl,
+        wxID_ANY,
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxTAB_TRAVERSAL);
+
+    panelAbout->SetForegroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOWTEXT));
+    panelAbout->SetBackgroundColour(wxSystemSettings::GetColour(wxSYS_COLOUR_WINDOW));
+
+    wxBoxSizer* aboutSizer = new wxBoxSizer(wxVERTICAL);
+
+    // Keep this page intentionally simple: a single vertical sizer avoids
+    // fragile nested layouts and keeps the About tab easy to maintain.
+    wxFileName openObserverLogoFile;
+    openObserverLogoFile.SetPath(GetPluginDataDir("openobserver_pi"));
+    openObserverLogoFile.AppendDir("data");
+    openObserverLogoFile.SetFullName("openobserver-about-logo.svg");
+
+    wxBitmap openObserverLogo = GetBitmapFromSVGFile(
+        openObserverLogoFile.GetFullPath(),
+        96,
+        96);
+
+    if (openObserverLogo.IsOk()) {
+        wxStaticBitmap* logo = new wxStaticBitmap(
+            panelAbout,
+            wxID_ANY,
+            openObserverLogo,
+            wxDefaultPosition,
+            wxDefaultSize,
+            0);
+
+        aboutSizer->Add(logo, 0, wxALIGN_CENTER_HORIZONTAL | wxTOP | wxBOTTOM, 10);
+    }
+
+    wxStaticText* aboutTitle = new wxStaticText(
+        panelAbout,
+        wxID_ANY,
+        _("Open Observer"));
+
+    wxFont aboutTitleFont = aboutTitle->GetFont();
+    aboutTitleFont.SetWeight(wxFONTWEIGHT_BOLD);
+    aboutTitleFont.SetPointSize(aboutTitleFont.GetPointSize() + 2);
+    aboutTitle->SetFont(aboutTitleFont);
+
+    aboutSizer->Add(aboutTitle, 0, wxALIGN_CENTER_HORIZONTAL | wxLEFT | wxRIGHT | wxBOTTOM, 18);
+
+    wxStaticText* aboutTagline = new wxStaticText(
+        panelAbout,
+        wxID_ANY,
+        _("The digital field notebook for the sea."),
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxALIGN_CENTER_HORIZONTAL);
+
+    wxFont italicFont = aboutTagline->GetFont();
+    italicFont.SetStyle(wxFONTSTYLE_ITALIC);
+    aboutTagline->SetFont(italicFont);
+
+    aboutSizer->Add(aboutTagline, 0, wxALIGN_CENTER_HORIZONTAL | wxLEFT | wxRIGHT | wxBOTTOM, 18);
+
+    wxStaticText* aboutText = new wxStaticText(
+        panelAbout,
+        wxID_ANY,
+        _("Every trip, patrol, field mission, or observation campaign can yield valuable scientific observations.\n\n"
+          "Open Observer was designed to support this vision by helping to transform these observations into structured, shareable, and scientifically useful data.\n\n"
+          "We wish you a safe watch, and many incredible sightings!"),
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxALIGN_CENTER_HORIZONTAL);
+
+    aboutText->SetFont(italicFont);
+    aboutText->Wrap(620);
+    aboutSizer->Add(aboutText, 0, wxALIGN_CENTER_HORIZONTAL | wxLEFT | wxRIGHT | wxBOTTOM, 24);
+
+    wxStaticText* acknowledgementsTitle = new wxStaticText(
+        panelAbout,
+        wxID_ANY,
+        _("Acknowledgements"),
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxALIGN_CENTER_HORIZONTAL);
+
+    wxFont acknowledgementsTitleFont = acknowledgementsTitle->GetFont();
+    acknowledgementsTitleFont.SetWeight(wxFONTWEIGHT_BOLD);
+    acknowledgementsTitle->SetFont(acknowledgementsTitleFont);
+
+    aboutSizer->Add(acknowledgementsTitle, 0, wxALIGN_CENTER_HORIZONTAL | wxLEFT | wxRIGHT | wxBOTTOM, 14);
+
+    wxStaticText* acknowledgementsText = new wxStaticText(
+        panelAbout,
+        wxID_ANY,
+        _("A huge thank you to the teams at Atlas Expedition, the Glacialis and Sila projects, as well as to the dedicated volunteer contributors to the project’s development: Alex Mansfield, Angie Gartz, Arnaud Conne, Christophe Daudin, and Matthew Ryle."),
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxALIGN_CENTER_HORIZONTAL);
+
+    acknowledgementsText->SetFont(italicFont);
+    acknowledgementsText->Wrap(620);
+    aboutSizer->Add(acknowledgementsText, 0, wxALIGN_CENTER_HORIZONTAL | wxLEFT | wxRIGHT | wxBOTTOM, 22);
+
+    wxStaticText* supportedByText = new wxStaticText(
+        panelAbout,
+        wxID_ANY,
+        _("Open Observer, a project supported by Atlas Expeditions"),
+        wxDefaultPosition,
+        wxDefaultSize,
+        wxALIGN_CENTER_HORIZONTAL);
+
+    wxFont supportedByFont = supportedByText->GetFont();
+    supportedByFont.SetWeight(wxFONTWEIGHT_BOLD);
+    supportedByText->SetFont(supportedByFont);
+
+    aboutSizer->Add(supportedByText, 0, wxALIGN_CENTER_HORIZONTAL | wxLEFT | wxRIGHT | wxBOTTOM, 8);
+
+    wxHyperlinkCtrl* atlasWebsiteLink = new wxHyperlinkCtrl(
+        panelAbout,
+        wxID_ANY,
+        "www.atlasexpeditions.org",
+        "https://www.atlasexpeditions.org");
+
+    wxHyperlinkCtrl* atlasEmailLink = new wxHyperlinkCtrl(
+        panelAbout,
+        wxID_ANY,
+        "info@atlasexpeditions.org",
+        "mailto:info@atlasexpeditions.org?subject=Open%20Observer");
+
+    const wxColour atlasGold(0xca, 0x9e, 0x00);
+
+    atlasWebsiteLink->SetNormalColour(atlasGold);
+    atlasWebsiteLink->SetHoverColour(atlasGold);
+    atlasWebsiteLink->SetVisitedColour(atlasGold);
+
+    atlasEmailLink->SetNormalColour(atlasGold);
+    atlasEmailLink->SetHoverColour(atlasGold);
+    atlasEmailLink->SetVisitedColour(atlasGold);
+
+    wxFont linkFont = atlasWebsiteLink->GetFont();
+    linkFont.SetUnderlined(false);
+    atlasWebsiteLink->SetFont(linkFont);
+    atlasEmailLink->SetFont(linkFont);
+
+    aboutSizer->Add(atlasWebsiteLink, 0, wxALIGN_CENTER_HORIZONTAL | wxLEFT | wxRIGHT | wxBOTTOM, 4);
+    aboutSizer->Add(atlasEmailLink, 0, wxALIGN_CENTER_HORIZONTAL | wxLEFT | wxRIGHT | wxBOTTOM, 14);
+
+    wxFileName atlasLogoFile;
+    atlasLogoFile.SetPath(GetPluginDataDir("openobserver_pi"));
+    atlasLogoFile.AppendDir("data");
+    atlasLogoFile.SetFullName("openobserver-atlas-logo.svg");
+
+    if (atlasLogoFile.FileExists()) {
+        wxBitmap atlasLogo = GetBitmapFromSVGFile(
+            atlasLogoFile.GetFullPath(),
+            120,
+            120);
+
+        if (atlasLogo.IsOk()) {
+            wxStaticBitmap* atlasLogoControl = new wxStaticBitmap(
+                panelAbout,
+                wxID_ANY,
+                atlasLogo,
+                wxDefaultPosition,
+                wxDefaultSize,
+                0);
+
+            aboutSizer->Add(atlasLogoControl, 0, wxALIGN_CENTER_HORIZONTAL | wxBOTTOM, 12);
+        }
+    }
+
+    panelAbout->SetSizer(aboutSizer);
+    panelAbout->Layout();
+
+    m_notebookControl->AddPage(panelAbout, _("About"), false);
 
     // Initialize on 'Observations' tab
     m_notebookControl->SetSelection(1);
