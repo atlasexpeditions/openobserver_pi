@@ -167,6 +167,8 @@ void ooMiniPanel::StartOrStopObservation()
     g_openobserver_pi->m_ooObservations->StopObservation();
     g_openobserver_pi->StopNmeaRecordingIfNeeded();
 
+    g_openobserver_pi->CreateMarkForCompletedObservationIfRequested();
+
     // issue event
     wxCommandEvent event(OBSERVATION_STOPPED, GetId());
     event.SetEventObject(this);

@@ -109,23 +109,23 @@ void ooAuiPanel::OnStartStop(wxCommandEvent& event)
         return;
     }
 
-    if (g_openobserver_pi->m_ooObservations->IsObserving()) {
+    const bool wasObserving = g_openobserver_pi->m_ooObservations->IsObserving();
+
+    if (wasObserving) {
         g_openobserver_pi->m_ooObservations->StopObservation();
         g_openobserver_pi->StopNmeaRecordingIfNeeded();
+
+        g_openobserver_pi->CreateMarkForCompletedObservationIfRequested();
+
     } else {
         g_openobserver_pi->m_ooObservations->StartObservation();
         g_openobserver_pi->StartNmeaRecordingIfNeeded();
+
     }
 
     UpdateObservationStatus();
-
     UpdateObservationDuration();
-
-    if (g_openobserver_pi) {
-
-        g_openobserver_pi->RefreshObservationDisplay();
-
-    }
+    g_openobserver_pi->RefreshObservationDisplay();
 
     event.Skip();
 }

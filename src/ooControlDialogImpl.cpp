@@ -595,14 +595,6 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
     
     std::function<void(wxCommandEvent&)> refreshHandler = [&](wxCommandEvent& event)
     {
-        if (event.GetEventType() == OBSERVATION_STOPPED &&
-            m_showObservationMarks &&
-            m_Observations) {
-            // When the user wants observations on the chart, each completed
-            // observation should quietly receive its mark.
-            m_Observations->AddMarks(0);
-        }
-
         RefreshGridAppearance(m_ObservationsTable);
         event.Skip();
     };
@@ -2212,6 +2204,16 @@ void ooControlDialogImpl::RefreshObservationsGrid()
     if (m_MiniPanel) {
         m_MiniPanel->RefreshObservationDisplay();
     }
+}
+
+void ooControlDialogImpl::CreateMarkForCompletedObservationIfRequested()
+{
+    if (!m_showObservationMarks || !m_Observations) return;
+
+    // New observations are inserted at row 0. Reuse the validated standard
+    // window behaviour so mini and AUI panels stay consistent.
+    m_Observations->AddMarks(0);
+    RefreshObservationsGrid();
 }
 
 void ooControlDialogImpl::CommitCurrentObservationsGridEdit()

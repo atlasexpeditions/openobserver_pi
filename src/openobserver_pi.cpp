@@ -883,6 +883,13 @@ void openobserver_pi::RefreshObservationDisplay()
     }
 }
 
+void openobserver_pi::CreateMarkForCompletedObservationIfRequested()
+{
+    if (m_ooControlDialogImpl) {
+        m_ooControlDialogImpl->CreateMarkForCompletedObservationIfRequested();
+    }
+}
+
 void openobserver_pi::StartNmeaRecordingIfNeeded()
 {
     if (!m_recordNmeaStreamDuringEachObservation) return;

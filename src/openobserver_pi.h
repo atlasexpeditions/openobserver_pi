@@ -195,6 +195,7 @@ public:
     void HighlightObservationOnChart(double lat, double lon, const wxColour& colour);
     void JumpToObservationOnChart(double lat, double lon);
     void RefreshObservationDisplay();
+    void CreateMarkForCompletedObservationIfRequested();
     void StartNmeaRecordingIfNeeded();
     void StopNmeaRecordingIfNeeded();
     void UndockAuiPanel();
