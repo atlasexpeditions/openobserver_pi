@@ -2382,6 +2382,8 @@ void ooControlDialogImpl::OnButtonClickNewObservation( wxCommandEvent& event )
 
     m_MiniPanel->StartOrStopObservation();
     m_MiniPanel->StartOrStopObservation();
+
+    FocusCurrentObservationRow();
 }
 
 void ooControlDialogImpl::ApplyObservationTextFilter(const wxString& rawQuery)
@@ -2569,13 +2571,35 @@ void ooControlDialogImpl::RefreshObservationsGrid()
     }
 }
 
+void ooControlDialogImpl::FocusCurrentObservationRow()
+{
+    if (!m_Observations || !m_ObservationsTable) return;
+
+    const int row = m_Observations->GetCurrentObservationRow();
+
+    if (row == wxNOT_FOUND ||
+        row < 0 ||
+        row >= m_Observations->GetNumberRows()) {
+        return;
+    }
+
+    m_ObservationsTable->ClearSelection();
+    m_ObservationsTable->SelectRow(row);
+    m_ObservationsTable->SetGridCursor(row, 0);
+    m_ObservationsTable->MakeCellVisible(row, 0);
+
+    if (m_ObservationsDelete) {
+        m_ObservationsDelete->Enable(true);
+    }
+}
+
 void ooControlDialogImpl::CreateMarkForCompletedObservationIfRequested()
 {
     if (!m_showObservationMarks || !m_Observations) return;
 
-    // New observations are inserted at row 0. Reuse the validated standard
-    // window behaviour so mini and AUI panels stay consistent.
-    m_Observations->AddMarks(0);
+    // Use the active observation row so future row-order changes do not
+    // break mark creation from Standard, Mini or AUI workflows.
+    m_Observations->AddMarks(m_Observations->GetCurrentObservationRow());
     RefreshObservationsGrid();
 }
 

@@ -137,6 +137,7 @@ public:
     bool HasNmeaRecordingField();
     void SetCurrentObservationNmeaRecording(const wxString& recordingPath);
     void AddObservation(double lat, double lon);
+    int GetCurrentObservationRow();
 
     bool IsObserving() const;
 

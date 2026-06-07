@@ -61,6 +61,7 @@ public:
         void SetNmeaSentence(const wxString& sentence);
         void SetViewScale(double viewScale);
         void RefreshObservationsGrid();
+        void FocusCurrentObservationRow();
         void CreateMarkForCompletedObservationIfRequested();
         void MarkObservationsDirty(const wxString& reason);
       protected:

@@ -487,51 +487,54 @@ void ooObservations::StartObservation()
     wxString observationIdString = GenerateObservationId(dateString);
 
     
-    // create new observation in table and fill in fields
-    InsertRows(0, 1);
+    // Create new observations at the end of the table so the internal order
+    // follows the natural field log: oldest observation first, newest last.
+    AppendRows(1);
+    const int currentObservationRow = GetCurrentObservationRow();
     const int C = GetNumberCols();
+
     if (m_project.GetColCount() == C)
     {
         for (int c=0; c<C; ++c)
         {
             wxString field_type = m_project.GetColFieldTypes()[c];
+
             if (field_type.IsSameAs("Observation ID"))
-                SetValue(0, c, observationIdString);
+                SetValue(currentObservationRow, c, observationIdString);
             else if (field_type.IsSameAs("Start Date"))
-                SetValue(0, c, dateString);
+                SetValue(currentObservationRow, c, dateString);
             else if (field_type.IsSameAs("Start Time"))
-                SetValue(0, c, timeString);
+                SetValue(currentObservationRow, c, timeString);
             else if (field_type.IsSameAs("Start Timestamp UTC"))
-                SetValue(0, c, utcTimestampString);
+                SetValue(currentObservationRow, c, utcTimestampString);
             else if (field_type.IsSameAs("Start Latitude"))
               {
-               
-                SetValue(0, c, toSDMM_PlugIn(1, m_position_fix_lat));
+                SetValue(currentObservationRow, c, toSDMM_PlugIn(1, m_position_fix_lat));
                 StartLatSave = m_position_fix_lat;
               }
             else if (field_type.IsSameAs("Start Longitude"))
               {
-                 SetValue(0, c, toSDMM_PlugIn(2, m_position_fix_lon));
+                 SetValue(currentObservationRow, c, toSDMM_PlugIn(2, m_position_fix_lon));
                  StartLongSave = m_position_fix_lon;
               }
             else if (field_type.IsSameAs("NMEA AWS"))
-                SetValue(0, c, wxString::Format("%d", (int)round(m_apparentWindSpeed)));
+                SetValue(currentObservationRow, c, wxString::Format("%d", (int)round(m_apparentWindSpeed)));
             else if (field_type.IsSameAs("NMEA AWA"))
-                SetValue(0, c, wxString::Format("%d", (int)round(m_apparentWindAngle)));
+                SetValue(currentObservationRow, c, wxString::Format("%d", (int)round(m_apparentWindAngle)));
             else if (field_type.IsSameAs("NMEA TWS"))
-                SetValue(0, c, wxString::Format("%d", (int)round(m_trueWindSpeed)));
+                SetValue(currentObservationRow, c, wxString::Format("%d", (int)round(m_trueWindSpeed)));
             else if (field_type.IsSameAs("NMEA TWD"))
-                SetValue(0, c, wxString::Format("%d", (int)round(m_trueWindDirection)));
+                SetValue(currentObservationRow, c, wxString::Format("%d", (int)round(m_trueWindDirection)));
             else if (field_type.IsSameAs("NMEA COG"))
-                SetValue(0, c, wxString::Format("%d", (int)round(m_COG)));
+                SetValue(currentObservationRow, c, wxString::Format("%d", (int)round(m_COG)));
             else if (field_type.IsSameAs("NMEA SOG"))
-                SetValue(0, c, wxString::Format("%.1f", m_SOG));
+                SetValue(currentObservationRow, c, wxString::Format("%.1f", m_SOG));
             else if (field_type.IsSameAs("Distance"))
-              SetValue(0, c, "...");
+              SetValue(currentObservationRow, c, "...");
             else {
                 for (const auto& item : ooObservations::m_nmeaFields) {
                     if (field_type.IsSameAs(item.m_description)) {
-                        SetValue(0, c, item.m_value);
+                        SetValue(currentObservationRow, c, item.m_value);
                         break;
                     }
                 }
@@ -571,28 +574,31 @@ void ooObservations::StopObservation()
     sprintf(durationString, "%02u:%02u:%02u", hours, minutes, seconds);
 
     // fill in fields
+    const int currentObservationRow = GetCurrentObservationRow();
     const int C = GetNumberCols();
+
     if (m_project.GetColCount() == C)
     {
         for (int c=0; c<C; ++c)
         {
             wxString field_type = m_project.GetColFieldTypes()[c];
+
             if (field_type.IsSameAs("End Date"))
-                SetValue(0, c, dateString);
+                SetValue(currentObservationRow, c, dateString);
             else if (field_type.IsSameAs("End Time"))
-                SetValue(0, c, timeString);
+                SetValue(currentObservationRow, c, timeString);
             else if (field_type.IsSameAs("End Timestamp UTC"))
-                SetValue(0, c, utcTimestampString);
+                SetValue(currentObservationRow, c, utcTimestampString);
             else if (field_type.IsSameAs("End Latitude"))
-                SetValue(0, c, toSDMM_PlugIn(1, m_position_fix_lat));
+                SetValue(currentObservationRow, c, toSDMM_PlugIn(1, m_position_fix_lat));
             else if (field_type.IsSameAs("End Longitude"))
-                SetValue(0, c, toSDMM_PlugIn(2, m_position_fix_lon));
-          else if (field_type.IsSameAs("Distance")) {
+                SetValue(currentObservationRow, c, toSDMM_PlugIn(2, m_position_fix_lon));
+            else if (field_type.IsSameAs("Distance")) {
                 double dist = HaversineDistance(StartLatSave, StartLongSave, m_position_fix_lat, m_position_fix_lon);
-                SetValue(0, c,wxString::Format("%.3f", dist));
-          }
+                SetValue(currentObservationRow, c, wxString::Format("%.3f", dist));
+            }
             else if (field_type.IsSameAs("Observation Duration"))
-                SetValue(0, c, durationString);
+                SetValue(currentObservationRow, c, durationString);
         }
     } else {
         wxLogError("m_col_field_types.GetCount() does not match number of observation columns");
@@ -628,14 +634,26 @@ void ooObservations::SetCurrentObservationNmeaRecording(const wxString& recordin
         return;
     }
 
+    const int currentObservationRow = GetCurrentObservationRow();
+
     for (int c = 0; c < C; ++c) {
         const wxString field_type = m_project.GetColFieldTypes()[c];
 
         if (field_type.IsSameAs("NMEA Recording")) {
-            SetValue(0, c, recordingPath);
+            SetValue(currentObservationRow, c, recordingPath);
             return;
         }
     }
+}
+
+int ooObservations::GetCurrentObservationRow()
+{
+    if (GetNumberRows() <= 0) {
+        return wxNOT_FOUND;
+    }
+
+    // The active observation is the newest row, stored at the end of the table.
+    return GetNumberRows() - 1;
 }
 
 void ooObservations::AddObservation(double lat, double lon)
@@ -1055,6 +1073,7 @@ void ooObservations::SaveToXML(wxFile *file, bool stripMarkGuid)
     wxXmlNode* observations = new wxXmlNode(NULL, wxXML_ELEMENT_NODE, "observations");
     observations->AddAttribute("creator", "Open Observer for OpenCPN");
     observations->AddAttribute("file_version", wxString::FromDouble(XML_FILE_VERSION_OBSERVATIONS));
+    observations->AddAttribute("row_order", "chronological");
     xmlDoc.SetRoot(observations);
 
     // xml item 1: save project
@@ -1063,7 +1082,10 @@ void ooObservations::SaveToXML(wxFile *file, bool stripMarkGuid)
     // xml item 2: save data
     wxXmlNode* data = new wxXmlNode(observations, wxXML_ELEMENT_NODE, "data");
 
-    for (int r=0; r<R; ++r) {
+    // wxXmlNode(parent, ...) inserts new nodes before existing children.
+    // Iterate backwards so the saved XML remains human-readable:
+    // observation id 0 first, newest observation last.
+    for (int r = R - 1; r >= 0; --r) {
         wxXmlNode* observation = new wxXmlNode(data, wxXML_ELEMENT_NODE, "observation");
         observation->AddAttribute("id", wxString::Format(wxT("%i"), r));
 
@@ -1178,6 +1200,10 @@ bool ooObservations::ReadFromXML(const wxString& filename, const ooProject& defa
     SetProject(project);
 
     const int C = GetNumberCols();
+    const bool convertLegacyNewestFirstOrder =
+        root->GetName() == "observations" &&
+        !root->HasAttribute("row_order");
+
     wxXmlNode* data = (root->GetName() == "project" ? NULL // Loading old project file without data
                                                     : fileVersion == 1 ? root
                                                     : FindChild(root, "data"));
@@ -1206,6 +1232,18 @@ bool ooObservations::ReadFromXML(const wxString& filename, const ooProject& defa
         }
 
         observation = observation->GetNext();
+    }
+
+    if (convertLegacyNewestFirstOrder) {
+        const int R = GetNumberRows();
+
+        for (int top = 0, bottom = R - 1; top < bottom; ++top, --bottom) {
+            for (int c = 0; c < C; ++c) {
+                const wxString topValue = GetValue(top, c);
+                SetValue(top, c, GetValue(bottom, c));
+                SetValue(bottom, c, topValue);
+            }
+        }
     }
 
     return true;

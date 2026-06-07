@@ -737,7 +737,7 @@ void openobserver_pi::OnContextMenuItemCallback(int id)
     m_ooObservations->AddObservation(m_cursor_lat, m_cursor_lon);
     MarkObservationsDirty("observation added from chart context menu");
 
-    m_ooObservations->AddMarks(0);
+    m_ooObservations->AddMarks(m_ooObservations->GetCurrentObservationRow());
 
     RefreshObservationDisplay();
 }
