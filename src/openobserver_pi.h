@@ -197,6 +197,7 @@ public:
     void RefreshObservationDisplay();
     void MarkObservationsDirty(const wxString& reason);
     void CreateMarkForCompletedObservationIfRequested();
+    void FocusCurrentObservationRow();
     void StartNmeaRecordingIfNeeded();
     void StopNmeaRecordingIfNeeded();
     void UndockAuiPanel();

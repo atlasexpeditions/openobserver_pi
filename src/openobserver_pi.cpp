@@ -899,6 +899,13 @@ void openobserver_pi::CreateMarkForCompletedObservationIfRequested()
     }
 }
 
+void openobserver_pi::FocusCurrentObservationRow()
+{
+    if (m_ooControlDialogImpl) {
+        m_ooControlDialogImpl->FocusCurrentObservationRow();
+    }
+}
+
 void openobserver_pi::StartNmeaRecordingIfNeeded()
 {
     if (!m_ooObservations) return;

@@ -144,6 +144,7 @@ void ooAuiPanel::OnStartStop(wxCommandEvent& event)
         g_openobserver_pi->StopNmeaRecordingIfNeeded();
 
         g_openobserver_pi->CreateMarkForCompletedObservationIfRequested();
+        g_openobserver_pi->FocusCurrentObservationRow();
 
     } else {
         g_openobserver_pi->m_ooObservations->StartObservation();
