@@ -151,6 +151,8 @@ void ooAuiPanel::OnStartStop(wxCommandEvent& event)
 
     }
 
+    g_openobserver_pi->MarkObservationsDirty("observation start/stop");
+
     UpdateObservationStatus();
     UpdateObservationDuration();
     g_openobserver_pi->RefreshObservationDisplay();

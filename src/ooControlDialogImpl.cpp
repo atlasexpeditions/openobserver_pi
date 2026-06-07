@@ -584,6 +584,8 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
       m_hasObservationPasteUndo(false),
       m_observationPasteUndoRow(wxNOT_FOUND),
       m_observationPasteUndoCol(wxNOT_FOUND),
+      m_observationsDirty(false),
+      m_lastSafetySaveTime(wxDateTime::Now()),
       m_viewScale(1.0),
       m_observationsChoiceCount(1),
       m_markIconsLoaded(false),
@@ -1166,6 +1168,7 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                     m_observationPasteUndoText = undoText;
                     m_observationPasteUndoRow = undoRow;
                     m_observationPasteUndoCol = undoCol;
+                    MarkObservationsDirty("paste");
                 }
 
                 if (g_openobserver_pi) {
@@ -1191,6 +1194,7 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                     m_observationPasteUndoText);
 
                 m_hasObservationPasteUndo = false;
+                MarkObservationsDirty("undo paste");
 
                 if (g_openobserver_pi) {
                     g_openobserver_pi->RefreshObservationDisplay();
@@ -1298,6 +1302,7 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                         m_observationPasteUndoText = undoText;
                         m_observationPasteUndoRow = undoRow;
                         m_observationPasteUndoCol = undoCol;
+                        MarkObservationsDirty("paste");
                     }
 
                     if (g_openobserver_pi) {
@@ -1327,6 +1332,7 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                         m_observationPasteUndoText);
 
                     m_hasObservationPasteUndo = false;
+                    MarkObservationsDirty("undo paste");
 
                     if (g_openobserver_pi) {
                         g_openobserver_pi->RefreshObservationDisplay();
@@ -1463,6 +1469,60 @@ void ooControlDialogImpl::SetObservationsChoiceCount(int observationsChoiceCount
   m_choiceObservations->GetParent()->Layout();
 }
 
+void ooControlDialogImpl::LogObservationSaveEvent(const wxString& message) const
+{
+    wxFileName logFileName(*g_PrivateDataDir, wxEmptyString);
+    logFileName.AppendDir("logs");
+    logFileName.SetFullName("observation_save_events.log");
+
+    wxFileName::Mkdir(logFileName.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
+
+    wxFFile logFile(logFileName.GetFullPath(), "a");
+
+    if (!logFile.IsOpened()) {
+        return;
+    }
+
+    logFile.Write(
+        wxDateTime::Now().FormatISOCombined(' ') +
+        " | " +
+        message +
+        "\n");
+
+    logFile.Close();
+
+    wxTextFile textLog(logFileName.GetFullPath());
+
+    if (!textLog.Open()) {
+        return;
+    }
+
+    while (textLog.GetLineCount() > 500) {
+        textLog.RemoveLine(0);
+    }
+
+    textLog.Write();
+    textLog.Close();
+}
+
+void ooControlDialogImpl::MarkObservationsDirty(const wxString& reason)
+{
+    if (!m_observationsDirty) {
+        LogObservationSaveEvent("DIRTY | " + reason);
+    }
+
+    m_observationsDirty = true;
+}
+
+void ooControlDialogImpl::ClearObservationsDirty(const wxString& reason)
+{
+    if (m_observationsDirty) {
+        LogObservationSaveEvent("CLEAN | " + reason);
+    }
+
+    m_observationsDirty = false;
+}
+
 bool ooControlDialogImpl::SaveObservations(const wxString& filename, bool stopObservation)
 {
     wxString savePath = filename;
@@ -1517,6 +1577,8 @@ bool ooControlDialogImpl::SaveObservations(const wxString& filename, bool stopOb
     }
 
     if (!wxRenameFile(tempPath, savePath, true)) {
+        LogObservationSaveEvent("SAVE FAILED | unable to replace final file | " + savePath);
+
         wxMessageBox(
             "Unable to replace project file safely.\n\n"
             "The previous file was kept unchanged.\n"
@@ -1525,6 +1587,14 @@ bool ooControlDialogImpl::SaveObservations(const wxString& filename, bool stopOb
             wxOK,
             this);
         return false;
+    }
+
+    LogObservationSaveEvent("SAVE OK | " + savePath);
+
+    if (!filename.IsEmpty()) {
+        ClearObservationsDirty("internal save | " + savePath);
+    } else {
+        LogObservationSaveEvent("EXTERNAL SAVE | dirty state preserved | " + savePath);
     }
 
     return true;
@@ -2059,6 +2129,7 @@ void ooControlDialogImpl::ooControlDialogActivate(wxActivateEvent& event)
           // wxMessageBox(wxString::Format(wxT("The position of %i observation(s)
           // has been updated !"), count),
           //              "Position updated", wxOK, this);
+          MarkObservationsDirty("observation mark moved");
           RefreshGridAppearance(m_ObservationsTable);
         }
     }
@@ -2102,6 +2173,7 @@ void ooControlDialogImpl::UseProject()
 
     m_Observations->SetProject(project);
     m_CurrentProject = project;
+    MarkObservationsDirty("project applied");
 
     // update the project tab interface
     SetProjectEditable(false);
@@ -2477,6 +2549,8 @@ void ooControlDialogImpl::OnButtonClickDeleteObservation( wxCommandEvent& event 
     if (deleteAssociatedNmeaRecordings) {
         DeleteExistingFiles(nmeaRecordingPaths);
     }
+
+    MarkObservationsDirty("observation deleted");
 
     RefreshGridAppearance(m_ObservationsTable);
 }
@@ -3151,14 +3225,39 @@ void ooControlDialogImpl::OnButtonClickImportObservations(wxCommandEvent& event)
     if (!m_Observations->ReadFromCSV(path, err)) {
         wxMessageBox("Unable to import CSV file " + path + ": " + err,
                      "Error", wxOK, this);
+        return;
     }
+
+    MarkObservationsDirty("CSV import");
 }
 
 void ooControlDialogImpl::OnBackupTimer(wxTimerEvent& event)
 {
     if (!m_Observations) return;
 
-    SaveObservations(GetBackupFilename(m_currentObservationsIndex), false);
+    const wxDateTime now = wxDateTime::Now();
+    const bool safetySaveDue =
+        !m_lastSafetySaveTime.IsValid() ||
+        (now - m_lastSafetySaveTime).GetMinutes() >= 10;
+
+    if (!m_observationsDirty) {
+        if (safetySaveDue) {
+            LogObservationSaveEvent("SAFETY SAVE START | clean");
+            if (SaveObservations(GetBackupFilename(m_currentObservationsIndex), false)) {
+                m_lastSafetySaveTime = now;
+            }
+            return;
+        }
+
+        LogObservationSaveEvent("AUTOSAVE SKIPPED | clean");
+        return;
+    }
+
+    LogObservationSaveEvent("AUTOSAVE START | dirty");
+
+    if (SaveObservations(GetBackupFilename(m_currentObservationsIndex), false)) {
+        m_lastSafetySaveTime = now;
+    }
 }
 
 bool ooControlDialogImpl::ObservationMarksArePresent() const
@@ -3357,6 +3456,24 @@ static wxString BuildGridClipboardText(wxGrid* grid)
     return text;
 }
 
+static wxArrayString SplitTabRowPreserveEmptyCells(const wxString& rowText)
+{
+    wxArrayString cells;
+    wxString currentCell;
+
+    for (size_t i = 0; i < rowText.length(); ++i) {
+        if (rowText[i] == '\t') {
+            cells.Add(currentCell);
+            currentCell.Clear();
+        } else {
+            currentCell += rowText[i];
+        }
+    }
+
+    cells.Add(currentCell);
+    return cells;
+}
+
 static bool PasteClipboardTextIntoGrid(wxGrid* grid,
                                        const wxString& text,
                                        wxWindow* parent,
@@ -3388,7 +3505,7 @@ static bool PasteClipboardTextIntoGrid(wxGrid* grid,
             if (targetRow >= grid->GetNumberRows()) break;
             if (!grid->IsRowShown(targetRow)) continue;
 
-            wxArrayString cols = wxSplit(rows[r], '\t');
+            wxArrayString cols = SplitTabRowPreserveEmptyCells(rows[r]);
 
             bool firstCell = true;
 
@@ -3419,7 +3536,7 @@ static bool PasteClipboardTextIntoGrid(wxGrid* grid,
         if (targetRow >= grid->GetNumberRows()) break;
         if (!grid->IsRowShown(targetRow)) continue;
 
-        wxArrayString cols = wxSplit(rows[r], '\t');
+        wxArrayString cols = SplitTabRowPreserveEmptyCells(rows[r]);
 
         for (size_t c = 0; c < cols.GetCount(); ++c) {
             const int targetCol = startCol + static_cast<int>(c);
@@ -3456,7 +3573,7 @@ static bool PasteClipboardTextIntoGrid(wxGrid* grid,
         if (targetRow >= grid->GetNumberRows()) break;
         if (!grid->IsRowShown(targetRow)) continue;
 
-        wxArrayString cols = wxSplit(rows[r], '\t');
+        wxArrayString cols = SplitTabRowPreserveEmptyCells(rows[r]);
 
         for (size_t c = 0; c < cols.GetCount(); ++c) {
             const int targetCol = startCol + static_cast<int>(c);
@@ -3584,6 +3701,8 @@ void ooControlDialogImpl::OnObservationsGridCellChange(wxGridEvent& event)
         m_Observations->DeleteMarks(r);
         m_Observations->AddMarks(r);
     }
+
+    MarkObservationsDirty("cell changed");
 
     if (g_openobserver_pi) {
         g_openobserver_pi->RefreshObservationDisplay();

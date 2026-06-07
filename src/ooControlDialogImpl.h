@@ -62,6 +62,7 @@ public:
         void SetViewScale(double viewScale);
         void RefreshObservationsGrid();
         void CreateMarkForCompletedObservationIfRequested();
+        void MarkObservationsDirty(const wxString& reason);
       protected:
         void SetupObservationsForProject();
         bool LoadObservations(const wxString& filename, bool updateFromMarks = true);
@@ -126,6 +127,11 @@ public:
 
         bool m_markIconsLoaded;
         bool m_showObservationMarks;
+        bool m_observationsDirty;
+        wxDateTime m_lastSafetySaveTime;
+
+        void ClearObservationsDirty(const wxString& reason);
+        void LogObservationSaveEvent(const wxString& message) const;
 
         void EnsureMarkIconChoiceContains(const wxString& iconName);
         void SelectMarkIconOrFallback(const wxString& iconName);

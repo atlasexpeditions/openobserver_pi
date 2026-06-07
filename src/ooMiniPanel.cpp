@@ -199,6 +199,10 @@ void ooMiniPanel::StartOrStopObservation()
     ProcessWindowEvent(event);
   }
 
+  if (g_openobserver_pi) {
+    g_openobserver_pi->MarkObservationsDirty("observation start/stop");
+  }
+
   UpdateObservationStatus();
 
   if (g_openobserver_pi) {
