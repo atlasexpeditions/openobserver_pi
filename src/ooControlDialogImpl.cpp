@@ -832,6 +832,25 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
         &ooControlDialogImpl::OnButtonClickClearObservationFilter,
         this);
 
+    if (m_checkShowCurrentData) {
+        m_checkShowCurrentData->Bind(
+            wxEVT_CHECKBOX,
+            [this](wxCommandEvent&)
+            {
+                const bool showCurrentData = m_checkShowCurrentData->GetValue();
+
+                // Hide the whole generated "Current Data" sizer row, not only
+                // its child controls, so the compact mode does not leave an
+                // empty visual band above the observation actions.
+                m_staticline1->Show(showCurrentData);
+                m_fgSizerObservations->Show(2, showCurrentData);
+
+                m_panelObservations->Layout();
+                m_fgSizerObservations->Layout();
+                m_notebookControl->Layout();
+            });
+    }
+
     m_textFilterObservations->Bind(
         wxEVT_TEXT_ENTER,
         &ooControlDialogImpl::OnButtonClickFilterObservations,

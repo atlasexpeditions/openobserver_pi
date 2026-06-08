@@ -306,6 +306,10 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 	m_checkShowObservationMarks = new wxCheckBox( m_panelObservations, wxID_ANY, _("Show Observation Marks"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizerObservationsButtons->Add( m_checkShowObservationMarks, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
+	m_checkShowCurrentData = new wxCheckBox( m_panelObservations, wxID_ANY, _("Show Current Data"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_checkShowCurrentData->SetValue( true );
+	fgSizerObservationsButtons->Add( m_checkShowCurrentData, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+
 	fgSizerObservationsButtons->AddStretchSpacer();
 
 	m_textFilterObservations = new wxTextCtrl( m_panelObservations, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 220,-1 ), wxTE_PROCESS_ENTER );
