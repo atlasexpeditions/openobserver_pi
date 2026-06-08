@@ -217,6 +217,8 @@ public:
 
     void    MenuPrepend(wxMenu *menu, int id, wxString label);
     void    MenuAppend(wxMenu *menu, int id, wxString label);
+    void    ShowObservationForSelectedMark();
+    void    CreateObservationFromSelectedMark();
 
     wxWindow            *m_parent_window;
     wxFileConfig        *m_pConfig;
@@ -239,6 +241,8 @@ public:
     wxColor m_currentProjectColor;
     int     m_addObservationItem;
     int     m_showMiniPanelItem;
+    int     m_showObservationItem;
+    int     m_createObservationFromMarkItem;
 
     double  m_cursor_lat;
     double  m_cursor_lon;

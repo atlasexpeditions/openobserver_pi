@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<observations creator="Open Observer for OpenCPN" file_version="2">
+<observations creator="Open Observer for OpenCPN" file_version="2" row_order="chronological">
   <data/>
-  <project name="Default" color="20,58,58" mark_icon="Info-Fish-Whale">
+  <project name="Default" color="16,115,198" mark_icon="Info-Fish-Whale">
     <field id="7" label="Mark GUID" field_type="Mark GUID" col_size="0"/>
     <field id="6" label="End timestamp" field_type="End Timestamp UTC" col_size="195"/>
     <field id="5" label="Notes" field_type="Text" col_size="374"/>
@@ -10,14 +10,10 @@
     <field id="2" label="Lon" field_type="Start Longitude" col_size="152"/>
     <field id="1" label="Lat" field_type="Start Latitude" col_size="134"/>
     <field id="0" label="Start timestamp" field_type="Start Timestamp UTC" col_size="186"/>
-    <description>This is a default Open Observer project.
-
-Since the original purpose of Open Observer was to help record marine wildlife sightings, this template uses Oceanic Species as its primary observation field.
-You can start using it right away to record your observations, import a project template specifically designed for your mission, or create your own custom project from scratch.
-
-We hope you enjoy using Open Observer and look forward to your feedback:
-info@atlasexpeditions.org - www.atlasexpeditions.org
-
+    <description>* This is the default Open Observer project.
+** Since the original purpose of Open Observer was to help record marine wildlife sightings, this template uses Oceanic Species as its primary observation field.
+*** You can start using it right away to record your observations, import a project template specifically designed for your mission, or create your own custom project from scratch.
+**** We hope you enjoy using Open Observer and look forward to your feedback: info@atlasexpeditions.org - www.atlasexpeditions.org
 The Open Observer Team</description>
   </project>
 </observations>

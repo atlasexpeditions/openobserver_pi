@@ -670,6 +670,22 @@ void ooObservations::AddObservation(double lat, double lon)
     m_position_fix_lat = ex_position_fix_lat;
 }
 
+bool ooObservations::SetObservationMarkGuid(int row, const wxString& markGuid)
+{
+    if (row < 0 || row >= GetNumberRows() || markGuid.IsEmpty()) {
+        return false;
+    }
+
+    const int markCol = GetProject().GetMarkCol();
+
+    if (markCol == wxNOT_FOUND) {
+        return false;
+    }
+
+    SetValue(row, markCol, markGuid);
+    return true;
+}
+
 const double R_EARTH_KM = 6371.0;  // rayon Terre en km
 double ooObservations::DegToRad(double deg) { return deg * M_PI / 180.0; }
 constexpr double KM_TO_NAUTICAL_MILES = 1.0 / 1.8520;

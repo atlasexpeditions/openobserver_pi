@@ -978,34 +978,36 @@ void ooControlDialogImpl::LoadMarkIconsIfNeeded(const wxString& preferredIconNam
     SelectMarkIconOrFallback(selectedIcon);
 }
 
-void ooControlDialogImpl::NewProject()
+void ooControlDialogImpl::NewProject(bool useDefaultTemplate)
 {
-    // Prefer the user-editable default project template.
-    // This keeps the first Open Observer experience welcoming without hiding
-    // the project structure inside C++ code.
-    const wxString templatePath = GetDefaultProjectTemplatePath();
+    if (useDefaultTemplate) {
+        // Prefer the user-editable default project template.
+        // This keeps the first Open Observer experience welcoming without hiding
+        // the project structure inside C++ code.
+        const wxString templatePath = GetDefaultProjectTemplatePath();
 
-    if (!templatePath.IsEmpty() && wxFileExists(templatePath)) {
-        int fileVersion = 0;
-        wxXmlDocument xmlDoc;
-        wxXmlNode* root = nullptr;
-        ooProject templateProject;
+        if (!templatePath.IsEmpty() && wxFileExists(templatePath)) {
+            int fileVersion = 0;
+            wxXmlDocument xmlDoc;
+            wxXmlNode* root = nullptr;
+            ooProject templateProject;
 
-        if (ooObservations::ReadFromXML(
-                templatePath,
-                fileVersion,
-                templateProject,
-                xmlDoc,
-                root,
-                CreateFallbackDefaultProject())) {
-            LoadProject(templateProject);
-            return;
+            if (ooObservations::ReadFromXML(
+                    templatePath,
+                    fileVersion,
+                    templateProject,
+                    xmlDoc,
+                    root,
+                    CreateFallbackDefaultProject())) {
+                LoadProject(templateProject);
+                return;
+            }
         }
     }
 
     // Keep a tiny, dependable fallback in code.
-    // It is not meant to be beautiful; it only keeps New Project usable if the
-    // external template is missing, damaged, or not copied yet.
+    // It is not meant to be beautiful; it only keeps empty secondary slots usable
+    // without duplicating the bundled default protocol everywhere.
     LoadProject(CreateFallbackDefaultProject());
 }
 
@@ -2709,6 +2711,67 @@ void ooControlDialogImpl::FocusCurrentObservationRow()
     }
 }
 
+bool ooControlDialogImpl::FocusObservationByMarkGuid(const wxString& markGuid)
+{
+    if (markGuid.IsEmpty() || !m_Observations || !m_ObservationsTable) {
+        return false;
+    }
+
+    const int originalIndex = m_currentObservationsIndex;
+
+    // Preserve the current slot before searching across saved slots.
+    SaveObservations(GetBackupFilename(m_currentObservationsIndex), false);
+
+    for (int slotIndex = 0; slotIndex < (int)m_choiceObservations->GetCount(); ++slotIndex) {
+        const wxString filename = GetBackupFilename(slotIndex);
+
+        if (!wxFile::Exists(filename)) {
+            continue;
+        }
+
+        m_currentObservationsIndex = slotIndex;
+        m_choiceObservations->SetSelection(slotIndex);
+
+        if (!LoadObservations(filename, false)) {
+            continue;
+        }
+
+        const int markCol = m_Observations->GetProject().GetMarkCol();
+        if (markCol == wxNOT_FOUND) {
+            continue;
+        }
+
+        for (int dataRow = 0; dataRow < m_Observations->GetNumberRows(); ++dataRow) {
+            if (!m_Observations->GetValue(dataRow, markCol).IsSameAs(markGuid)) {
+                continue;
+            }
+
+            if (m_textFilterObservations) {
+                m_textFilterObservations->SetValue(wxEmptyString);
+            }
+            ClearObservationTextFilter();
+
+            const int displayRow = DataRowToDisplayRow(dataRow);
+
+            m_ObservationsTable->SetFocus();
+            m_ObservationsTable->ClearSelection();
+            m_ObservationsTable->SelectRow(displayRow);
+            m_ObservationsTable->SetGridCursor(displayRow, 0);
+            m_ObservationsTable->MakeCellVisible(displayRow, 0);
+
+            if (m_ObservationsDelete) {
+                m_ObservationsDelete->Enable(true);
+            }
+
+            RefreshGridAppearance(m_ObservationsTable);
+            return true;
+        }
+    }
+
+    RestoreBackupObservations(originalIndex);
+    return false;
+}
+
 void ooControlDialogImpl::CreateMarkForCompletedObservationIfRequested()
 {
     if (!m_showObservationMarks || !m_Observations) return;
@@ -3523,7 +3586,7 @@ void ooControlDialogImpl::OnChoiceObservationsChanged(wxCommandEvent& event)
         LoadObservations(filename);
     } else {
         ClearCurrentObservationsForNewProject();
-        NewProject();
+        NewProject(m_currentObservationsIndex == 0);
         UseProject();
     }
 

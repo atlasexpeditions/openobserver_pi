@@ -51,7 +51,7 @@ public:
         ooControlDialogImpl(wxWindow *parent);
         ~ooControlDialogImpl();
 
-        void NewProject();
+        void NewProject(bool useDefaultTemplate = true);
         void UseProject();
 
         void CreateObservationsTable(ooObservations *observations);
@@ -63,6 +63,7 @@ public:
         void SetViewScale(double viewScale);
         void RefreshObservationsGrid();
         void FocusCurrentObservationRow();
+        bool FocusObservationByMarkGuid(const wxString& markGuid);
         int DisplayRowToDataRow(int displayRow) const;
         int DataRowToDisplayRow(int dataRow) const;
         wxArrayInt DisplayRowsToDataRows(const wxArrayInt& displayRows) const;

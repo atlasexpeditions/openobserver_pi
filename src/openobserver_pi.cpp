@@ -144,7 +144,9 @@ openobserver_pi::openobserver_pi(void *ppimgr)
       m_recordNmeaStreamDuringEachObservation(false),
       m_currentProjectName(wxEmptyString),
       m_currentProjectColor(*wxBLACK),
-      m_showMiniPanelItem(-1)
+      m_showMiniPanelItem(-1),
+      m_showObservationItem(-1),
+      m_createObservationFromMarkItem(-1)
 {
     // Create the PlugIn icons
     g_ppimgr = ppimgr;
@@ -260,9 +262,9 @@ openobserver_pi::openobserver_pi(void *ppimgr)
                 wxFileName::Mkdir(targetFile.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
             }
 
-            if (!wxFile::Exists(targetFile.GetFullPath())) {
-                wxCopyFile(f, targetFile.GetFullPath());
-            }
+            // Packaged default listings are part of the plugin protocol resources.
+            // Keep user-added files, but refresh known packaged files on reinstall/update.
+            wxCopyFile(f, targetFile.GetFullPath(), true);
         }
     }
 
@@ -339,7 +341,13 @@ openobserver_pi::openobserver_pi(void *ppimgr)
                 wxFileName::Mkdir(targetFile.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
             }
 
-            if (!wxFile::Exists(targetFile.GetFullPath())) {
+            if (targetFile.GetFullName().IsSameAs(wxT("Default.xml"))) {
+                // Default.xml is the official bundled project template.
+                // Refresh it on reinstall/update so a new package can provide a new default.
+                wxCopyFile(f, targetFile.GetFullPath(), true);
+            } else if (!wxFile::Exists(targetFile.GetFullPath())) {
+                // Other templates may be user-customized or user-added.
+                // Add new bundled templates, but do not overwrite existing ones.
                 wxCopyFile(f, targetFile.GetFullPath());
             }
         }
@@ -434,9 +442,9 @@ openobserver_pi::openobserver_pi(void *ppimgr)
                 wxFileName::Mkdir(targetFile.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
             }
 
-            if (!wxFile::Exists(targetFile.GetFullPath())) {
-                wxCopyFile(f, targetFile.GetFullPath());
-            }
+            // Packaged user icons are visual resources shipped with the plugin.
+            // Keep user-added icons, but refresh known packaged icons on reinstall/update.
+            wxCopyFile(f, targetFile.GetFullPath(), true);
         }
     }
 
@@ -514,6 +522,17 @@ int openobserver_pi::Init(void)
         new wxMenuItem(&dummy_menu, -1, _("Open Observer: show mini panel"));
     m_showMiniPanelItem = AddCanvasContextMenuItem(pmiShowMiniPanel, this);
     SetCanvasContextMenuItemViz(m_showMiniPanelItem, true);
+
+    wxMenuItem* pmiShowObservation =
+        new wxMenuItem(&dummy_menu, -1, _("Open Observer: show observation"));
+    m_showObservationItem = AddCanvasContextMenuItem(pmiShowObservation, this);
+    SetCanvasContextMenuItemViz(m_showObservationItem, true);
+
+    wxMenuItem* pmiCreateObservationFromMark =
+        new wxMenuItem(&dummy_menu, -1, _("Open Observer: create observation from mark"));
+    m_createObservationFromMarkItem =
+        AddCanvasContextMenuItem(pmiCreateObservationFromMark, this);
+    SetCanvasContextMenuItemViz(m_createObservationFromMarkItem, true);
 
 
     // Get item into font list in options/user interface
@@ -718,10 +737,128 @@ void openobserver_pi::OnToolbarToolUpCallback(int id)
     return;
 }
 
+void openobserver_pi::ShowObservationForSelectedMark()
+{
+    const wxString selectedMarkGuid = GetSelectedWaypointGUID_Plugin();
+
+    if (selectedMarkGuid.IsEmpty()) {
+        wxMessageBox(
+            _("No OpenCPN mark is currently selected."),
+            _("Open Observer: show observation"),
+            wxOK | wxICON_INFORMATION,
+            wxGetActiveWindow());
+        return;
+    }
+
+    if (!m_ooControlDialogImpl) {
+        ToggleWindow();
+    }
+
+    if (!m_ooControlDialogImpl) {
+        return;
+    }
+
+    if (!m_ooControlDialogImpl->FocusObservationByMarkGuid(selectedMarkGuid)) {
+        wxMessageBox(
+            _("No Open Observer observation is linked to the selected mark."),
+            _("Open Observer: show observation"),
+            wxOK | wxICON_INFORMATION,
+            wxGetActiveWindow());
+        return;
+    }
+
+    m_ooControlDialogImpl->Show();
+    m_ooControlDialogImpl->Raise();
+    m_ooControlDialogImpl->SetFocus();
+}
+
+void openobserver_pi::CreateObservationFromSelectedMark()
+{
+    const wxString selectedMarkGuid = GetSelectedWaypointGUID_Plugin();
+
+    if (selectedMarkGuid.IsEmpty()) {
+        wxMessageBox(
+            _("No OpenCPN mark is currently selected."),
+            _("Open Observer: create observation from mark"),
+            wxOK | wxICON_INFORMATION,
+            wxGetActiveWindow());
+        return;
+    }
+
+    if (!m_ooControlDialogImpl) {
+        ToggleWindow();
+    }
+
+    if (!m_ooControlDialogImpl || !m_ooObservations) {
+        return;
+    }
+
+    if (m_ooObservations->IsObserving()) {
+        wxMessageBox(
+            _("Could not create observation. An observation is already running."),
+            _("Open Observer: create observation from mark"),
+            wxOK | wxICON_WARNING,
+            wxGetActiveWindow());
+        return;
+    }
+
+    if (m_ooControlDialogImpl->FocusObservationByMarkGuid(selectedMarkGuid)) {
+        wxMessageBox(
+            _("This mark is already linked to an Open Observer observation."),
+            _("Open Observer: create observation from mark"),
+            wxOK | wxICON_INFORMATION,
+            wxGetActiveWindow());
+        return;
+    }
+
+    std::unique_ptr<PlugIn_Waypoint> selectedMark =
+        GetWaypoint_Plugin(selectedMarkGuid);
+
+    if (!selectedMark) {
+        wxMessageBox(
+            _("The selected OpenCPN mark could not be read."),
+            _("Open Observer: create observation from mark"),
+            wxOK | wxICON_WARNING,
+            wxGetActiveWindow());
+        return;
+    }
+
+    m_ooObservations->AddObservation(selectedMark->m_lat, selectedMark->m_lon);
+
+    const int newRow = m_ooObservations->GetCurrentObservationRow();
+
+    if (!m_ooObservations->SetObservationMarkGuid(newRow, selectedMarkGuid)) {
+        wxMessageBox(
+            _("The observation was created, but Open Observer could not link it to the selected mark."),
+            _("Open Observer: create observation from mark"),
+            wxOK | wxICON_WARNING,
+            wxGetActiveWindow());
+        return;
+    }
+
+    MarkObservationsDirty("observation created from existing mark");
+    RefreshObservationDisplay();
+    FocusCurrentObservationRow();
+
+    m_ooControlDialogImpl->Show();
+    m_ooControlDialogImpl->Raise();
+    m_ooControlDialogImpl->SetFocus();
+}
+
 void openobserver_pi::OnContextMenuItemCallback(int id)
 {
     if (id == m_showMiniPanelItem) {
         ShowMiniPanel();
+        return;
+    }
+
+    if (id == m_showObservationItem) {
+        ShowObservationForSelectedMark();
+        return;
+    }
+
+    if (id == m_createObservationFromMarkItem) {
+        CreateObservationFromSelectedMark();
         return;
     }
 
@@ -774,6 +911,18 @@ bool openobserver_pi::MouseEventHook( wxMouseEvent &event )
     if (event.LeftDown()) {
         m_click_lat = m_cursor_lat;
         m_click_lon = m_cursor_lon;
+    }
+
+    if (event.RightDown()) {
+        // OpenCPN exposes plugin items through the canvas "Main menu".
+        // The selected waypoint GUID is reliable when the action is triggered,
+        // but not early enough to grey/ungrey the menu items before display.
+        if (m_showObservationItem >= 0) {
+            SetCanvasMenuItemGrey(m_showObservationItem, false);
+        }
+        if (m_createObservationFromMarkItem >= 0) {
+            SetCanvasMenuItemGrey(m_createObservationFromMarkItem, false);
+        }
     }
 
     return false;
