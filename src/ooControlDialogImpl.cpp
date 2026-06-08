@@ -73,12 +73,22 @@ static wxColour ContrastTextColour(const wxColour& background);
 static wxColour AlternateRowColour(const wxColour& base);
 static void ApplyStandardBoldGridLabelFont(wxGrid* grid);
 static wxString BuildGridClipboardText(wxGrid* grid);
+static void RestoreGridClipboardText(wxGrid* grid,
+                                     const wxString& text,
+                                     int startRow,
+                                     int startCol,
+                                     int rowCount,
+                                     int colCount);
+
 static bool PasteClipboardTextIntoGrid(wxGrid* grid,
                                        const wxString& text,
                                        wxWindow* parent = nullptr,
                                        wxString* undoText = nullptr,
                                        int* undoRow = nullptr,
-                                       int* undoCol = nullptr);
+                                       int* undoCol = nullptr,
+                                       int* undoRows = nullptr,
+                                       int* undoCols = nullptr,
+                                       bool confirmOverwrite = true);
 
 static wxString GetDefaultProjectTemplatePath()
 {
@@ -581,9 +591,6 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
       m_Observations(nullptr),
       m_ObservationsTable(nullptr),
       m_isScanningNmea(false),
-      m_hasObservationPasteUndo(false),
-      m_observationPasteUndoRow(wxNOT_FOUND),
-      m_observationPasteUndoCol(wxNOT_FOUND),
       m_observationsDirty(false),
       m_lastSafetySaveTime(wxDateTime::Now()),
       m_viewScale(1.0),
@@ -619,6 +626,12 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
     bSizerTopButtons->Add(m_MiniPanel, 1, wxEXPAND, 5);
     m_panelObservations->Layout();
     m_fgSizerObservations->Fit(m_panelObservations);
+
+    // Let the notebook area shrink before the bottom project/data bar disappears.
+    // The observation grid already has a tiny minimum size; relaxing the notebook
+    // and page minimums keeps Save/Import/Data Package and the project selector reachable.
+    m_notebookControl->SetMinSize(wxSize(1, 1));
+    m_panelObservations->SetMinSize(wxSize(1, 1));
 
     wxPanel* panelAbout = new wxPanel(
         m_notebookControl,
@@ -851,6 +864,10 @@ ooControlDialogImpl::~ooControlDialogImpl()
             wxGridRangeSelectEventHandler(
                 ooControlDialogImpl::OnObservationsGridRangeSelect),
             NULL, this);
+        m_ObservationsTable->Disconnect(
+            wxEVT_GRID_CELL_CHANGING,
+            wxGridEventHandler(ooControlDialogImpl::OnObservationsGridCellChanging),
+            NULL, this);
         m_ObservationsTable->Disconnect(wxEVT_GRID_CELL_CHANGED,
                                wxGridEventHandler(ooControlDialogImpl::OnObservationsGridCellChange),
                                NULL, this);
@@ -1066,6 +1083,11 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
         wxGridRangeSelectEventHandler(
             ooControlDialogImpl::OnObservationsGridRangeSelect),
         NULL, this);
+    m_ObservationsTable->Connect(
+        wxEVT_GRID_CELL_CHANGING,
+        wxGridEventHandler(ooControlDialogImpl::OnObservationsGridCellChanging),
+        NULL,
+        this);
     m_ObservationsTable->Connect(wxEVT_GRID_CELL_CHANGED,
                                  wxGridEventHandler(ooControlDialogImpl::OnObservationsGridCellChange),
                                  NULL,
@@ -1156,6 +1178,8 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                 wxString undoText;
                 int undoRow = wxNOT_FOUND;
                 int undoCol = wxNOT_FOUND;
+                int undoRows = 0;
+                int undoCols = 0;
 
                 if (PasteClipboardTextIntoGrid(
                         m_ObservationsTable,
@@ -1163,12 +1187,17 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                         this,
                         &undoText,
                         &undoRow,
-                        &undoCol)) {
+                        &undoCol,
+                        &undoRows,
+                        &undoCols)) {
 
-                    m_hasObservationPasteUndo = true;
-                    m_observationPasteUndoText = undoText;
-                    m_observationPasteUndoRow = undoRow;
-                    m_observationPasteUndoCol = undoCol;
+                    m_observationPasteUndoStack.push_back(
+                        {undoRow, undoCol, undoRows, undoCols, undoText});
+
+                    if (m_observationPasteUndoStack.size() > 2) {
+                        m_observationPasteUndoStack.erase(m_observationPasteUndoStack.begin());
+                    }
+
                     MarkObservationsDirty("paste");
                 }
 
@@ -1181,20 +1210,28 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                 return;
             }
 
-            if (undoShortcut &&
-                m_hasObservationPasteUndo &&
-                m_observationPasteUndoRow != wxNOT_FOUND &&
-                m_observationPasteUndoCol != wxNOT_FOUND) {
+            if (undoShortcut && !m_observationPasteUndoStack.empty()) {
+                const ObservationPasteUndoEntry undoEntry =
+                    m_observationPasteUndoStack.back();
+                m_observationPasteUndoStack.pop_back();
+
+                if (undoEntry.row == wxNOT_FOUND ||
+                    undoEntry.col == wxNOT_FOUND) {
+                    return;
+                }
 
                 m_ObservationsTable->SetGridCursor(
-                    m_observationPasteUndoRow,
-                    m_observationPasteUndoCol);
+                    undoEntry.row,
+                    undoEntry.col);
 
-                PasteClipboardTextIntoGrid(
+                RestoreGridClipboardText(
                     m_ObservationsTable,
-                    m_observationPasteUndoText);
+                    undoEntry.text,
+                    undoEntry.row,
+                    undoEntry.col,
+                    undoEntry.rows,
+                    undoEntry.cols);
 
-                m_hasObservationPasteUndo = false;
                 MarkObservationsDirty("undo paste");
 
                 if (g_openobserver_pi) {
@@ -1244,7 +1281,7 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
             menu.AppendSeparator();
             menu.Append(showNmeaRecordingId, _("Show NMEA recording"));
 
-            menu.Enable(undoPasteId, m_hasObservationPasteUndo);
+            menu.Enable(undoPasteId, !m_observationPasteUndoStack.empty());
 
             menu.Bind(
                 wxEVT_MENU,
@@ -1291,6 +1328,8 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                     wxString undoText;
                     int undoRow = wxNOT_FOUND;
                     int undoCol = wxNOT_FOUND;
+                    int undoRows = 0;
+                    int undoCols = 0;
 
                     if (PasteClipboardTextIntoGrid(
                             m_ObservationsTable,
@@ -1298,12 +1337,17 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                             this,
                             &undoText,
                             &undoRow,
-                            &undoCol)) {
+                            &undoCol,
+                            &undoRows,
+                            &undoCols)) {
 
-                        m_hasObservationPasteUndo = true;
-                        m_observationPasteUndoText = undoText;
-                        m_observationPasteUndoRow = undoRow;
-                        m_observationPasteUndoCol = undoCol;
+                        m_observationPasteUndoStack.push_back(
+                            {undoRow, undoCol, undoRows, undoCols, undoText});
+
+                        if (m_observationPasteUndoStack.size() > 2) {
+                            m_observationPasteUndoStack.erase(m_observationPasteUndoStack.begin());
+                        }
+
                         MarkObservationsDirty("paste");
                     }
 
@@ -1319,21 +1363,31 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                 wxEVT_MENU,
                 [this](wxCommandEvent&)
                 {
-                    if (!m_hasObservationPasteUndo ||
-                        m_observationPasteUndoRow == wxNOT_FOUND ||
-                        m_observationPasteUndoCol == wxNOT_FOUND) {
+                    if (m_observationPasteUndoStack.empty()) {
+                        return;
+                    }
+
+                    const ObservationPasteUndoEntry undoEntry =
+                        m_observationPasteUndoStack.back();
+                    m_observationPasteUndoStack.pop_back();
+
+                    if (undoEntry.row == wxNOT_FOUND ||
+                        undoEntry.col == wxNOT_FOUND) {
                         return;
                     }
 
                     m_ObservationsTable->SetGridCursor(
-                        m_observationPasteUndoRow,
-                        m_observationPasteUndoCol);
+                        undoEntry.row,
+                        undoEntry.col);
 
-                    PasteClipboardTextIntoGrid(
+                    RestoreGridClipboardText(
                         m_ObservationsTable,
-                        m_observationPasteUndoText);
+                        undoEntry.text,
+                        undoEntry.row,
+                        undoEntry.col,
+                        undoEntry.rows,
+                        undoEntry.cols);
 
-                    m_hasObservationPasteUndo = false;
                     MarkObservationsDirty("undo paste");
 
                     if (g_openobserver_pi) {
@@ -2465,6 +2519,11 @@ void ooControlDialogImpl::ApplyObservationTextFilter(const wxString& rawQuery)
     m_ObservationsTable->Thaw();
     m_ObservationsTable->ForceRefresh();
 
+    if (m_buttonFilterObservations) {
+        m_buttonFilterObservations->SetLabel(
+            wxString::Format(_("Filter (%d/%d)"), visibleCount, rowCount));
+    }
+
     wxLogMessage(
         "OpenObserver: observation filter applied, %d/%d visible",
         visibleCount,
@@ -2487,6 +2546,10 @@ void ooControlDialogImpl::ClearObservationTextFilter()
 
     m_ObservationsTable->Thaw();
     m_ObservationsTable->ForceRefresh();
+
+    if (m_buttonFilterObservations) {
+        m_buttonFilterObservations->SetLabel(_("Filter"));
+    }
 
     wxLogMessage("OpenObserver: observation filter cleared");
 }
@@ -3532,12 +3595,63 @@ static wxArrayString SplitTabRowPreserveEmptyCells(const wxString& rowText)
     return cells;
 }
 
+static void RestoreGridClipboardText(wxGrid* grid,
+                                     const wxString& text,
+                                     int startRow,
+                                     int startCol,
+                                     int rowCount,
+                                     int colCount)
+{
+    if (!grid ||
+        startRow < 0 ||
+        startCol < 0 ||
+        rowCount <= 0 ||
+        colCount <= 0) {
+        return;
+    }
+
+    wxArrayString rows;
+    if (!text.IsEmpty()) {
+        rows = wxSplit(text, '\n');
+    }
+
+    grid->BeginBatch();
+
+    for (int r = 0; r < rowCount; ++r) {
+        const int targetRow = startRow + r;
+        if (targetRow >= grid->GetNumberRows()) break;
+        if (!grid->IsRowShown(targetRow)) continue;
+
+        wxArrayString cols;
+        if (r < (int)rows.GetCount()) {
+            cols = SplitTabRowPreserveEmptyCells(rows[r]);
+        }
+
+        for (int c = 0; c < colCount; ++c) {
+            const int targetCol = startCol + c;
+            if (targetCol >= grid->GetNumberCols()) break;
+            if (!grid->IsColShown(targetCol)) continue;
+
+            const wxString value =
+                (c < (int)cols.GetCount()) ? cols[c] : wxString();
+
+            grid->SetCellValue(targetRow, targetCol, value);
+        }
+    }
+
+    grid->EndBatch();
+    grid->ForceRefresh();
+}
+
 static bool PasteClipboardTextIntoGrid(wxGrid* grid,
                                        const wxString& text,
                                        wxWindow* parent,
                                        wxString* undoText,
                                        int* undoRow,
-                                       int* undoCol)
+                                       int* undoCol,
+                                       int* undoRows,
+                                       int* undoCols,
+                                       bool confirmOverwrite)
 {
     if (!grid || text.IsEmpty()) return false;
 
@@ -3554,6 +3668,33 @@ static bool PasteClipboardTextIntoGrid(wxGrid* grid,
     }
 
     if (rows.IsEmpty()) return false;
+
+    int pastedRowCount = 0;
+    int pastedColCount = 0;
+
+    for (size_t r = 0; r < rows.GetCount(); ++r) {
+        const int targetRow = startRow + static_cast<int>(r);
+        if (targetRow >= grid->GetNumberRows()) break;
+        if (!grid->IsRowShown(targetRow)) continue;
+
+        pastedRowCount++;
+
+        wxArrayString cols = SplitTabRowPreserveEmptyCells(rows[r]);
+        int visibleColsThisRow = 0;
+
+        for (size_t c = 0; c < cols.GetCount(); ++c) {
+            const int targetCol = startCol + static_cast<int>(c);
+            if (targetCol >= grid->GetNumberCols()) break;
+            if (!grid->IsColShown(targetCol)) continue;
+
+            visibleColsThisRow++;
+        }
+
+        pastedColCount = wxMax(pastedColCount, visibleColsThisRow);
+    }
+
+    if (undoRows) *undoRows = pastedRowCount;
+    if (undoCols) *undoCols = pastedColCount;
 
     if (undoText) {
         undoText->Clear();
@@ -3612,7 +3753,7 @@ static bool PasteClipboardTextIntoGrid(wxGrid* grid,
         }
     }
 
-    if (wouldOverwriteData && parent) {
+    if (confirmOverwrite && wouldOverwriteData && parent) {
         const int answer = wxMessageBox(
             _("Some target cells already contain data.\n\nOverwrite existing values?"),
             _("Paste observations data"),
@@ -3745,6 +3886,64 @@ void ooControlDialogImpl::OnProjectGridCellChange(wxGridEvent& event)
                 wxOK | wxICON_INFORMATION,
                 this);
         }
+    }
+
+    event.Skip();
+}
+
+void ooControlDialogImpl::OnObservationsGridCellChanging(wxGridEvent& event)
+{
+    if (!m_Observations || !m_ObservationsTable) {
+        event.Skip();
+        return;
+    }
+
+    const int displayRow = event.GetRow();
+    const int dataRow = DisplayRowToDataRow(displayRow);
+    const int col = event.GetCol();
+
+    if (dataRow < 0 ||
+        dataRow >= m_Observations->GetNumberRows() ||
+        col < 0 ||
+        col >= m_Observations->GetNumberCols()) {
+        event.Skip();
+        return;
+    }
+
+    const wxArrayString& fieldTypes = m_Observations->GetColFieldTypes();
+    if (col >= (int)fieldTypes.GetCount()) {
+        event.Skip();
+        return;
+    }
+
+    const wxString fieldType = fieldTypes[col];
+
+    const bool protectedField =
+        fieldType.IsSameAs("Start Timestamp UTC") ||
+        fieldType.IsSameAs("End Timestamp UTC") ||
+        fieldType.IsSameAs("Start Latitude") ||
+        fieldType.IsSameAs("Start Longitude") ||
+        fieldType.IsSameAs("End Latitude") ||
+        fieldType.IsSameAs("End Longitude");
+
+    if (!protectedField) {
+        event.Skip();
+        return;
+    }
+
+    const int response = wxMessageBox(
+        wxString::Format(
+            _("This field is normally filled automatically by Open Observer:\n\n%s\n\n"
+              "Changing it manually can affect observation position, timing, marks and exports.\n\n"
+              "Do you want to continue?"),
+            fieldType),
+        _("Edit automatic observation field?"),
+        wxYES_NO | wxNO_DEFAULT | wxICON_WARNING,
+        this);
+
+    if (response != wxYES) {
+        event.Veto();
+        return;
     }
 
     event.Skip();

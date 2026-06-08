@@ -39,6 +39,7 @@
 #include "ooObservations.h"
 
 #include <set>
+#include <vector>
 #include <unordered_map>
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -108,6 +109,7 @@ public:
         void OnProjectGridCellSelect(wxGridEvent& event);
         void OnProjectGridRangeSelect(wxGridRangeSelectEvent& event);
         void OnProjectGridCellChange(wxGridEvent& event);
+        void OnObservationsGridCellChanging(wxGridEvent& event);
         void OnObservationsGridCellChange(wxGridEvent& event);
 
       private:
@@ -151,10 +153,15 @@ public:
         bool m_isScanningNmea;
         std::unordered_map<wxString, std::set<int>> m_scannedNmeaFields;
 
-        bool m_hasObservationPasteUndo;
-        int m_observationPasteUndoRow;
-        int m_observationPasteUndoCol;
-        wxString m_observationPasteUndoText;
+        struct ObservationPasteUndoEntry {
+            int row;
+            int col;
+            int rows;
+            int cols;
+            wxString text;
+        };
+
+        std::vector<ObservationPasteUndoEntry> m_observationPasteUndoStack;
 
         ooObservations * m_Observations;
         wxGrid* m_ObservationsTable;
