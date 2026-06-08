@@ -144,7 +144,6 @@ void ooAuiPanel::OnStartStop(wxCommandEvent& event)
         g_openobserver_pi->StopNmeaRecordingIfNeeded();
 
         g_openobserver_pi->CreateMarkForCompletedObservationIfRequested();
-        g_openobserver_pi->FocusCurrentObservationRow();
 
     } else {
         g_openobserver_pi->m_ooObservations->StartObservation();
@@ -157,6 +156,7 @@ void ooAuiPanel::OnStartStop(wxCommandEvent& event)
     UpdateObservationStatus();
     UpdateObservationDuration();
     g_openobserver_pi->RefreshObservationDisplay();
+    g_openobserver_pi->FocusCurrentObservationRow();
 
     event.Skip();
 }

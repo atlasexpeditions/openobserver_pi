@@ -2616,6 +2616,7 @@ void ooControlDialogImpl::FocusCurrentObservationRow()
         return;
     }
 
+    m_ObservationsTable->SetFocus();
     m_ObservationsTable->ClearSelection();
     m_ObservationsTable->SelectRow(displayRow);
     m_ObservationsTable->SetGridCursor(displayRow, 0);

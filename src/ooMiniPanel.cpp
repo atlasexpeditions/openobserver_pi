@@ -183,7 +183,6 @@ void ooMiniPanel::StartOrStopObservation()
     g_openobserver_pi->StopNmeaRecordingIfNeeded();
 
     g_openobserver_pi->CreateMarkForCompletedObservationIfRequested();
-    g_openobserver_pi->FocusCurrentObservationRow();
 
     // issue event
     wxCommandEvent event(OBSERVATION_STOPPED, GetId());
@@ -208,6 +207,7 @@ void ooMiniPanel::StartOrStopObservation()
 
   if (g_openobserver_pi) {
     g_openobserver_pi->RefreshObservationDisplay();
+    g_openobserver_pi->FocusCurrentObservationRow();
   }
 }
 

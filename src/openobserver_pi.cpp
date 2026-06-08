@@ -740,6 +740,7 @@ void openobserver_pi::OnContextMenuItemCallback(int id)
     m_ooObservations->AddMarks(m_ooObservations->GetCurrentObservationRow());
 
     RefreshObservationDisplay();
+    FocusCurrentObservationRow();
 }
 
 bool openobserver_pi::KeyboardEventHook( wxKeyEvent &event )
