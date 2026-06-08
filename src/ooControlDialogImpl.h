@@ -62,6 +62,9 @@ public:
         void SetViewScale(double viewScale);
         void RefreshObservationsGrid();
         void FocusCurrentObservationRow();
+        int DisplayRowToDataRow(int displayRow) const;
+        int DataRowToDisplayRow(int dataRow) const;
+        wxArrayInt DisplayRowsToDataRows(const wxArrayInt& displayRows) const;
         void CreateMarkForCompletedObservationIfRequested();
         void MarkObservationsDirty(const wxString& reason);
       protected:

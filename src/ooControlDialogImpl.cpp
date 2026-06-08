@@ -1079,18 +1079,19 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                 return;
             }
 
-            const int row = event.GetRow();
+            const int displayRow = event.GetRow();
+            const int dataRow = DisplayRowToDataRow(displayRow);
 
-            if (row >= 0) {
+            if (displayRow >= 0) {
                 if (event.ShiftDown() || event.ControlDown() || event.CmdDown()) {
                     event.Skip();
                     return;
                 }
 
                 m_ObservationsTable->ClearSelection();
-                m_ObservationsTable->SelectRow(row);
+                m_ObservationsTable->SelectRow(displayRow);
                 m_ObservationsDelete->Enable(true);
-                GoToObservationMarkForRow(row);
+                GoToObservationMarkForRow(dataRow);
                 return;
             }
 
@@ -1214,9 +1215,10 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                 return;
             }
 
-            const int row = event.GetRow();
+            const int displayRow = event.GetRow();
+            const int dataRow = DisplayRowToDataRow(displayRow);
 
-            if (row < 0 || row >= m_Observations->GetNumberRows()) {
+            if (displayRow < 0 || displayRow >= m_Observations->GetNumberRows()) {
                 event.Skip();
                 return;
             }
@@ -1224,7 +1226,7 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
             const int col = event.GetCol();
 
             if (col >= 0 && col < m_Observations->GetNumberCols()) {
-                m_ObservationsTable->SetGridCursor(row, col);
+                m_ObservationsTable->SetGridCursor(displayRow, col);
             }
 
             wxMenu menu;
@@ -1246,9 +1248,9 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
 
             menu.Bind(
                 wxEVT_MENU,
-                [this, row](wxCommandEvent&)
+                [this, dataRow](wxCommandEvent&)
                 {
-                    GoToObservationMarkForRow(row);
+                    GoToObservationMarkForRow(dataRow);
                 },
                 goToMarkId);
             menu.Bind(
@@ -1344,7 +1346,7 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
 
             menu.Bind(
                 wxEVT_MENU,
-                [this, row](wxCommandEvent&)
+                [this, dataRow](wxCommandEvent&)
                 {
                     wxArrayString recordingLabels;
                     recordingLabels.Add("NMEA Recording");
@@ -1366,7 +1368,7 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                         return;
                     }
 
-                    wxString recordingValue = m_Observations->GetValue(row, recordingCol);
+                    wxString recordingValue = m_Observations->GetValue(dataRow, recordingCol);
                     recordingValue.Trim(true);
                     recordingValue.Trim(false);
 
@@ -2543,9 +2545,14 @@ void ooControlDialogImpl::OnButtonClickDeleteObservation( wxCommandEvent& event 
         deleteAssociatedNmeaRecordings = (nmeaResponse == wxYES);
     }
 
-    for (int i = 0; i < (int)selectedRows.GetCount(); i++) {
-        m_Observations->DeleteMarks(selectedRows[i]);
-        m_Observations->DeleteRows(selectedRows[i]);
+    wxArrayInt selectedDataRows = DisplayRowsToDataRows(selectedRows);
+    selectedDataRows.Sort([](int * a, int* b) { return *a > *b  ? -1 :
+                                                       *a == *b ? 0  :
+                                                                  1; });
+
+    for (int i = 0; i < (int)selectedDataRows.GetCount(); i++) {
+        m_Observations->DeleteMarks(selectedDataRows[i]);
+        m_Observations->DeleteRows(selectedDataRows[i]);
     }
 
     if (deleteAssociatedNmeaRecordings) {
@@ -2571,22 +2578,48 @@ void ooControlDialogImpl::RefreshObservationsGrid()
     }
 }
 
+int ooControlDialogImpl::DisplayRowToDataRow(int displayRow) const
+{
+    // View mapping starts as identity. Future display modes such as
+    // "Latest first" will translate visible rows to stable data rows here.
+    return displayRow;
+}
+
+int ooControlDialogImpl::DataRowToDisplayRow(int dataRow) const
+{
+    // Keep data rows and displayed rows identical until a view mode is enabled.
+    return dataRow;
+}
+
+wxArrayInt ooControlDialogImpl::DisplayRowsToDataRows(const wxArrayInt& displayRows) const
+{
+    wxArrayInt dataRows;
+    dataRows.Alloc(displayRows.GetCount());
+
+    for (size_t i = 0; i < displayRows.GetCount(); ++i) {
+        dataRows.Add(DisplayRowToDataRow(displayRows[i]));
+    }
+
+    return dataRows;
+}
+
 void ooControlDialogImpl::FocusCurrentObservationRow()
 {
     if (!m_Observations || !m_ObservationsTable) return;
 
-    const int row = m_Observations->GetCurrentObservationRow();
+    const int dataRow = m_Observations->GetCurrentObservationRow();
+    const int displayRow = DataRowToDisplayRow(dataRow);
 
-    if (row == wxNOT_FOUND ||
-        row < 0 ||
-        row >= m_Observations->GetNumberRows()) {
+    if (displayRow == wxNOT_FOUND ||
+        displayRow < 0 ||
+        displayRow >= m_Observations->GetNumberRows()) {
         return;
     }
 
     m_ObservationsTable->ClearSelection();
-    m_ObservationsTable->SelectRow(row);
-    m_ObservationsTable->SetGridCursor(row, 0);
-    m_ObservationsTable->MakeCellVisible(row, 0);
+    m_ObservationsTable->SelectRow(displayRow);
+    m_ObservationsTable->SetGridCursor(displayRow, 0);
+    m_ObservationsTable->MakeCellVisible(displayRow, 0);
 
     if (m_ObservationsDelete) {
         m_ObservationsDelete->Enable(true);
@@ -3718,12 +3751,19 @@ void ooControlDialogImpl::OnProjectGridCellChange(wxGridEvent& event)
 
 void ooControlDialogImpl::OnObservationsGridCellChange(wxGridEvent& event)
 {
-    const int r = event.GetRow();
+    const int displayRow = event.GetRow();
+    const int dataRow = DisplayRowToDataRow(displayRow);
     const int markCol = m_Observations->GetProject().GetMarkCol();
-    const bool hasMark = (!m_Observations->GetValue(r, markCol).IsEmpty());
+
+    if (dataRow < 0 || dataRow >= m_Observations->GetNumberRows()) {
+        event.Skip();
+        return;
+    }
+
+    const bool hasMark = (!m_Observations->GetValue(dataRow, markCol).IsEmpty());
     if (hasMark) {
-        m_Observations->DeleteMarks(r);
-        m_Observations->AddMarks(r);
+        m_Observations->DeleteMarks(dataRow);
+        m_Observations->AddMarks(dataRow);
     }
 
     MarkObservationsDirty("cell changed");
