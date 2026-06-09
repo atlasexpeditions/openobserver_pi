@@ -88,6 +88,8 @@ public:
         void OnButtonClickDeleteObservation( wxCommandEvent& event );
         void OnButtonClickFilterObservations(wxCommandEvent& event);
         void OnButtonClickClearObservationFilter(wxCommandEvent& event);
+        void OnButtonClickProjectMenu(wxCommandEvent& event) override;
+        void OnButtonClickDataMenu(wxCommandEvent& event) override;
         void OnButtonClickExportObservations( wxCommandEvent& event );
         void OnButtonClickDataPackage( wxCommandEvent& event ) override;
         void OnButtonClickCreateScientificPackage( wxCommandEvent& event ) override;

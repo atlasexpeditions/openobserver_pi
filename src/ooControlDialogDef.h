@@ -52,7 +52,6 @@ class ooControlDialogDef : public wxFrame
 		wxButton* m_ProjectMoveColumnLeft;
 		wxButton* m_ProjectMoveColumnRight;
 		wxButton* m_ProjectDeleteColumn;
-		wxButton* m_ProjectNew;
 		wxStaticLine* m_staticline3;
 		wxStaticText* m_staticText6;
 		wxTextCtrl* m_textProjectName;
@@ -66,11 +65,9 @@ class ooControlDialogDef : public wxFrame
 		wxStaticText* m_staticText7;
 		wxStaticText* m_staticTextNMEA;
 		wxButton* m_buttonScanNmea;
-		wxButton* m_buttonCleanNmeaRecordings;
 		wxCheckBox* m_checkShowAdvancedNmeaFields;
 		wxStaticText* m_staticText11;
 		wxStaticText* m_staticTextListings;
-		wxButton* m_buttonOpenResourcesFolder;
 		wxButton* m_buttonRefreshListings;
 		wxPanel* m_panelObservations;
 		wxFlexGridSizer* m_fgSizerObservations;
@@ -94,11 +91,8 @@ class ooControlDialogDef : public wxFrame
 		wxTextCtrl* m_textFilterObservations;
 		wxButton* m_buttonFilterObservations;
 		wxButton* m_buttonClearObservationFilter;
-		wxButton* m_buttonLoadObs;
-		wxButton* m_buttonSaveObs;
-		wxButton* m_ObservationsImportObservations;
-		wxButton* m_ObservationsExportObservations;
-		wxButton* m_buttonCreateScientificPackage;
+		wxButton* m_buttonProjectMenu;
+		wxButton* m_buttonDataMenu;
 		wxChoice* m_choiceObservations;
 
 		// Virtual event handlers, override them in your derived class
@@ -121,6 +115,8 @@ class ooControlDialogDef : public wxFrame
 		virtual void OnButtonClickNewObservation( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickDeleteObservation( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCheckBoxShowObservationMarks( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickProjectMenu( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickDataMenu( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickLoadObservation( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickSaveObservation( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickImportObservations( wxCommandEvent& event ) { event.Skip(); }

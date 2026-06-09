@@ -2364,7 +2364,6 @@ void ooControlDialogImpl::SetProjectEditable(bool editable)
 
         m_ProjectEditUse->SetLabel("Use");
         m_gridProject->Enable();
-        m_ProjectNew->Enable();
         m_ProjectNewColumn->Enable();
         m_ProjectMoveColumnLeft->Enable();
         m_ProjectMoveColumnRight->Enable();
@@ -2377,7 +2376,6 @@ void ooControlDialogImpl::SetProjectEditable(bool editable)
     } else {
         m_ProjectEditUse->SetLabel("Edit");
         m_gridProject->Disable();
-        m_ProjectNew->Disable();
         m_ProjectNewColumn->Disable();
         m_ProjectMoveColumnLeft->Disable();
         m_ProjectMoveColumnRight->Disable();
@@ -2844,6 +2842,77 @@ void ooControlDialogImpl::CommitCurrentObservationsGridEdit()
         m_ObservationsTable->SaveEditControlValue();
         m_ObservationsTable->HideCellEditControl();
     }
+}
+
+void ooControlDialogImpl::OnButtonClickProjectMenu(wxCommandEvent& event)
+{
+    wxMenu menu;
+
+    const int idLoadProject = wxWindow::NewControlId();
+    const int idSaveProject = wxWindow::NewControlId();
+    const int idNewProject = wxWindow::NewControlId();
+    const int idCreateFromExcel = wxWindow::NewControlId();
+    const int idExportTemplate = wxWindow::NewControlId();
+    const int idOpenResourcesFolder = wxWindow::NewControlId();
+
+    menu.Append(idLoadProject, _("Load..."));
+    menu.Append(idSaveProject, _("Save..."));
+    menu.AppendSeparator();
+    menu.Append(idNewProject, _("New Project..."));
+    menu.Append(idCreateFromExcel, _("Create from Excel..."));
+    menu.Append(idExportTemplate, _("Export Template..."));
+    menu.AppendSeparator();
+    menu.Append(idOpenResourcesFolder, _("Open Resources Folder"));
+
+    menu.Enable(idCreateFromExcel, false);
+    menu.Enable(idExportTemplate, false);
+
+    Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickLoadObservation, this, idLoadProject);
+    Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickSaveObservation, this, idSaveProject);
+    Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickProjectNew, this, idNewProject);
+    Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickOpenResourcesFolder, this, idOpenResourcesFolder);
+
+    PopupMenu(
+        &menu,
+        m_buttonProjectMenu->GetPosition() +
+            wxPoint(0, m_buttonProjectMenu->GetSize().GetHeight()));
+
+    Unbind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickLoadObservation, this, idLoadProject);
+    Unbind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickSaveObservation, this, idSaveProject);
+    Unbind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickProjectNew, this, idNewProject);
+    Unbind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickOpenResourcesFolder, this, idOpenResourcesFolder);
+}
+
+void ooControlDialogImpl::OnButtonClickDataMenu(wxCommandEvent& event)
+{
+    wxMenu menu;
+
+    const int idImportData = wxWindow::NewControlId();
+    const int idExportData = wxWindow::NewControlId();
+    const int idDataPackage = wxWindow::NewControlId();
+    const int idCleanNmeaRecordings = wxWindow::NewControlId();
+
+    menu.Append(idImportData, _("Import Data..."));
+    menu.Append(idExportData, _("Export Data..."));
+    menu.AppendSeparator();
+    menu.Append(idDataPackage, _("Data Package..."));
+    menu.AppendSeparator();
+    menu.Append(idCleanNmeaRecordings, _("Clean NMEA Recordings..."));
+
+    Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickImportObservations, this, idImportData);
+    Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickExportObservations, this, idExportData);
+    Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickDataPackage, this, idDataPackage);
+    Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickCleanNmeaRecordings, this, idCleanNmeaRecordings);
+
+    PopupMenu(
+        &menu,
+        m_buttonDataMenu->GetPosition() +
+            wxPoint(0, m_buttonDataMenu->GetSize().GetHeight()));
+
+    Unbind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickImportObservations, this, idImportData);
+    Unbind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickExportObservations, this, idExportData);
+    Unbind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickDataPackage, this, idDataPackage);
+    Unbind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickCleanNmeaRecordings, this, idCleanNmeaRecordings);
 }
 
 void ooControlDialogImpl::OnButtonClickExportObservations( wxCommandEvent& event )

@@ -60,11 +60,6 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	m_ProjectEditUse->SetDefault();
 	fgSizerProjectButtons->Add( m_ProjectEditUse, 0, wxALL, 5 );
 
-	m_ProjectNew = new wxButton( m_panelProject, wxID_ANY, _("New Project"), wxDefaultPosition, wxDefaultSize, 0 );
-	m_ProjectNew->Enable( false );
-
-	fgSizerProjectButtons->Add( m_ProjectNew, 0, wxALL, 5 );
-
 	m_ProjectNewColumn = new wxButton( m_panelProject, wxID_ANY, _("Insert Column"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_ProjectNewColumn->Enable( false );
 
@@ -196,9 +191,6 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 	m_buttonScanNmea = new wxButton( m_panelProject, wxID_ANY, _("Start NMEA Scan"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer9->Add( m_buttonScanNmea, 0, wxALL, 5 );
 
-	m_buttonCleanNmeaRecordings = new wxButton( m_panelProject, wxID_ANY, _("Clean NMEA recordings"), wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizer9->Add( m_buttonCleanNmeaRecordings, 0, wxALL, 5 );
-
 	m_checkShowAdvancedNmeaFields = new wxCheckBox(
     	m_panelProject,
     	wxID_ANY,
@@ -223,9 +215,6 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 
 	m_buttonRefreshListings = new wxButton( m_panelProject, wxID_ANY, _("Refresh Listings"), wxDefaultPosition, wxDefaultSize, 0 );
 	fgSizer9->Add( m_buttonRefreshListings, 0, wxALL, 5 );
-
-	m_buttonOpenResourcesFolder = new wxButton( m_panelProject, wxID_ANY, _("Open Resources Folder"), wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizer9->Add( m_buttonOpenResourcesFolder, 0, wxALL|wxEXPAND, 5 );
 
 
 	fgSizerProject->Add( fgSizer9, 0, wxEXPAND, 5 );
@@ -342,31 +331,16 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 	fgSizer3->Add( m_notebookControl, 0, wxALL|wxEXPAND, 5 );
 
 	wxFlexGridSizer* fgSizerBottomBar;
-	fgSizerBottomBar = new wxFlexGridSizer( 1, 9, 0, 0 );
-	fgSizerBottomBar->AddGrowableCol( 7 );
+	fgSizerBottomBar = new wxFlexGridSizer( 1, 4, 0, 0 );
+	fgSizerBottomBar->AddGrowableCol( 2 );
 	fgSizerBottomBar->SetFlexibleDirection( wxHORIZONTAL );
 	fgSizerBottomBar->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_NONE );
 
-	m_buttonLoadObs = new wxButton( this, wxID_ANY, _("Load Project..."), wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizerBottomBar->Add( m_buttonLoadObs, 0, wxALL, 5 );
+	m_buttonProjectMenu = new wxButton( this, wxID_ANY, _("Project ▼"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizerBottomBar->Add( m_buttonProjectMenu, 0, wxALL, 5 );
 
-	m_buttonSaveObs = new wxButton( this, wxID_ANY, _("Save Project..."), wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizerBottomBar->Add( m_buttonSaveObs, 0, wxALL, 5 );
-
-	wxStaticText* bottomSeparatorProjectData = new wxStaticText( this, wxID_ANY, _("|"), wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizerBottomBar->Add( bottomSeparatorProjectData, 0, wxALIGN_CENTER_VERTICAL|wxLEFT|wxRIGHT, 3 );
-
-	m_ObservationsImportObservations = new wxButton( this, wxID_ANY, _("Import Data..."), wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizerBottomBar->Add( m_ObservationsImportObservations, 0, wxALL, 5 );
-
-	m_ObservationsExportObservations = new wxButton( this, wxID_ANY, _("Export Data..."), wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizerBottomBar->Add( m_ObservationsExportObservations, 0, wxALL, 5 );
-
-	wxStaticText* bottomSeparatorDataPackage = new wxStaticText( this, wxID_ANY, _("|"), wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizerBottomBar->Add( bottomSeparatorDataPackage, 0, wxALIGN_CENTER_VERTICAL|wxLEFT|wxRIGHT, 3 );
-
-	m_buttonCreateScientificPackage = new wxButton( this, wxID_ANY, _("Data Package..."), wxDefaultPosition, wxDefaultSize, 0 );
-	fgSizerBottomBar->Add( m_buttonCreateScientificPackage, 0, wxALL, 5 );
+	m_buttonDataMenu = new wxButton( this, wxID_ANY, _("Data ▼"), wxDefaultPosition, wxDefaultSize, 0 );
+	fgSizerBottomBar->Add( m_buttonDataMenu, 0, wxALL, 5 );
 
 	fgSizerBottomBar->Add( 0, 0, 1, wxEXPAND, 5 );
 
@@ -392,7 +366,6 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 	this->Connect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( ooControlDialogDef::ooControlDialogDefOnClose ) );
 	m_notebookControl->Connect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( ooControlDialogDef::OnNotebookPageChanged ), NULL, this );
 	m_ProjectEditUse->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectEditUse ), NULL, this );
-	m_ProjectNew->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectNew ), NULL, this );
 	m_ProjectNewColumn->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectNewColumn ), NULL, this );
 	m_ProjectMoveColumnLeft->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectMoveColumnLeft ), NULL, this );
 	m_ProjectMoveColumnRight->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectMoveColumnRight ), NULL, this );
@@ -400,18 +373,13 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 	m_gridProject->Connect( wxEVT_GRID_SELECT_CELL, wxGridEventHandler( ooControlDialogDef::OnProjectGridSelect ), NULL, this );
 	m_gridProject->Connect( wxEVT_GRID_RANGE_SELECT, wxGridRangeSelectEventHandler( ooControlDialogDef::OnProjectGridRangeSelect ), NULL, this );
 	m_buttonScanNmea->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickScanNmea ), NULL, this );
-	m_buttonCleanNmeaRecordings->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickCleanNmeaRecordings ), NULL, this );
 	m_checkShowAdvancedNmeaFields->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnCheckBoxShowAdvancedNmeaFields ), NULL, this );
-	m_buttonOpenResourcesFolder->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickOpenResourcesFolder ), NULL, this );
 	m_buttonRefreshListings->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickRefreshListings ), NULL, this );
 	m_ObservationsNew->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickNewObservation ), NULL, this );
 	m_ObservationsDelete->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickDeleteObservation ), NULL, this );
 	m_checkShowObservationMarks->Connect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnCheckBoxShowObservationMarks ), NULL, this );
-	m_buttonLoadObs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickLoadObservation ), NULL, this );
-	m_buttonSaveObs->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickSaveObservation ), NULL, this );
-	m_ObservationsImportObservations->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickImportObservations ), NULL, this );
-	m_ObservationsExportObservations->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickExportObservations ), NULL, this );
-	m_buttonCreateScientificPackage->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickDataPackage ), NULL, this );
+	m_buttonProjectMenu->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectMenu ), NULL, this );
+	m_buttonDataMenu->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickDataMenu ), NULL, this );
 	m_choiceObservations->Connect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( ooControlDialogDef::OnChoiceObservationsChanged ), NULL, this );
 
 	return true;
@@ -424,7 +392,6 @@ ooControlDialogDef::~ooControlDialogDef()
 	this->Disconnect( wxEVT_CLOSE_WINDOW, wxCloseEventHandler( ooControlDialogDef::ooControlDialogDefOnClose ) );
 	m_notebookControl->Disconnect( wxEVT_COMMAND_NOTEBOOK_PAGE_CHANGED, wxNotebookEventHandler( ooControlDialogDef::OnNotebookPageChanged ), NULL, this );
 	m_ProjectEditUse->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectEditUse ), NULL, this );
-	m_ProjectNew->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectNew ), NULL, this );
 	m_ProjectNewColumn->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectNewColumn ), NULL, this );
 	m_ProjectMoveColumnLeft->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectMoveColumnLeft ), NULL, this );
 	m_ProjectMoveColumnRight->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectMoveColumnRight ), NULL, this );
@@ -432,18 +399,13 @@ ooControlDialogDef::~ooControlDialogDef()
 	m_gridProject->Disconnect( wxEVT_GRID_SELECT_CELL, wxGridEventHandler( ooControlDialogDef::OnProjectGridSelect ), NULL, this );
 	m_gridProject->Disconnect( wxEVT_GRID_RANGE_SELECT, wxGridRangeSelectEventHandler( ooControlDialogDef::OnProjectGridRangeSelect ), NULL, this );
 	m_buttonScanNmea->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickScanNmea ), NULL, this );
-	m_buttonCleanNmeaRecordings->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickCleanNmeaRecordings ), NULL, this );
 	m_checkShowAdvancedNmeaFields->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnCheckBoxShowAdvancedNmeaFields ), NULL, this );
-	m_buttonOpenResourcesFolder->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickOpenResourcesFolder ), NULL, this );
 	m_buttonRefreshListings->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickRefreshListings ), NULL, this );
 	m_ObservationsNew->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickNewObservation ), NULL, this );
 	m_ObservationsDelete->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickDeleteObservation ), NULL, this );
 	m_checkShowObservationMarks->Disconnect( wxEVT_COMMAND_CHECKBOX_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnCheckBoxShowObservationMarks ), NULL, this );
-	m_buttonLoadObs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickLoadObservation ), NULL, this );
-	m_buttonSaveObs->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickSaveObservation ), NULL, this );
-	m_ObservationsImportObservations->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickImportObservations ), NULL, this );
-	m_ObservationsExportObservations->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickExportObservations ), NULL, this );
-	m_buttonCreateScientificPackage->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickDataPackage ), NULL, this );
+	m_buttonProjectMenu->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectMenu ), NULL, this );
+	m_buttonDataMenu->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickDataMenu ), NULL, this );
 	m_choiceObservations->Disconnect( wxEVT_COMMAND_CHOICE_SELECTED, wxCommandEventHandler( ooControlDialogDef::OnChoiceObservationsChanged ), NULL, this );
 
 }
