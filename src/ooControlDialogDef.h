@@ -49,6 +49,8 @@ class ooControlDialogDef : public wxFrame
 		wxPanel* m_panelProject;
 		wxButton* m_ProjectEditUse;
 		wxButton* m_ProjectNewColumn;
+		wxButton* m_ProjectMoveColumnLeft;
+		wxButton* m_ProjectMoveColumnRight;
 		wxButton* m_ProjectDeleteColumn;
 		wxButton* m_ProjectNew;
 		wxStaticLine* m_staticline3;
@@ -105,6 +107,8 @@ class ooControlDialogDef : public wxFrame
 		virtual void OnNotebookPageChanged( wxNotebookEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickProjectEditUse( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickProjectNewColumn( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickProjectMoveColumnLeft( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnButtonClickProjectMoveColumnRight( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickProjectDeleteColumn( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnButtonClickProjectNew( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnProjectGridSelect( wxGridEvent& event ) { event.Skip(); }

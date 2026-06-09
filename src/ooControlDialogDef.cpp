@@ -50,7 +50,7 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	fgSizerProject->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_ALL );
 
 	wxFlexGridSizer* fgSizerProjectButtons;
-	fgSizerProjectButtons = new wxFlexGridSizer( 1, 6, 0, 0 );
+	fgSizerProjectButtons = new wxFlexGridSizer( 1, 8, 0, 0 );
 	fgSizerProjectButtons->AddGrowableCol( 0 );
 	fgSizerProjectButtons->SetFlexibleDirection( wxBOTH );
 	fgSizerProjectButtons->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
@@ -69,6 +69,16 @@ bool ooControlDialogDef::Create( wxWindow* parent, wxWindowID id, const wxString
 	m_ProjectNewColumn->Enable( false );
 
 	fgSizerProjectButtons->Add( m_ProjectNewColumn, 0, wxALL, 5 );
+
+	m_ProjectMoveColumnLeft = new wxButton( m_panelProject, wxID_ANY, _("Move Left"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_ProjectMoveColumnLeft->Enable( false );
+
+	fgSizerProjectButtons->Add( m_ProjectMoveColumnLeft, 0, wxALL, 5 );
+
+	m_ProjectMoveColumnRight = new wxButton( m_panelProject, wxID_ANY, _("Move Right"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_ProjectMoveColumnRight->Enable( false );
+
+	fgSizerProjectButtons->Add( m_ProjectMoveColumnRight, 0, wxALL, 5 );
 
 	m_ProjectDeleteColumn = new wxButton( m_panelProject, wxID_ANY, _("Delete Selected"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_ProjectDeleteColumn->Enable( false );
@@ -384,6 +394,8 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 	m_ProjectEditUse->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectEditUse ), NULL, this );
 	m_ProjectNew->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectNew ), NULL, this );
 	m_ProjectNewColumn->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectNewColumn ), NULL, this );
+	m_ProjectMoveColumnLeft->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectMoveColumnLeft ), NULL, this );
+	m_ProjectMoveColumnRight->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectMoveColumnRight ), NULL, this );
 	m_ProjectDeleteColumn->Connect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectDeleteColumn ), NULL, this );
 	m_gridProject->Connect( wxEVT_GRID_SELECT_CELL, wxGridEventHandler( ooControlDialogDef::OnProjectGridSelect ), NULL, this );
 	m_gridProject->Connect( wxEVT_GRID_RANGE_SELECT, wxGridRangeSelectEventHandler( ooControlDialogDef::OnProjectGridRangeSelect ), NULL, this );
@@ -414,6 +426,8 @@ ooControlDialogDef::~ooControlDialogDef()
 	m_ProjectEditUse->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectEditUse ), NULL, this );
 	m_ProjectNew->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectNew ), NULL, this );
 	m_ProjectNewColumn->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectNewColumn ), NULL, this );
+	m_ProjectMoveColumnLeft->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectMoveColumnLeft ), NULL, this );
+	m_ProjectMoveColumnRight->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectMoveColumnRight ), NULL, this );
 	m_ProjectDeleteColumn->Disconnect( wxEVT_COMMAND_BUTTON_CLICKED, wxCommandEventHandler( ooControlDialogDef::OnButtonClickProjectDeleteColumn ), NULL, this );
 	m_gridProject->Disconnect( wxEVT_GRID_SELECT_CELL, wxGridEventHandler( ooControlDialogDef::OnProjectGridSelect ), NULL, this );
 	m_gridProject->Disconnect( wxEVT_GRID_RANGE_SELECT, wxGridRangeSelectEventHandler( ooControlDialogDef::OnProjectGridRangeSelect ), NULL, this );

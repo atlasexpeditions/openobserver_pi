@@ -2366,7 +2366,10 @@ void ooControlDialogImpl::SetProjectEditable(bool editable)
         m_gridProject->Enable();
         m_ProjectNew->Enable();
         m_ProjectNewColumn->Enable();
+        m_ProjectMoveColumnLeft->Enable();
+        m_ProjectMoveColumnRight->Enable();
         m_ProjectDeleteColumn->Enable();
+        OnProjectGridSelectionChange();
         m_textProjectName->Enable();
         m_textProjectDescription->Enable();
         m_colourProject->Enable();
@@ -2376,6 +2379,8 @@ void ooControlDialogImpl::SetProjectEditable(bool editable)
         m_gridProject->Disable();
         m_ProjectNew->Disable();
         m_ProjectNewColumn->Disable();
+        m_ProjectMoveColumnLeft->Disable();
+        m_ProjectMoveColumnRight->Disable();
         m_ProjectDeleteColumn->Disable();
         m_colourProject->Disable();
         m_listMarkIcons->Disable();
@@ -2438,18 +2443,69 @@ void ooControlDialogImpl::OnButtonClickProjectNewColumn(wxCommandEvent& event)
     ApplyProjectGridReadabilityStyle(m_gridProject);
 }
 
+void ooControlDialogImpl::MoveSelectedProjectColumn(int direction)
+{
+    if (!m_gridProject) return;
+    if (m_gridProject->GetNumberCols() < 2) return;
+
+    const wxArrayInt selection = m_gridProject->GetSelectedCols();
+
+    // Keep this first version intentionally simple: one selected project field,
+    // one step left or right. It is safer for protocol editing and easier to test.
+    if (selection.GetCount() != 1) return;
+
+    const int from = selection[0];
+    const int to = from + direction;
+
+    if (to < 0 || to >= m_gridProject->GetNumberCols()) return;
+
+    const wxString labelFrom = m_gridProject->GetCellValue(0, from);
+    const wxString typeFrom = m_gridProject->GetCellValue(1, from);
+    const int sizeFrom = m_gridProject->GetColSize(from);
+
+    const wxString labelTo = m_gridProject->GetCellValue(0, to);
+    const wxString typeTo = m_gridProject->GetCellValue(1, to);
+    const int sizeTo = m_gridProject->GetColSize(to);
+
+    m_gridProject->SetCellValue(0, from, labelTo);
+    m_gridProject->SetCellValue(1, from, typeTo);
+    m_gridProject->SetColSize(from, sizeTo);
+
+    m_gridProject->SetCellValue(0, to, labelFrom);
+    m_gridProject->SetCellValue(1, to, typeFrom);
+    m_gridProject->SetColSize(to, sizeFrom);
+
+    m_gridProject->ClearSelection();
+    m_gridProject->SelectCol(to);
+    m_gridProject->SetGridCursor(0, to);
+
+    UpdateProjectCellEditors();
+    ApplyProjectGridReadabilityStyle(m_gridProject);
+    OnProjectGridSelectionChange();
+}
+
+void ooControlDialogImpl::OnButtonClickProjectMoveColumnLeft(wxCommandEvent& event)
+{
+    MoveSelectedProjectColumn(-1);
+}
+
+void ooControlDialogImpl::OnButtonClickProjectMoveColumnRight(wxCommandEvent& event)
+{
+    MoveSelectedProjectColumn(1);
+}
+
 void ooControlDialogImpl::OnButtonClickProjectDeleteColumn(wxCommandEvent& event)
 {
     if (m_gridProject->GetNumberCols() == 0) return;
 
     wxArrayInt selection = m_gridProject->GetSelectedCols();
-    int pos = (selection.IsEmpty() ? 0 : selection[0]);
 
     for (auto it = selection.rbegin(); it != selection.rend(); it++) {
         m_gridProject->DeleteCols(*it);
     }
 
     ApplyProjectGridReadabilityStyle(m_gridProject);
+    OnProjectGridSelectionChange();
 }
 
 void ooControlDialogImpl::OnButtonClickNewObservation( wxCommandEvent& event )
@@ -3929,8 +3985,21 @@ void ooControlDialogImpl::OnObservationsGridRangeSelect(
 void ooControlDialogImpl::OnProjectGridSelectionChange()
 {
     const wxArrayInt selectedCols = m_gridProject->GetSelectedCols();
-    m_ProjectDeleteColumn->Enable(!selectedCols.IsEmpty());
+    const bool editing = m_gridProject && m_gridProject->IsEnabled();
+    const bool oneColumnSelected = selectedCols.GetCount() == 1;
+
+    m_ProjectDeleteColumn->Enable(editing && !selectedCols.IsEmpty());
     m_ProjectDeleteColumn->SetLabel("Delete Selected");
+
+    if (!editing || !oneColumnSelected) {
+        m_ProjectMoveColumnLeft->Disable();
+        m_ProjectMoveColumnRight->Disable();
+        return;
+    }
+
+    const int selectedCol = selectedCols[0];
+    m_ProjectMoveColumnLeft->Enable(selectedCol > 0);
+    m_ProjectMoveColumnRight->Enable(selectedCol < m_gridProject->GetNumberCols() - 1);
 }
 
 void ooControlDialogImpl::OnProjectGridCellSelect(wxGridEvent& event)

@@ -79,6 +79,8 @@ public:
         void OnButtonClickProjectEditUse(wxCommandEvent& event);
         void OnButtonClickProjectNew(wxCommandEvent& event);
 	      void OnButtonClickProjectNewColumn(wxCommandEvent& event);
+        void OnButtonClickProjectMoveColumnLeft(wxCommandEvent& event);
+        void OnButtonClickProjectMoveColumnRight(wxCommandEvent& event);
         void OnButtonClickProjectDeleteColumn(wxCommandEvent& event);
         void OnProjectColourChanged(wxColourPickerEvent& event);
 
@@ -130,6 +132,7 @@ public:
         void SyncShowObservationMarksCheckboxWithData();
         void RefreshListings();
         void OnProjectGridSelectionChange();
+        void MoveSelectedProjectColumn(int direction);
         void GoToObservationMarkForRow(int row);
 
         bool m_markIconsLoaded;
