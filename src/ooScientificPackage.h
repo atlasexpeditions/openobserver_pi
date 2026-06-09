@@ -103,6 +103,13 @@ private:
         wxString& errorMessage,
         RunSummary& runSummary);
 
+    static bool ExportDailyCsvFiles(
+        ooObservations* observations,
+        const wxString& packageDir,
+        const wxArrayString& dates,
+        wxString& errorMessage,
+        RunSummary& runSummary);
+
     static bool CopyNmeaRecordings(
         ooObservations* observations,
         const wxString& packageDir,

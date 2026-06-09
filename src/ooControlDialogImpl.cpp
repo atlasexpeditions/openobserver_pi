@@ -2939,7 +2939,7 @@ static bool ReadDataPackageSettings(
 
     const wxString settingsPath =
         packageDir + wxFILE_SEP_PATH +
-        "00_raw-data" + wxFILE_SEP_PATH +
+        "00_raw_data" + wxFILE_SEP_PATH +
         "metadata" + wxFILE_SEP_PATH +
         "data_package_settings.json";
 
@@ -2991,16 +2991,17 @@ static void ApplyDataPackageSettingsToChecklist(
         workingChecklist->Check(i, false);
     }
 
-    rawChecklist->Check(0, rawDataFolders.Index("00_raw-data/observations") != wxNOT_FOUND);
-    rawChecklist->Check(1, rawDataFolders.Index("00_raw-data/nmea-recordings") != wxNOT_FOUND);
-    rawChecklist->Check(2, rawDataFolders.Index("00_raw-data/tracks") != wxNOT_FOUND);
+    rawChecklist->Check(0, rawDataFolders.Index("00_raw_data/observations") != wxNOT_FOUND);
+    rawChecklist->Check(1, rawDataFolders.Index("00_raw_data/nmea_recordings") != wxNOT_FOUND);
+    rawChecklist->Check(2, rawDataFolders.Index("00_raw_data/tracks") != wxNOT_FOUND);
 
-    dailyChecklist->Check(0, dailyFolders.Index("photos") != wxNOT_FOUND);
-    dailyChecklist->Check(1, dailyFolders.Index("audio") != wxNOT_FOUND);
-    dailyChecklist->Check(2, dailyFolders.Index("video") != wxNOT_FOUND);
-    dailyChecklist->Check(3, dailyFolders.Index("tracks") != wxNOT_FOUND);
-    dailyChecklist->Check(4, dailyFolders.Index("nmea") != wxNOT_FOUND);
-    dailyChecklist->Check(5, dailyFolders.Index("samples") != wxNOT_FOUND);
+    dailyChecklist->Check(0, dailyFolders.Index("daily_csv") != wxNOT_FOUND);
+    dailyChecklist->Check(1, dailyFolders.Index("photos") != wxNOT_FOUND);
+    dailyChecklist->Check(2, dailyFolders.Index("audio") != wxNOT_FOUND);
+    dailyChecklist->Check(3, dailyFolders.Index("video") != wxNOT_FOUND);
+    dailyChecklist->Check(4, dailyFolders.Index("tracks") != wxNOT_FOUND);
+    dailyChecklist->Check(5, dailyFolders.Index("nmea") != wxNOT_FOUND);
+    dailyChecklist->Check(6, dailyFolders.Index("samples") != wxNOT_FOUND);
 
     workingChecklist->Check(0, workingFolders.Index("02_working") != wxNOT_FOUND);
 }
@@ -3089,18 +3090,18 @@ static bool ShowDataPackageFolderDialog(
     wxStaticText* projectInfo = new wxStaticText(
         &dialog,
         wxID_ANY,
-        _("✓ project XML in 00_raw-data/project"));
+        _("✓ project XML in 00_raw_data/project"));
 
     wxStaticText* exportsTitle = new wxStaticText(
         &dialog,
         wxID_ANY,
-        _("00_raw-data"));
+        _("00_raw_data"));
 
     exportsTitle->SetFont(sectionFont);
 
     wxArrayString rawChoices;
     rawChoices.Add(_("observations"));
-    rawChoices.Add(_("nmea-recordings"));
+    rawChoices.Add(_("nmea_recordings"));
     rawChoices.Add(_("tracks"));
 
     wxCheckListBox* rawChecklist = new wxCheckListBox(
@@ -3113,11 +3114,12 @@ static bool ShowDataPackageFolderDialog(
     wxStaticText* dailyTitle = new wxStaticText(
         &dialog,
         wxID_ANY,
-        _("01_daily-media"));
+        _("01_daily_data"));
 
     dailyTitle->SetFont(sectionFont);
 
     wxArrayString dailyChoices;
+    dailyChoices.Add(_("daily.csv"));
     dailyChoices.Add(_("photos"));
     dailyChoices.Add(_("audio"));
     dailyChoices.Add(_("video"));
@@ -3265,16 +3267,17 @@ static bool ShowDataPackageFolderDialog(
     selectedWorkingFolders.Clear();
     selectedRawDataFolders.Clear();
 
-    if (rawChecklist->IsChecked(0)) selectedRawDataFolders.Add("00_raw-data/observations");
-    if (rawChecklist->IsChecked(1)) selectedRawDataFolders.Add("00_raw-data/nmea-recordings");
-    if (rawChecklist->IsChecked(2)) selectedRawDataFolders.Add("00_raw-data/tracks");
+    if (rawChecklist->IsChecked(0)) selectedRawDataFolders.Add("00_raw_data/observations");
+    if (rawChecklist->IsChecked(1)) selectedRawDataFolders.Add("00_raw_data/nmea_recordings");
+    if (rawChecklist->IsChecked(2)) selectedRawDataFolders.Add("00_raw_data/tracks");
 
-    if (dailyChecklist->IsChecked(0)) selectedDailyFolders.Add("photos");
-    if (dailyChecklist->IsChecked(1)) selectedDailyFolders.Add("audio");
-    if (dailyChecklist->IsChecked(2)) selectedDailyFolders.Add("video");
-    if (dailyChecklist->IsChecked(3)) selectedDailyFolders.Add("tracks");
-    if (dailyChecklist->IsChecked(4)) selectedDailyFolders.Add("nmea");
-    if (dailyChecklist->IsChecked(5)) selectedDailyFolders.Add("samples");
+    if (dailyChecklist->IsChecked(0)) selectedDailyFolders.Add("daily_csv");
+    if (dailyChecklist->IsChecked(1)) selectedDailyFolders.Add("photos");
+    if (dailyChecklist->IsChecked(2)) selectedDailyFolders.Add("audio");
+    if (dailyChecklist->IsChecked(3)) selectedDailyFolders.Add("video");
+    if (dailyChecklist->IsChecked(4)) selectedDailyFolders.Add("tracks");
+    if (dailyChecklist->IsChecked(5)) selectedDailyFolders.Add("nmea");
+    if (dailyChecklist->IsChecked(6)) selectedDailyFolders.Add("samples");
 
     if (workingChecklist->IsChecked(0)) selectedWorkingFolders.Add("02_working");
 
@@ -3404,7 +3407,7 @@ void ooControlDialogImpl::OnButtonClickCreateScientificPackage(wxCommandEvent& e
         wxString::Format(_("• %d daily GPX tracks exported\n"), runSummary.gpxDailyTracksExported) +
         wxString::Format(_("• %d raw OpenCPN GPX tracks exported\n"), runSummary.gpxCompiledTracksExported) +
         wxString::Format(_("• %d GPX track points exported\n"), runSummary.gpxTrackPointsExported) +
-        _("\nA detailed log was written to:\n00_raw-data/metadata/data_package_last_run.txt"),
+        _("\nA detailed log was written to:\n00_raw_data/metadata/data_package_last_run.txt"),
         _("Create Data Package"),
         wxOK | wxICON_INFORMATION,
         this);
@@ -3461,7 +3464,7 @@ void ooControlDialogImpl::OnButtonClickUpdateScientificPackage(wxCommandEvent& e
         wxString::Format(_("• %d daily GPX tracks exported\n"), runSummary.gpxDailyTracksExported) +
         wxString::Format(_("• %d raw OpenCPN GPX tracks exported\n"), runSummary.gpxCompiledTracksExported) +
         wxString::Format(_("• %d GPX track points exported\n"), runSummary.gpxTrackPointsExported) +
-        _("\nA detailed log was written to:\n00_raw-data/metadata/data_package_last_run.txt"),
+        _("\nA detailed log was written to:\n00_raw_data/metadata/data_package_last_run.txt"),
         _("Update Data Package"),
         wxOK | wxICON_INFORMATION,
         this);

@@ -1003,6 +1003,91 @@ void ooObservations::SaveToCSV(wxFile *file, bool stripMarkGuid)
     }
 }
 
+void ooObservations::SaveToCSVForDate(wxFile *file, const wxString& date, bool stripMarkGuid)
+{
+    const int C = GetNumberCols();
+    const int R = GetNumberRows();
+
+    int markGuidCol = -1;
+    int dateCol = -1;
+    int timestampCol = -1;
+
+    if (m_project.GetColCount() == C) {
+        for (int c = 0; c < C; ++c) {
+            const wxString fieldType = m_project.GetColFieldTypes()[c];
+
+            if (stripMarkGuid && IsInternalObservationFieldType(fieldType)) {
+                markGuidCol = c;
+            }
+
+            if (fieldType.IsSameAs("Start Date")) {
+                dateCol = c;
+            } else if (fieldType.IsSameAs("Start Timestamp UTC")) {
+                timestampCol = c;
+            }
+        }
+    }
+
+    wxString normalizedDate = date;
+    normalizedDate.Trim(true);
+    normalizedDate.Trim(false);
+    normalizedDate.Replace("/", "-");
+
+    for (int c = 0; c < C; ++c)
+    {
+        file->Write(EscapeCSVCell(GetColLabelValue(c)));
+
+        if (c < (C - 1))
+            file->Write(",");
+    }
+    file->Write("\n");
+
+    for (int r = 0; r < R; ++r)
+    {
+        wxString rowDate;
+
+        if (dateCol >= 0) {
+            rowDate = GetValue(r, dateCol);
+            rowDate.Trim(true);
+            rowDate.Trim(false);
+        }
+
+        if (rowDate.IsEmpty() && timestampCol >= 0) {
+            wxString timestamp = GetValue(r, timestampCol);
+            timestamp.Trim(true);
+            timestamp.Trim(false);
+
+            if (timestamp.Length() >= 10) {
+                rowDate = timestamp.Left(10);
+            }
+        }
+
+        if (rowDate.Length() >= 10) {
+            rowDate = rowDate.Left(10);
+            rowDate.Replace("/", "-");
+        }
+
+        if (!rowDate.IsSameAs(normalizedDate)) {
+            continue;
+        }
+
+        for (int c = 0; c < C; ++c)
+        {
+            wxString cellValue = GetValue(r, c);
+
+            if (stripMarkGuid && c == markGuidCol) {
+                cellValue.Clear();
+            }
+
+            file->Write(EscapeCSVCell(cellValue));
+
+            if (c < (C - 1))
+                file->Write(",");
+        }
+        file->Write("\n");
+    }
+}
+
 static wxArrayString ParseCSVLine(const wxString& line)
 {
     wxArrayString cells;

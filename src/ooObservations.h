@@ -152,6 +152,7 @@ public:
     const ooProject& GetProject() const;
 
    void SaveToCSV(wxFile *file, bool stripMarkGuid = false);
+   void SaveToCSVForDate(wxFile *file, const wxString& date, bool stripMarkGuid = false);
     bool ReadFromCSV(const wxString& filename, wxString& err);
     void SaveToXML(wxFile *file, bool stripMarkGuid = false);
     bool ReadFromXML(const wxString& filename, const ooProject& defaultProject);
