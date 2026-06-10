@@ -2913,6 +2913,9 @@ void ooControlDialogImpl::OnButtonClickCreateProjectFromTable(wxCommandEvent& ev
     wxArrayString labels;
     wxArrayString fieldTypes;
     wxGridSizesInfo colSizes;
+    wxArrayString automaticallyAddedRequiredFields;
+
+    const wxArrayString availableFieldTypes = ooObservations::GetObservationFieldTypes();
 
     for (size_t i = 0; i < table.headers.GetCount(); ++i) {
         wxString label = table.headers[i];
@@ -2923,13 +2926,16 @@ void ooControlDialogImpl::OnButtonClickCreateProjectFromTable(wxCommandEvent& ev
             continue;
         }
 
-        const int col = static_cast<int>(labels.GetCount());
+        const wxString suggestedFieldType =
+            ooProjectFieldMapper::SuggestFieldTypeForColumn(label, availableFieldTypes);
+
+        if (ooObservations::IsInternalObservationFieldType(suggestedFieldType)) {
+            continue;
+        }
 
         labels.Add(label);
-        fieldTypes.Add(ooProjectFieldMapper::SuggestFieldTypeForColumn(label));
-        colSizes.m_customSizes[col] = 160;
+        fieldTypes.Add(suggestedFieldType);
     }
-
     if (labels.IsEmpty()) {
         wxMessageBox(
             "No usable column headers were found in the CSV file.",
@@ -2937,6 +2943,40 @@ void ooControlDialogImpl::OnButtonClickCreateProjectFromTable(wxCommandEvent& ev
             wxOK | wxICON_ERROR,
             this);
         return;
+    }
+    auto hasFieldType = [&](const wxString& fieldType) {
+        return fieldTypes.Index(fieldType) != wxNOT_FOUND;
+    };
+
+    auto prependRequiredField = [&](const wxString& fieldType) {
+        if (hasFieldType(fieldType)) {
+            return;
+        }
+
+        labels.Insert(fieldType, 0);
+        fieldTypes.Insert(fieldType, 0);
+        automaticallyAddedRequiredFields.Insert(fieldType, 0);
+    };
+
+    // Open Observer needs a stable timestamp and position bridge.
+    // Add these visible technical fields at the beginning so the user sees them
+    // immediately and can keep protocol-specific columns after them.
+    prependRequiredField("Start Longitude");
+    prependRequiredField("Start Latitude");
+    prependRequiredField("Start Timestamp UTC");
+
+    // Mark GUID is internal and should stay quiet: it lives at the end and is
+    // hidden from the user-facing project grid.
+    if (!hasFieldType("Mark GUID")) {
+        labels.Add("Mark GUID");
+        fieldTypes.Add("Mark GUID");
+    }
+
+    colSizes.m_customSizes.clear();
+
+    for (int c = 0; c < static_cast<int>(labels.GetCount()); ++c) {
+        colSizes.m_customSizes[c] =
+            ooObservations::IsInternalObservationFieldType(fieldTypes[c]) ? 0 : 160;
     }
 
     wxFileName sourceFile(openFileDialog.GetPath());
@@ -2962,6 +3002,22 @@ void ooControlDialogImpl::OnButtonClickCreateProjectFromTable(wxCommandEvent& ev
     ClearCurrentObservationsForNewProject();
     LoadProject(project);
     SetProjectEditable(true);
+
+    if (!automaticallyAddedRequiredFields.IsEmpty()) {
+        wxString addedFieldsMessage =
+            "Open Observer needs valid timestamp and position fields.\n\n"
+            "The following field types were added automatically at the beginning of your template:\n";
+
+        for (size_t i = 0; i < automaticallyAddedRequiredFields.GetCount(); ++i) {
+            addedFieldsMessage += "- " + automaticallyAddedRequiredFields[i] + "\n";
+        }
+
+        wxMessageBox(
+            addedFieldsMessage,
+            "Required fields added",
+            wxOK | wxICON_INFORMATION,
+            this);
+    }
 
     wxMessageBox(
         wxString::Format(
