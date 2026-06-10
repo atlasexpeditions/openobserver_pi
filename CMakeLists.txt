@@ -178,6 +178,8 @@ add_definitions(-DUSE_S57)
 set(SRCS 
     src/openobserver_pi.cpp
     src/ooObservations.cpp
+    src/ooTableImport.cpp
+    src/ooProjectFieldMapper.cpp
     src/ooScientificPackage.cpp
     src/ooGpxTrackExport.cpp
     src/ooObservationHighlight.cpp
@@ -195,6 +197,8 @@ set(SRCS
 set(HDRS
     src/openobserver_pi.h
     src/ooObservations.h
+    src/ooTableImport.h
+    src/ooProjectFieldMapper.h
     src/ooObservationHighlight.h
     src/ooControlDialogDef.h
     src/ooControlDialogImpl.h

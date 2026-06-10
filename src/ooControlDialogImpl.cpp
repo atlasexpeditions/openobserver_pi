@@ -49,7 +49,9 @@
 #include <wx/mstream.h>
 
 #include "ooControlDialogImpl.h"
+#include "ooProjectFieldMapper.h"
 #include "ooScientificPackage.h"
+#include "ooTableImport.h"
 #include "openobserver_pi.h"
 
 #include "ocpn_plugin.h"
@@ -143,6 +145,21 @@ static wxString JoinControlPath(const wxString& a, const wxString& b)
 {
     wxFileName fn(a, b);
     return fn.GetFullPath();
+}
+
+static void OpenContainingFolder(const wxString& filePath)
+{
+    wxFileName file(filePath);
+
+    if (!file.IsOk()) {
+        return;
+    }
+
+    const wxString folderPath = file.GetPath();
+
+    if (!folderPath.IsEmpty()) {
+        wxLaunchDefaultApplication(folderPath);
+    }
 }
 
 static wxXmlNode* FindControlXmlChild(wxXmlNode* parent, const wxString& name)
@@ -1672,6 +1689,7 @@ bool ooControlDialogImpl::SaveObservations(const wxString& filename, bool stopOb
         ClearObservationsDirty("internal save | " + savePath);
     } else {
         LogObservationSaveEvent("EXTERNAL SAVE | dirty state preserved | " + savePath);
+        OpenContainingFolder(savePath);
     }
 
     return true;
@@ -2422,6 +2440,10 @@ void ooControlDialogImpl::OnButtonClickProjectNew(wxCommandEvent& event)
 
     if (response != wxYES) return;
 
+    if (m_notebookControl) {
+        m_notebookControl->SetSelection(0);
+    }
+
     ClearCurrentObservationsForNewProject();
     NewProject();
     UseProject();
@@ -2844,6 +2866,113 @@ void ooControlDialogImpl::CommitCurrentObservationsGridEdit()
     }
 }
 
+void ooControlDialogImpl::OnButtonClickCreateProjectFromTable(wxCommandEvent& event)
+{
+    const int response = wxMessageBox(
+        "This will prepare a new Open Observer project from the header row of a CSV table.\n\n"
+        "Existing observations in the current project will be cleared, but the CSV file itself will not be modified.\n\n"
+        "Do you want to continue?",
+        "Create project from table",
+        wxYES_NO | wxICON_WARNING,
+        this);
+
+    if (response != wxYES) return;
+
+    wxFileDialog openFileDialog(
+        this,
+        _("Choose a CSV table"),
+        "",
+        "",
+        "CSV files (*.csv)|*.csv|All files (*.*)|*.*",
+        wxFD_OPEN | wxFD_FILE_MUST_EXIST);
+
+    if (openFileDialog.ShowModal() == wxID_CANCEL) {
+        return;
+    }
+
+    wxFileName selectedFile(openFileDialog.GetPath());
+
+    if (!selectedFile.GetExt().IsSameAs("csv", false)) {
+        wxMessageBox(
+            "Create from Table currently supports CSV files only.\n\n"
+            "Please export your table as CSV first, then try again.",
+            "Create project from table",
+            wxOK | wxICON_WARNING,
+            this);
+        return;
+    }
+
+    ooImportedTable table;
+    wxString errorMessage;
+
+    if (!ooTableImport::ReadCsvHeaders(openFileDialog.GetPath(), table, errorMessage)) {
+        wxMessageBox(errorMessage, "Create project from table", wxOK | wxICON_ERROR, this);
+        return;
+    }
+
+    wxArrayString labels;
+    wxArrayString fieldTypes;
+    wxGridSizesInfo colSizes;
+
+    for (size_t i = 0; i < table.headers.GetCount(); ++i) {
+        wxString label = table.headers[i];
+        label.Trim(true);
+        label.Trim(false);
+
+        if (label.IsEmpty()) {
+            continue;
+        }
+
+        const int col = static_cast<int>(labels.GetCount());
+
+        labels.Add(label);
+        fieldTypes.Add(ooProjectFieldMapper::SuggestFieldTypeForColumn(label));
+        colSizes.m_customSizes[col] = 160;
+    }
+
+    if (labels.IsEmpty()) {
+        wxMessageBox(
+            "No usable column headers were found in the CSV file.",
+            "Create project from table",
+            wxOK | wxICON_ERROR,
+            this);
+        return;
+    }
+
+    wxFileName sourceFile(openFileDialog.GetPath());
+    wxString projectName = sourceFile.GetName();
+
+    if (projectName.IsEmpty()) {
+        projectName = "Project from table";
+    }
+
+    ooProject project(
+        projectName,
+        "Project structure created from CSV table headers. Review field types before clicking Use.",
+        colSizes,
+        fieldTypes,
+        labels,
+        DEFAULT_PROJECT_COLOUR,
+        DEFAULT_PROJECT_ICON);
+
+    if (m_notebookControl) {
+        m_notebookControl->SetSelection(0);
+    }
+
+    ClearCurrentObservationsForNewProject();
+    LoadProject(project);
+    SetProjectEditable(true);
+
+    wxMessageBox(
+        wxString::Format(
+            "Project structure created from %lu CSV columns.\n\n"
+            "Please review field types in the Project tab, then click Use to apply the project.",
+            static_cast<unsigned long>(labels.GetCount())),
+        "Create project from table",
+        wxOK | wxICON_INFORMATION,
+        this);
+}
+
 void ooControlDialogImpl::OnButtonClickProjectMenu(wxCommandEvent& event)
 {
     wxMenu menu;
@@ -2851,7 +2980,7 @@ void ooControlDialogImpl::OnButtonClickProjectMenu(wxCommandEvent& event)
     const int idLoadProject = wxWindow::NewControlId();
     const int idSaveProject = wxWindow::NewControlId();
     const int idNewProject = wxWindow::NewControlId();
-    const int idCreateFromExcel = wxWindow::NewControlId();
+    const int idCreateFromTable = wxWindow::NewControlId();
     const int idExportTemplate = wxWindow::NewControlId();
     const int idOpenResourcesFolder = wxWindow::NewControlId();
 
@@ -2859,17 +2988,17 @@ void ooControlDialogImpl::OnButtonClickProjectMenu(wxCommandEvent& event)
     menu.Append(idSaveProject, _("Save..."));
     menu.AppendSeparator();
     menu.Append(idNewProject, _("New Project..."));
-    menu.Append(idCreateFromExcel, _("Create from Excel..."));
+    menu.Append(idCreateFromTable, _("Create from Table..."));
     menu.Append(idExportTemplate, _("Export Template..."));
     menu.AppendSeparator();
     menu.Append(idOpenResourcesFolder, _("Open Resources Folder"));
 
-    menu.Enable(idCreateFromExcel, false);
     menu.Enable(idExportTemplate, false);
 
     Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickLoadObservation, this, idLoadProject);
     Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickSaveObservation, this, idSaveProject);
     Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickProjectNew, this, idNewProject);
+    Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickCreateProjectFromTable, this, idCreateFromTable);
     Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickOpenResourcesFolder, this, idOpenResourcesFolder);
 
     PopupMenu(
@@ -2880,6 +3009,7 @@ void ooControlDialogImpl::OnButtonClickProjectMenu(wxCommandEvent& event)
     Unbind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickLoadObservation, this, idLoadProject);
     Unbind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickSaveObservation, this, idSaveProject);
     Unbind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickProjectNew, this, idNewProject);
+    Unbind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickCreateProjectFromTable, this, idCreateFromTable);
     Unbind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickOpenResourcesFolder, this, idOpenResourcesFolder);
 }
 
@@ -2934,15 +3064,22 @@ void ooControlDialogImpl::OnButtonClickExportObservations( wxCommandEvent& event
     if (exportFileDialog.ShowModal() == wxID_CANCEL)
         return;
  
-    wxFileOutputStream output_stream(exportFileDialog.GetPath());
+    const wxString exportPath = exportFileDialog.GetPath();
+
+    wxFileOutputStream output_stream(exportPath);
     if (!output_stream.IsOk())
     {
-        wxMessageBox("Unable to save observations to file " + exportFileDialog.GetPath() + ".", "Error", wxOK, this);
+        wxMessageBox("Unable to save observations to file " + exportPath + ".", "Error", wxOK, this);
         return;
     }
 
-    if (exportFileDialog.GetPath().EndsWith("geojson")) m_Observations->SaveToGeoJSON(output_stream);
-else                                                m_Observations->SaveToCSV(output_stream.GetFile(), true);
+    if (exportPath.EndsWith("geojson")) {
+        m_Observations->SaveToGeoJSON(output_stream);
+    } else {
+        m_Observations->SaveToCSV(output_stream.GetFile(), true);
+    }
+
+    OpenContainingFolder(exportPath);
 }
 
 static bool ExtractJsonArrayValues(
@@ -3663,6 +3800,10 @@ void ooControlDialogImpl::OnButtonClickLoadObservation(wxCommandEvent& event)
                      "Error", wxOK, this);
         return;
     }
+
+    if (m_notebookControl) {
+        m_notebookControl->SetSelection(0);
+    }
 }
 
 void ooControlDialogImpl::OnButtonClickSaveObservation(wxCommandEvent& event)
@@ -3685,6 +3826,24 @@ void ooControlDialogImpl::ooControlDialogDefOnClose(wxCloseEvent& event)
 
 void ooControlDialogImpl::OnNotebookPageChanged(wxNotebookEvent& event)
 {
+    if (event.GetOldSelection() == 0 &&
+        event.GetSelection() != 0 &&
+        m_gridProject &&
+        m_gridProject->IsEnabled()) {
+        wxMessageBox(
+            "The project is currently being edited.\n\n"
+            "Please click Use before leaving the Project tab.",
+            "Project edit in progress",
+            wxOK | wxICON_INFORMATION,
+            this);
+
+        if (m_notebookControl) {
+            m_notebookControl->ChangeSelection(0);
+        }
+
+        return;
+    }
+
     if (event.GetSelection() == 0 &&
         m_Observations &&
         m_ObservationsTable &&

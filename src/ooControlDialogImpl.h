@@ -90,6 +90,7 @@ public:
         void OnButtonClickClearObservationFilter(wxCommandEvent& event);
         void OnButtonClickProjectMenu(wxCommandEvent& event) override;
         void OnButtonClickDataMenu(wxCommandEvent& event) override;
+        void OnButtonClickCreateProjectFromTable(wxCommandEvent& event);
         void OnButtonClickExportObservations( wxCommandEvent& event );
         void OnButtonClickDataPackage( wxCommandEvent& event ) override;
         void OnButtonClickCreateScientificPackage( wxCommandEvent& event ) override;

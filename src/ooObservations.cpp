@@ -964,39 +964,35 @@ void ooObservations::SaveToCSV(wxFile *file, bool stripMarkGuid)
     const int C = GetNumberCols();
     const int R = GetNumberRows();
 
-    int markGuidCol = -1;
+    wxArrayInt exportedColumns;
 
-    if (stripMarkGuid && m_project.GetColCount() == C) {
-        for (int c = 0; c < C; ++c) {
-            if (IsInternalObservationFieldType(m_project.GetColFieldTypes()[c])) {
-                markGuidCol = c;
-                break;
-            }
+    for (int c = 0; c < C; ++c) {
+        const bool isInternalColumn =
+            stripMarkGuid &&
+            m_project.GetColCount() == C &&
+            IsInternalObservationFieldType(m_project.GetColFieldTypes()[c]);
+
+        if (!isInternalColumn) {
+            exportedColumns.Add(c);
         }
     }
 
-    for (int c = 0; c < C; ++c)
+    for (size_t i = 0; i < exportedColumns.GetCount(); ++i)
     {
-        file->Write(EscapeCSVCell(GetColLabelValue(c)));
+        file->Write(EscapeCSVCell(GetColLabelValue(exportedColumns[i])));
 
-        if (c < (C - 1))
+        if (i < exportedColumns.GetCount() - 1)
             file->Write(",");
     }
     file->Write("\n");
 
     for (int r = 0; r < R; ++r)
     {
-        for (int c = 0; c < C; ++c)
+        for (size_t i = 0; i < exportedColumns.GetCount(); ++i)
         {
-            wxString cellValue = GetValue(r, c);
+            file->Write(EscapeCSVCell(GetValue(r, exportedColumns[i])));
 
-            if (stripMarkGuid && c == markGuidCol) {
-                cellValue.Clear();
-            }
-
-            file->Write(EscapeCSVCell(cellValue));
-
-            if (c < (C - 1))
+            if (i < exportedColumns.GetCount() - 1)
                 file->Write(",");
         }
         file->Write("\n");
@@ -1008,7 +1004,7 @@ void ooObservations::SaveToCSVForDate(wxFile *file, const wxString& date, bool s
     const int C = GetNumberCols();
     const int R = GetNumberRows();
 
-    int markGuidCol = -1;
+    wxArrayInt exportedColumns;
     int dateCol = -1;
     int timestampCol = -1;
 
@@ -1016,8 +1012,12 @@ void ooObservations::SaveToCSVForDate(wxFile *file, const wxString& date, bool s
         for (int c = 0; c < C; ++c) {
             const wxString fieldType = m_project.GetColFieldTypes()[c];
 
-            if (stripMarkGuid && IsInternalObservationFieldType(fieldType)) {
-                markGuidCol = c;
+            const bool isInternalColumn =
+                stripMarkGuid &&
+                IsInternalObservationFieldType(fieldType);
+
+            if (!isInternalColumn) {
+                exportedColumns.Add(c);
             }
 
             if (fieldType.IsSameAs("Start Date")) {
@@ -1026,6 +1026,10 @@ void ooObservations::SaveToCSVForDate(wxFile *file, const wxString& date, bool s
                 timestampCol = c;
             }
         }
+    } else {
+        for (int c = 0; c < C; ++c) {
+            exportedColumns.Add(c);
+        }
     }
 
     wxString normalizedDate = date;
@@ -1033,11 +1037,11 @@ void ooObservations::SaveToCSVForDate(wxFile *file, const wxString& date, bool s
     normalizedDate.Trim(false);
     normalizedDate.Replace("/", "-");
 
-    for (int c = 0; c < C; ++c)
+    for (size_t i = 0; i < exportedColumns.GetCount(); ++i)
     {
-        file->Write(EscapeCSVCell(GetColLabelValue(c)));
+        file->Write(EscapeCSVCell(GetColLabelValue(exportedColumns[i])));
 
-        if (c < (C - 1))
+        if (i < exportedColumns.GetCount() - 1)
             file->Write(",");
     }
     file->Write("\n");
@@ -1071,17 +1075,11 @@ void ooObservations::SaveToCSVForDate(wxFile *file, const wxString& date, bool s
             continue;
         }
 
-        for (int c = 0; c < C; ++c)
+        for (size_t i = 0; i < exportedColumns.GetCount(); ++i)
         {
-            wxString cellValue = GetValue(r, c);
+            file->Write(EscapeCSVCell(GetValue(r, exportedColumns[i])));
 
-            if (stripMarkGuid && c == markGuidCol) {
-                cellValue.Clear();
-            }
-
-            file->Write(EscapeCSVCell(cellValue));
-
-            if (c < (C - 1))
+            if (i < exportedColumns.GetCount() - 1)
                 file->Write(",");
         }
         file->Write("\n");
