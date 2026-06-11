@@ -2435,8 +2435,9 @@ void ooControlDialogImpl::SetProjectEditable(bool editable)
         m_ProjectMoveColumnRight->Enable();
         m_ProjectDeleteColumn->Enable();
         OnProjectGridSelectionChange();
-        m_textProjectName->Enable();
-        m_textProjectDescription->Enable();
+
+        m_textProjectName->SetEditable(true);
+        m_textProjectDescription->SetEditable(true);
         m_colourProject->Enable();
         m_listMarkIcons->Enable();
     } else {
@@ -2446,16 +2447,16 @@ void ooControlDialogImpl::SetProjectEditable(bool editable)
         m_ProjectMoveColumnLeft->Disable();
         m_ProjectMoveColumnRight->Disable();
         m_ProjectDeleteColumn->Disable();
+
+        // Keep text metadata readable in view mode.
+        // Pickers are disabled because clickable-but-unsaved edits would be misleading.
+        m_textProjectName->Enable();
+        m_textProjectName->SetEditable(false);
+        m_textProjectDescription->Enable();
+        m_textProjectDescription->SetEditable(false);
+
         m_colourProject->Disable();
         m_listMarkIcons->Disable();
-
-        // disable project name text field, first setting value in code to ensure it
-        // stays
-        m_textProjectName->SetValue(m_textProjectName->GetValue());
-        m_textProjectName->Disable();
-
-        m_textProjectDescription->SetValue(m_textProjectDescription->GetValue());
-        m_textProjectDescription->Disable();
     }
 }
 
@@ -3092,6 +3093,58 @@ void ooControlDialogImpl::OnButtonClickCreateProjectFromTable(wxCommandEvent& ev
         this);
 }
 
+void ooControlDialogImpl::OnButtonClickExportProjectTemplate(wxCommandEvent& event)
+{
+    if (!m_Observations) return;
+
+    CommitCurrentObservationsGridEdit();
+
+    ooProject project = GenerateProject();
+
+    wxFileDialog saveFileDialog(
+        this,
+        _("Export empty Open Observer project template"),
+        "",
+        project.GetName() + "_template",
+        "Open Observer XML template (*.xml)|*.xml",
+        wxFD_SAVE | wxFD_OVERWRITE_PROMPT);
+
+    if (saveFileDialog.ShowModal() == wxID_CANCEL) {
+        return;
+    }
+
+    wxString savePath = saveFileDialog.GetPath();
+    wxFileName saveFileName(savePath);
+
+    if (saveFileName.GetExt().Lower() != wxT("xml")) {
+        saveFileName.SetExt(wxT("xml"));
+        savePath = saveFileName.GetFullPath();
+    }
+
+    ooObservations templateObservations;
+    templateObservations.SetProject(project);
+
+    wxFileOutputStream outputStream(savePath);
+    if (!outputStream.IsOk()) {
+        wxMessageBox(
+            "Unable to export project template to file:\n" + savePath,
+            "Export Template",
+            wxOK | wxICON_ERROR,
+            this);
+        return;
+    }
+
+    templateObservations.SaveToXML(outputStream.GetFile(), true);
+
+    OpenContainingFolder(savePath);
+
+    wxMessageBox(
+        "Empty Open Observer project template exported successfully.",
+        "Export Template",
+        wxOK | wxICON_INFORMATION,
+        this);
+}
+
 void ooControlDialogImpl::OnButtonClickProjectMenu(wxCommandEvent& event)
 {
     wxMenu menu;
@@ -3112,12 +3165,11 @@ void ooControlDialogImpl::OnButtonClickProjectMenu(wxCommandEvent& event)
     menu.AppendSeparator();
     menu.Append(idOpenResourcesFolder, _("Open Resources Folder"));
 
-    menu.Enable(idExportTemplate, false);
-
     Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickLoadObservation, this, idLoadProject);
     Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickSaveObservation, this, idSaveProject);
     Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickProjectNew, this, idNewProject);
     Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickCreateProjectFromTable, this, idCreateFromTable);
+    Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickExportProjectTemplate, this, idExportTemplate);
     Bind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickOpenResourcesFolder, this, idOpenResourcesFolder);
 
     PopupMenu(
@@ -3129,6 +3181,7 @@ void ooControlDialogImpl::OnButtonClickProjectMenu(wxCommandEvent& event)
     Unbind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickSaveObservation, this, idSaveProject);
     Unbind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickProjectNew, this, idNewProject);
     Unbind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickCreateProjectFromTable, this, idCreateFromTable);
+    Unbind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickExportProjectTemplate, this, idExportTemplate);
     Unbind(wxEVT_MENU, &ooControlDialogImpl::OnButtonClickOpenResourcesFolder, this, idOpenResourcesFolder);
 }
 

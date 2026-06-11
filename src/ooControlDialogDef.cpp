@@ -133,8 +133,8 @@ fgSizer8->Add( 0, 0, 1, wxEXPAND, 5 );
     wxID_ANY,
     wxEmptyString,
     wxDefaultPosition,
-    wxSize( -1,80 ),
-    wxTE_MULTILINE | wxTE_PROCESS_ENTER
+    wxSize( -1,60 ),
+    wxTE_MULTILINE | wxTE_PROCESS_ENTER | wxTE_RICH2 | wxVSCROLL
 );
 m_textProjectDescription->SetBackgroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOW ) );
 m_textProjectDescription->SetForegroundColour( wxSystemSettings::GetColour( wxSYS_COLOUR_WINDOWTEXT ) );

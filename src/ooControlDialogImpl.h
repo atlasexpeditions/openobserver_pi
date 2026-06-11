@@ -91,6 +91,7 @@ public:
         void OnButtonClickProjectMenu(wxCommandEvent& event) override;
         void OnButtonClickDataMenu(wxCommandEvent& event) override;
         void OnButtonClickCreateProjectFromTable(wxCommandEvent& event);
+        void OnButtonClickExportProjectTemplate(wxCommandEvent& event);
         void OnButtonClickExportObservations( wxCommandEvent& event );
         void OnButtonClickDataPackage( wxCommandEvent& event ) override;
         void OnButtonClickCreateScientificPackage( wxCommandEvent& event ) override;
