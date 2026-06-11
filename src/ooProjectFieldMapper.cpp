@@ -95,8 +95,16 @@ wxString ooProjectFieldMapper::SuggestFieldTypeForColumn(
         return "Start Timestamp UTC";
     }
 
-    if (name.Contains("end") && name.Contains("latitude")) return "End Latitude";
-    if (name.Contains("end") && name.Contains("longitude")) return "End Longitude";
+    if ((name.Contains("end") || name.Contains("stop") || name.Contains("final")) &&
+        (name.Contains("latitude") || name.Contains(" lat ") || name.EndsWith(" lat") || name.StartsWith("lat "))) {
+        return "End Latitude";
+    }
+
+    if ((name.Contains("end") || name.Contains("stop") || name.Contains("final")) &&
+        (name.Contains("longitude") || name.Contains(" lon ") || name.EndsWith(" lon") || name.StartsWith("lon ") ||
+         name.Contains(" lng ") || name.EndsWith(" lng") || name.StartsWith("lng "))) {
+        return "End Longitude";
+    }
     if (name.Contains("start") && name.Contains("latitude")) return "Start Latitude";
     if (name.Contains("start") && name.Contains("longitude")) return "Start Longitude";
 

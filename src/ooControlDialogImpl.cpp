@@ -604,16 +604,18 @@ static wxArrayString CollectOrphanNmeaRecordingFiles(ooObservations* observation
 
 ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent) 
     : ooControlDialogDef(parent),
-      m_MiniPanel(nullptr),
-      m_Observations(nullptr),
-      m_ObservationsTable(nullptr),
-      m_isScanningNmea(false),
-      m_observationsDirty(false),
-      m_lastSafetySaveTime(wxDateTime::Now()),
-      m_viewScale(1.0),
-      m_observationsChoiceCount(1),
       m_markIconsLoaded(false),
-      m_showObservationMarks(false)
+      m_showObservationMarks(false),
+      m_observationsDirty(false),
+      m_pendingCsvImportAfterUse(false),
+      m_pendingCsvImportPath(wxEmptyString),
+      m_lastSafetySaveTime(wxDateTime::Now()),
+      m_MiniPanel(nullptr),
+      m_observationsChoiceCount(1),
+      m_viewScale(1.0),
+      m_isScanningNmea(false),
+      m_Observations(nullptr),
+      m_ObservationsTable(nullptr)
 {
     // The full Open Observer control window is a wxFrame, like OpenCPN's
     // Route & Mark Manager. wxDialog layout adaptation is not used here.
@@ -2279,6 +2281,52 @@ void ooControlDialogImpl::UseProject()
     m_choiceObservations->SetString(m_currentObservationsIndex,
                                     project.GetName());
     m_choiceObservations->GetParent()->Layout();
+
+    ImportPendingCsvRowsAfterUse();
+}
+
+void ooControlDialogImpl::ImportPendingCsvRowsAfterUse()
+{
+    if (!m_pendingCsvImportAfterUse || m_pendingCsvImportPath.IsEmpty()) {
+        return;
+    }
+
+    wxString importPath = m_pendingCsvImportPath;
+
+    m_pendingCsvImportAfterUse = false;
+    m_pendingCsvImportPath.Clear();
+
+    int rowsImported = 0;
+    wxString errorMessage;
+
+    const wxArrayString availableFieldTypes = ooObservations::GetObservationFieldTypes();
+
+    if (!ooTableImport::ImportCsvRowsByHeaderMapping(
+            importPath,
+            m_Observations,
+            availableFieldTypes,
+            rowsImported,
+            errorMessage)) {
+        wxMessageBox(
+            wxString("The project was created, but CSV rows could not be imported.\n\n") +
+                errorMessage,
+            "CSV row import",
+            wxOK | wxICON_WARNING,
+            this);
+        return;
+    }
+
+    MarkObservationsDirty("CSV rows imported from Create from Table");
+    RefreshObservationsGrid();
+
+    wxMessageBox(
+        wxString::Format(
+            "CSV rows imported successfully.\n\n"
+            "%d observation rows were added.",
+            rowsImported),
+        "CSV row import",
+        wxOK | wxICON_INFORMATION,
+        this);
 }
 
 void ooControlDialogImpl::EnsureProjectHasFieldType(const wxString& field_type, const wxString& label)
@@ -2977,6 +3025,21 @@ void ooControlDialogImpl::OnButtonClickCreateProjectFromTable(wxCommandEvent& ev
     for (int c = 0; c < static_cast<int>(labels.GetCount()); ++c) {
         colSizes.m_customSizes[c] =
             ooObservations::IsInternalObservationFieldType(fieldTypes[c]) ? 0 : 160;
+    }
+
+    const int importRowsResponse = wxMessageBox(
+        "Do you want to import the CSV data rows after reviewing the project fields and clicking Use?\n\n"
+        "Choose No to create the project structure only.",
+        "Import CSV rows?",
+        wxYES_NO | wxICON_QUESTION,
+        this);
+
+    m_pendingCsvImportAfterUse = (importRowsResponse == wxYES);
+
+    if (m_pendingCsvImportAfterUse) {
+        m_pendingCsvImportPath = openFileDialog.GetPath();
+    } else {
+        m_pendingCsvImportPath.Clear();
     }
 
     wxFileName sourceFile(openFileDialog.GetPath());

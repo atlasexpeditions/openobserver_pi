@@ -137,10 +137,13 @@ public:
         void OnProjectGridSelectionChange();
         void MoveSelectedProjectColumn(int direction);
         void GoToObservationMarkForRow(int row);
+        void ImportPendingCsvRowsAfterUse();
 
         bool m_markIconsLoaded;
         bool m_showObservationMarks;
         bool m_observationsDirty;
+        bool m_pendingCsvImportAfterUse;
+        wxString m_pendingCsvImportPath;
         wxDateTime m_lastSafetySaveTime;
 
         void ClearObservationsDirty(const wxString& reason);
