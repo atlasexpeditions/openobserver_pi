@@ -2436,10 +2436,15 @@ void ooControlDialogImpl::SetProjectEditable(bool editable)
         m_ProjectDeleteColumn->Enable();
         OnProjectGridSelectionChange();
 
+        m_textProjectName->Enable();
         m_textProjectName->SetEditable(true);
+
+        m_textProjectDescription->Enable();
         m_textProjectDescription->SetEditable(true);
-        m_colourProject->Enable();
-        m_listMarkIcons->Enable();
+
+        // Re-enable project metadata editors when entering Edit mode.
+        m_colourProject->Enable(true);
+        m_listMarkIcons->Enable(true);
     } else {
         m_ProjectEditUse->SetLabel("Edit");
         m_gridProject->Disable();
