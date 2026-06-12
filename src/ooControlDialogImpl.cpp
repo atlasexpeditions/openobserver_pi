@@ -2188,6 +2188,7 @@ void ooControlDialogImpl::RefreshDataLoggerControls()
     if (!g_openobserver_pi) return;
 
     ooDataLogger& logger = g_openobserver_pi->GetDataLogger();
+    const bool loggerRunning = logger.IsRunning();
 
     if (m_choiceDataLoggerProject) {
         const int previousSelection = m_choiceDataLoggerProject->GetSelection();
@@ -2213,6 +2214,7 @@ void ooControlDialogImpl::RefreshDataLoggerControls()
         }
 
         m_choiceDataLoggerProject->SetSelection(selection);
+        m_choiceDataLoggerProject->Enable(!loggerRunning);
 
         if (m_panelDataLoggerColour) {
             m_panelDataLoggerColour->SetBackgroundColour(GetProjectColourForSlot(selection));
@@ -2232,9 +2234,16 @@ void ooControlDialogImpl::RefreshDataLoggerControls()
         m_textDataLoggerCaptureMinutes,
         m_textDataLoggerCaptureSeconds);
 
+    m_textDataLoggerIntervalHours->Enable(!loggerRunning);
+    m_textDataLoggerIntervalMinutes->Enable(!loggerRunning);
+    m_textDataLoggerIntervalSeconds->Enable(!loggerRunning);
+    m_textDataLoggerCaptureHours->Enable(!loggerRunning);
+    m_textDataLoggerCaptureMinutes->Enable(!loggerRunning);
+    m_textDataLoggerCaptureSeconds->Enable(!loggerRunning);
+
     if (m_buttonDataLoggerStartStop) {
         m_buttonDataLoggerStartStop->SetLabel(
-            logger.IsRunning() ? _("Stop Logging") : _("Start Logging"));
+            loggerRunning ? _("Stop Logging") : _("Start Logging"));
     }
 
     if (m_staticTextDataLoggerStatus) {

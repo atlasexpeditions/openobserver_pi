@@ -936,6 +936,8 @@ void openobserver_pi::SetCursorLatLon(double lat, double lon)
 
 void openobserver_pi::SetPositionFix(PlugIn_Position_Fix &pfix)
 {
+    m_dataLogger.SetPositionFix(pfix.FixTime, pfix.Lat, pfix.Lon);
+
     if (m_ooObservations)
         m_ooObservations->SetPositionFix(pfix.FixTime, pfix.Lat, pfix.Lon);
     if (m_ooControlDialogImpl)
@@ -944,6 +946,8 @@ void openobserver_pi::SetPositionFix(PlugIn_Position_Fix &pfix)
 
 void openobserver_pi::SetNMEASentence(wxString& sentence)
 {
+    m_dataLogger.SetNmeaSentence(sentence);
+
     if (m_ooObservations)
         m_ooObservations->SetNmeaSentFix(sentence);
     if (m_ooControlDialogImpl)
