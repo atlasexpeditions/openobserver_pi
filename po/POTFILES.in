@@ -12,6 +12,7 @@ src/ooMiniDialogImpl.cpp
 src/ooMiniPanel.cpp
 src/ooAuiPanel.cpp
 src/ooNmeaRecorder.cpp
+src/ooDataLogger.cpp
 src/tpicons.cpp
 src/tpUtils.cpp
 src/openobserver_pi.h

@@ -143,6 +143,7 @@ std::cout << x  << std::endl ; } while (0)
 #include "ooObservations.h"
 #include "ooAuiPanel.h"
 #include "ooNmeaRecorder.h"
+#include "ooDataLogger.h"
 #include "ooObservationHighlight.h"
 #include "globals.h"
 
@@ -200,6 +201,8 @@ public:
     void FocusCurrentObservationRow();
     void StartNmeaRecordingIfNeeded();
     void StopNmeaRecordingIfNeeded();
+    ooDataLogger& GetDataLogger();
+    const ooDataLogger& GetDataLogger() const;
     void UndockAuiPanel();
     void ShowMiniPanel();
 
@@ -227,6 +230,8 @@ public:
     ooControlDialogImpl *m_ooControlDialogImpl;
     ooMiniDialogImpl *m_ooMiniDialogImpl;
     ooAuiPanel *m_ooAuiPanel;
+
+    ooDataLogger m_dataLogger;
 
     bool    m_bReadyForRequests;
     int     m_iCallerId;

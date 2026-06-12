@@ -190,6 +190,7 @@ set(SRCS
     src/ooMiniPanel.cpp
     src/ooAuiPanel.cpp
     src/ooNmeaRecorder.cpp
+    src/ooDataLogger.cpp
     src/tpicons.cpp
     src/tpUtils.cpp
 )

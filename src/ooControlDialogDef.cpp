@@ -219,6 +219,70 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 
 	fgSizerProject->Add( fgSizer9, 0, wxEXPAND, 5 );
 
+	wxFlexGridSizer* fgSizerDataLogger;
+	fgSizerDataLogger = new wxFlexGridSizer( 2, 1, 0, 0 );
+	fgSizerDataLogger->AddGrowableCol( 0 );
+	fgSizerDataLogger->SetFlexibleDirection( wxBOTH );
+	fgSizerDataLogger->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_SPECIFIED );
+
+	wxBoxSizer* bSizerDataLoggerTop;
+	bSizerDataLoggerTop = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticTextDataLogger = new wxStaticText( m_panelProject, wxID_ANY, _("Data Logger:"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticTextDataLogger->Wrap( -1 );
+	bSizerDataLoggerTop->Add( m_staticTextDataLogger, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+
+	wxArrayString m_choiceDataLoggerProjectChoices;
+	m_choiceDataLoggerProject = new wxChoice( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize( 220,-1 ), m_choiceDataLoggerProjectChoices, 0 );
+	bSizerDataLoggerTop->Add( m_choiceDataLoggerProject, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+
+	m_panelDataLoggerColour = new wxPanel( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize( 28,18 ), wxTAB_TRAVERSAL );
+	bSizerDataLoggerTop->Add( m_panelDataLoggerColour, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+
+	m_buttonDataLoggerStartStop = new wxButton( m_panelProject, wxID_ANY, _("Start Logging"), wxDefaultPosition, wxDefaultSize, 0 );
+	bSizerDataLoggerTop->Add( m_buttonDataLoggerStartStop, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
+
+	fgSizerDataLogger->Add( bSizerDataLoggerTop, 0, wxEXPAND, 5 );
+
+	wxBoxSizer* bSizerDataLoggerTiming;
+	bSizerDataLoggerTiming = new wxBoxSizer( wxHORIZONTAL );
+
+	m_staticTextDataLoggerInterval = new wxStaticText( m_panelProject, wxID_ANY, _("Interval"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticTextDataLoggerInterval->Wrap( -1 );
+	bSizerDataLoggerTiming->Add( m_staticTextDataLoggerInterval, 0, wxALIGN_CENTER_VERTICAL|wxLEFT|wxTOP|wxBOTTOM, 5 );
+
+	m_textDataLoggerIntervalHours = new wxTextCtrl( m_panelProject, wxID_ANY, _("00"), wxDefaultPosition, wxSize( 36,-1 ), wxTE_CENTER );
+	bSizerDataLoggerTiming->Add( m_textDataLoggerIntervalHours, 0, wxALL, 5 );
+	bSizerDataLoggerTiming->Add( new wxStaticText( m_panelProject, wxID_ANY, _("h"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALIGN_CENTER_VERTICAL|wxRIGHT, 5 );
+
+	m_textDataLoggerIntervalMinutes = new wxTextCtrl( m_panelProject, wxID_ANY, _("30"), wxDefaultPosition, wxSize( 36,-1 ), wxTE_CENTER );
+	bSizerDataLoggerTiming->Add( m_textDataLoggerIntervalMinutes, 0, wxALL, 5 );
+	bSizerDataLoggerTiming->Add( new wxStaticText( m_panelProject, wxID_ANY, _("m"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALIGN_CENTER_VERTICAL|wxRIGHT, 5 );
+
+	m_textDataLoggerIntervalSeconds = new wxTextCtrl( m_panelProject, wxID_ANY, _("00"), wxDefaultPosition, wxSize( 36,-1 ), wxTE_CENTER );
+	bSizerDataLoggerTiming->Add( m_textDataLoggerIntervalSeconds, 0, wxALL, 5 );
+	bSizerDataLoggerTiming->Add( new wxStaticText( m_panelProject, wxID_ANY, _("s"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALIGN_CENTER_VERTICAL|wxRIGHT, 15 );
+
+	m_staticTextDataLoggerCapture = new wxStaticText( m_panelProject, wxID_ANY, _("Capture"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticTextDataLoggerCapture->Wrap( -1 );
+	bSizerDataLoggerTiming->Add( m_staticTextDataLoggerCapture, 0, wxALIGN_CENTER_VERTICAL|wxLEFT|wxTOP|wxBOTTOM, 5 );
+
+	m_textDataLoggerCaptureHours = new wxTextCtrl( m_panelProject, wxID_ANY, _("00"), wxDefaultPosition, wxSize( 36,-1 ), wxTE_CENTER );
+	bSizerDataLoggerTiming->Add( m_textDataLoggerCaptureHours, 0, wxALL, 5 );
+	bSizerDataLoggerTiming->Add( new wxStaticText( m_panelProject, wxID_ANY, _("h"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALIGN_CENTER_VERTICAL|wxRIGHT, 5 );
+
+	m_textDataLoggerCaptureMinutes = new wxTextCtrl( m_panelProject, wxID_ANY, _("05"), wxDefaultPosition, wxSize( 36,-1 ), wxTE_CENTER );
+	bSizerDataLoggerTiming->Add( m_textDataLoggerCaptureMinutes, 0, wxALL, 5 );
+	bSizerDataLoggerTiming->Add( new wxStaticText( m_panelProject, wxID_ANY, _("m"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALIGN_CENTER_VERTICAL|wxRIGHT, 5 );
+
+	m_textDataLoggerCaptureSeconds = new wxTextCtrl( m_panelProject, wxID_ANY, _("00"), wxDefaultPosition, wxSize( 36,-1 ), wxTE_CENTER );
+	bSizerDataLoggerTiming->Add( m_textDataLoggerCaptureSeconds, 0, wxALL, 5 );
+	bSizerDataLoggerTiming->Add( new wxStaticText( m_panelProject, wxID_ANY, _("s"), wxDefaultPosition, wxDefaultSize, 0 ), 0, wxALIGN_CENTER_VERTICAL|wxRIGHT, 5 );
+
+	fgSizerDataLogger->Add( bSizerDataLoggerTiming, 0, wxEXPAND, 5 );
+
+	fgSizerProject->Add( fgSizerDataLogger, 0, wxEXPAND, 5 );
+
 
 	m_panelProject->SetSizer( fgSizerProject );
 	m_panelProject->Layout();
@@ -286,6 +350,10 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 	m_ObservationsLon = new wxTextCtrl( m_panelObservations, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 120,-1 ), wxTE_READONLY | wxTE_CENTER );
 	m_ObservationsLon->SetMinSize( wxSize( 120,-1 ) );
 	fgSizerObservationsLabels->Add( m_ObservationsLon, 0, wxALL, 5 );
+
+	m_staticTextDataLoggerStatus = new wxStaticText( m_panelObservations, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );
+	m_staticTextDataLoggerStatus->Wrap( -1 );
+	fgSizerObservationsLabels->Add( m_staticTextDataLoggerStatus, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
 
 	m_fgSizerObservations->Add( fgSizerObservationsLabels, 0, wxEXPAND, 5 );

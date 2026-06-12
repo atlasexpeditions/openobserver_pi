@@ -851,6 +851,16 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
         &ooControlDialogImpl::OnButtonClickClearObservationFilter,
         this);
 
+    m_choiceDataLoggerProject->Bind(
+        wxEVT_CHOICE,
+        &ooControlDialogImpl::OnDataLoggerProjectChanged,
+        this);
+
+    m_buttonDataLoggerStartStop->Bind(
+        wxEVT_BUTTON,
+        &ooControlDialogImpl::OnDataLoggerStartStop,
+        this);
+
     if (m_checkShowCurrentData) {
         m_checkShowCurrentData->Bind(
             wxEVT_CHECKBOX,
@@ -1041,6 +1051,43 @@ void ooControlDialogImpl::UpdateProjectCellEditors()
     HideInternalProjectColumns();
 }
 
+static void SetDurationControls(
+    long totalSeconds,
+    wxTextCtrl* hoursCtrl,
+    wxTextCtrl* minutesCtrl,
+    wxTextCtrl* secondsCtrl)
+{
+    if (totalSeconds < 0) totalSeconds = 0;
+
+    const long hours = totalSeconds / 3600;
+    const long minutes = (totalSeconds % 3600) / 60;
+    const long seconds = totalSeconds % 60;
+
+    hoursCtrl->SetValue(wxString::Format(wxT("%02ld"), hours));
+    minutesCtrl->SetValue(wxString::Format(wxT("%02ld"), minutes));
+    secondsCtrl->SetValue(wxString::Format(wxT("%02ld"), seconds));
+}
+
+static long ReadDurationControls(
+    wxTextCtrl* hoursCtrl,
+    wxTextCtrl* minutesCtrl,
+    wxTextCtrl* secondsCtrl)
+{
+    long hours = 0;
+    long minutes = 0;
+    long seconds = 0;
+
+    hoursCtrl->GetValue().ToLong(&hours);
+    minutesCtrl->GetValue().ToLong(&minutes);
+    secondsCtrl->GetValue().ToLong(&seconds);
+
+    if (hours < 0) hours = 0;
+    if (minutes < 0) minutes = 0;
+    if (seconds < 0) seconds = 0;
+
+    return hours * 3600 + minutes * 60 + seconds;
+}
+
 bool ooControlDialogImpl::LoadProject(const ooProject& project)
 {
     // delete columns
@@ -1076,6 +1123,8 @@ bool ooControlDialogImpl::LoadProject(const ooProject& project)
     HideInternalProjectColumns();
 
     m_CurrentProject = project;
+
+    RefreshDataLoggerControls();
 
     return true;
 }
@@ -2102,6 +2151,139 @@ void ooControlDialogImpl::SetPositionFix(time_t fixTime, double lat, double lon)
 
     m_ObservationsLat->SetValue(toSDMM_PlugIn(1, lat));
     m_ObservationsLon->SetValue(toSDMM_PlugIn(2, lon));
+
+    if (g_openobserver_pi && m_staticTextDataLoggerStatus) {
+        m_staticTextDataLoggerStatus->SetLabel(
+            g_openobserver_pi->GetDataLogger().GetStatusText());
+        m_staticTextDataLoggerStatus->GetParent()->Layout();
+    }
+}
+
+wxColour ooControlDialogImpl::GetProjectColourForSlot(int slotIndex) const
+{
+    if (slotIndex == m_currentObservationsIndex) {
+        return m_CurrentProject.GetColor();
+    }
+
+    int fileVersion = 0;
+    wxXmlDocument xmlDoc;
+    wxXmlNode* root = nullptr;
+    ooProject project;
+
+    if (ooObservations::ReadFromXML(
+            GetBackupFilename(slotIndex),
+            fileVersion,
+            project,
+            xmlDoc,
+            root,
+            ooProject())) {
+        return project.GetColor();
+    }
+
+    return DEFAULT_PROJECT_COLOUR;
+}
+
+void ooControlDialogImpl::RefreshDataLoggerControls()
+{
+    if (!g_openobserver_pi) return;
+
+    ooDataLogger& logger = g_openobserver_pi->GetDataLogger();
+
+    if (m_choiceDataLoggerProject) {
+        const int previousSelection = m_choiceDataLoggerProject->GetSelection();
+
+        m_choiceDataLoggerProject->Clear();
+
+        for (unsigned int i = 0; i < m_choiceObservations->GetCount(); ++i) {
+            m_choiceDataLoggerProject->Append(m_choiceObservations->GetString(i));
+        }
+
+        int selection = wxNOT_FOUND;
+
+        if (logger.HasLoggerProject()) {
+            selection = logger.GetLoggerProjectIndex();
+        } else if (previousSelection != wxNOT_FOUND) {
+            selection = previousSelection;
+        } else {
+            selection = m_currentObservationsIndex;
+        }
+
+        if (selection < 0 || selection >= (int)m_choiceDataLoggerProject->GetCount()) {
+            selection = m_currentObservationsIndex;
+        }
+
+        m_choiceDataLoggerProject->SetSelection(selection);
+
+        if (m_panelDataLoggerColour) {
+            m_panelDataLoggerColour->SetBackgroundColour(GetProjectColourForSlot(selection));
+            m_panelDataLoggerColour->Refresh();
+        }
+    }
+
+    SetDurationControls(
+        logger.GetIntervalSeconds(),
+        m_textDataLoggerIntervalHours,
+        m_textDataLoggerIntervalMinutes,
+        m_textDataLoggerIntervalSeconds);
+
+    SetDurationControls(
+        logger.GetCaptureDurationSeconds(),
+        m_textDataLoggerCaptureHours,
+        m_textDataLoggerCaptureMinutes,
+        m_textDataLoggerCaptureSeconds);
+
+    if (m_buttonDataLoggerStartStop) {
+        m_buttonDataLoggerStartStop->SetLabel(
+            logger.IsRunning() ? _("Stop Logging") : _("Start Logging"));
+    }
+
+    if (m_staticTextDataLoggerStatus) {
+        m_staticTextDataLoggerStatus->SetLabel(logger.GetStatusText());
+        m_staticTextDataLoggerStatus->GetParent()->Layout();
+    }
+}
+
+void ooControlDialogImpl::ApplyDataLoggerControlsToRuntime()
+{
+    if (!g_openobserver_pi) return;
+
+    ooDataLogger& logger = g_openobserver_pi->GetDataLogger();
+
+    const int selection = m_choiceDataLoggerProject->GetSelection();
+
+    if (selection != wxNOT_FOUND) {
+        logger.SetLoggerProject(selection, m_choiceDataLoggerProject->GetString(selection));
+    }
+
+    logger.SetIntervalSeconds(ReadDurationControls(
+        m_textDataLoggerIntervalHours,
+        m_textDataLoggerIntervalMinutes,
+        m_textDataLoggerIntervalSeconds));
+
+    logger.SetCaptureDurationSeconds(ReadDurationControls(
+        m_textDataLoggerCaptureHours,
+        m_textDataLoggerCaptureMinutes,
+        m_textDataLoggerCaptureSeconds));
+}
+
+void ooControlDialogImpl::OnDataLoggerProjectChanged(wxCommandEvent& event)
+{
+    ApplyDataLoggerControlsToRuntime();
+    RefreshDataLoggerControls();
+    event.Skip();
+}
+
+void ooControlDialogImpl::OnDataLoggerStartStop(wxCommandEvent& event)
+{
+    if (!g_openobserver_pi) return;
+
+    ApplyDataLoggerControlsToRuntime();
+
+    ooDataLogger& logger = g_openobserver_pi->GetDataLogger();
+    logger.Toggle();
+
+    RefreshDataLoggerControls();
+    event.Skip();
 }
 
 void ooControlDialogImpl::SetNmeaSentence(const wxString& sentence)

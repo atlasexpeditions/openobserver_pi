@@ -139,6 +139,11 @@ public:
         void MoveSelectedProjectColumn(int direction);
         void GoToObservationMarkForRow(int row);
         void ImportPendingCsvRowsAfterUse();
+        void RefreshDataLoggerControls();
+        void ApplyDataLoggerControlsToRuntime();
+        wxColour GetProjectColourForSlot(int slotIndex) const;
+        void OnDataLoggerProjectChanged(wxCommandEvent& event);
+        void OnDataLoggerStartStop(wxCommandEvent& event);
 
         bool m_markIconsLoaded;
         bool m_showObservationMarks;

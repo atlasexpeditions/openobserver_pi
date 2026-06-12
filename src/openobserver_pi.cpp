@@ -1075,6 +1075,16 @@ void openobserver_pi::StartNmeaRecordingIfNeeded()
     m_nmeaRecorder.StartRecording(*g_PrivateDataDir);
 }
 
+ooDataLogger& openobserver_pi::GetDataLogger()
+{
+    return m_dataLogger;
+}
+
+const ooDataLogger& openobserver_pi::GetDataLogger() const
+{
+    return m_dataLogger;
+}
+
 void openobserver_pi::StopNmeaRecordingIfNeeded()
 {
     if (m_nmeaRecorder.IsRecording()) {
