@@ -72,6 +72,19 @@ jobs:
           Write-Host "wxWidgets root: $wxRoot"
           Write-Host "wxWidgets libraries: $($wxLib.FullName)"
 
+      - name: Install GNU Gettext tools
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          choco install gettext --yes --no-progress
+
+          $msgfmt = Get-Command msgfmt.exe -ErrorAction Stop
+          $msgmerge = Get-Command msgmerge.exe -ErrorAction Stop
+
+          Write-Host "msgfmt: $($msgfmt.Source)"
+          Write-Host "msgmerge: $($msgmerge.Source)"
+
       - name: Configure Open Observer x64 build
         shell: pwsh
         env:
