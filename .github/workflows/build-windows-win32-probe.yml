@@ -116,11 +116,16 @@ jobs:
         run: |
           cmake --build build-windows-win32-probe --config Release --parallel
 
-      - name: List generated binaries
+      - name: Build Windows Win32 package
+        shell: pwsh
+        run: |
+          cmake --build build-windows-win32-probe --target package --config Release
+
+      - name: List generated Windows files
         if: always() && hashFiles('build-windows-win32-probe/**') != ''
         shell: pwsh
         run: |
-          Get-ChildItem build-windows-win32-probe -Recurse -Include *.dll,*.lib,*.exe |
+          Get-ChildItem build-windows-win32-probe -Recurse -Include *.dll,*.lib,*.exe,*.tar.gz,*.xml |
             Select-Object FullName, Length |
             Format-Table -AutoSize
 
