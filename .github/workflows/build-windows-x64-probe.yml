@@ -79,11 +79,27 @@ jobs:
 
           choco install gettext --yes --no-progress
 
-          $msgfmt = Get-Command msgfmt.exe -ErrorAction Stop
-          $msgmerge = Get-Command msgmerge.exe -ErrorAction Stop
+          $gettextBin = "C:\Program Files\gettext-iconv\bin"
 
-          Write-Host "msgfmt: $($msgfmt.Source)"
-          Write-Host "msgmerge: $($msgmerge.Source)"
+          if (-not (Test-Path $gettextBin)) {
+            throw "GNU Gettext bin directory was not found: $gettextBin"
+          }
+
+          "$gettextBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+          $msgfmt = Join-Path $gettextBin "msgfmt.exe"
+          $msgmerge = Join-Path $gettextBin "msgmerge.exe"
+
+          if (-not (Test-Path $msgfmt)) {
+            throw "msgfmt.exe was not found: $msgfmt"
+          }
+
+          if (-not (Test-Path $msgmerge)) {
+            throw "msgmerge.exe was not found: $msgmerge"
+          }
+
+          Write-Host "msgfmt: $msgfmt"
+          Write-Host "msgmerge: $msgmerge"
 
       - name: Configure Open Observer x64 build
         shell: pwsh
