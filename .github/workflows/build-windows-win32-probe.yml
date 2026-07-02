@@ -121,6 +121,91 @@ jobs:
         run: |
           cmake --build build-windows-win32-probe --target package --config Release
 
+      - name: Create importable OpenCPN package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $buildDir = "build-windows-win32-probe"
+          $buildDirFull = (Resolve-Path $buildDir).Path
+
+          $tarball = Get-ChildItem $buildDir -File -Filter "openobserver_pi-*.tar.gz" |
+            Where-Object { $_.Name -notmatch "-IMPORT\.tar\.gz$" } |
+            Select-Object -First 1
+
+          $metadata = Get-ChildItem $buildDir -File -Filter "openobserver_pi-*.xml" |
+            Select-Object -First 1
+
+          if (-not $tarball) {
+            throw "Original CPack tarball was not found."
+          }
+
+          if (-not $metadata) {
+            throw "Generated OpenCPN metadata XML was not found."
+          }
+
+          $stagingDir = Join-Path $buildDirFull "openobserver-import-staging"
+          Remove-Item -Recurse -Force $stagingDir -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path $stagingDir | Out-Null
+
+          tar -xzf $tarball.FullName -C $stagingDir
+
+          $rootDirs = @(Get-ChildItem $stagingDir -Directory)
+
+          if ($rootDirs.Count -ne 1) {
+            throw "Expected exactly one package root directory after extraction."
+          }
+
+          Copy-Item $metadata.FullName (Join-Path $stagingDir "metadata.xml")
+
+          $packageBaseName = $tarball.Name -replace "\.tar\.gz$", ""
+          $importTarball = Join-Path $buildDirFull "$packageBaseName-IMPORT.tar.gz"
+
+          Remove-Item -Force $importTarball -ErrorAction SilentlyContinue
+
+          Push-Location $stagingDir
+          try {
+            tar -czf $importTarball "metadata.xml" $rootDirs[0].Name
+          }
+          finally {
+            Pop-Location
+          }
+
+          Write-Host "Created import package: $importTarball"
+
+      - name: Verify importable OpenCPN package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $importTarball = Get-ChildItem build-windows-win32-probe -File -Filter "*-IMPORT.tar.gz" |
+            Select-Object -First 1
+
+          if (-not $importTarball) {
+            throw "OpenCPN import tarball was not created."
+          }
+
+          $entries = @(tar -tzf $importTarball.FullName)
+
+          if ($entries -notcontains "metadata.xml") {
+            throw "metadata.xml is missing from the import tarball root."
+          }
+
+          if (-not ($entries | Where-Object { $_ -match "openobserver_pi\.dll$" })) {
+            throw "openobserver_pi.dll is missing from the import tarball."
+          }
+
+          if (-not ($entries | Where-Object { $_ -match "data/Listings/" })) {
+            throw "Listings resources are missing from the import tarball."
+          }
+
+          Write-Host "=== Verified import package ==="
+          $entries | Where-Object {
+            $_ -eq "metadata.xml" -or
+            $_ -match "openobserver_pi\.dll$" -or
+            $_ -match "data/Listings/"
+          }
+
       - name: List generated Windows files
         if: always() && hashFiles('build-windows-win32-probe/**') != ''
         shell: pwsh
