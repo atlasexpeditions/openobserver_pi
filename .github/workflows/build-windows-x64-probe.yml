@@ -34,11 +34,11 @@ jobs:
           $wxDir = Join-Path $env:RUNNER_TEMP "wxwidgets"
           New-Item -ItemType Directory -Force -Path $wxDir | Out-Null
 
-          $devArchive = Join-Path $env:RUNNER_TEMP "wxMSW-3.2.1_vc14x_Dev.7z"
+          $devArchive = Join-Path $env:RUNNER_TEMP "wxMSW-3.2.1_vc14x_x64_Dev.7z"
           $headersArchive = Join-Path $env:RUNNER_TEMP "wxWidgets-3.2.1-headers.7z"
 
           Invoke-WebRequest `
-            -Uri "https://github.com/wxWidgets/wxWidgets/releases/download/v3.2.1/wxMSW-3.2.1_vc14x_Dev.7z" `
+            -Uri "https://github.com/wxWidgets/wxWidgets/releases/download/v3.2.1/wxMSW-3.2.1_vc14x_x64_Dev.7z" `
             -OutFile $devArchive
 
           Invoke-WebRequest `
@@ -88,7 +88,7 @@ jobs:
           cmake --build build-windows-x64-probe --config Release --parallel
 
       - name: List generated binaries
-        if: always()
+        if: always() && hashFiles('build-windows-x64-probe/**') != ''
         shell: pwsh
         run: |
           Get-ChildItem build-windows-x64-probe -Recurse -Include *.dll,*.lib,*.exe |
