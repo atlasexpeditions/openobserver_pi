@@ -404,10 +404,24 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 	fgSizerBottomBar->SetFlexibleDirection( wxHORIZONTAL );
 	fgSizerBottomBar->SetNonFlexibleGrowMode( wxFLEX_GROWMODE_NONE );
 
-	m_buttonProjectMenu = new wxButton( this, wxID_ANY, _("Project ▼"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_buttonProjectMenu = new wxButton(
+		this,
+		wxID_ANY,
+		_("Project ") + wxString::FromUTF8("\xE2\x96\xBC"),
+		wxDefaultPosition,
+		wxDefaultSize,
+		0
+	);
 	fgSizerBottomBar->Add( m_buttonProjectMenu, 0, wxALL, 5 );
 
-	m_buttonDataMenu = new wxButton( this, wxID_ANY, _("Data ▼"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_buttonDataMenu = new wxButton(
+		this,
+		wxID_ANY,
+		_("Data ") + wxString::FromUTF8("\xE2\x96\xBC"),
+		wxDefaultPosition,
+		wxDefaultSize,
+		0
+	);
 	fgSizerBottomBar->Add( m_buttonDataMenu, 0, wxALL, 5 );
 
 	fgSizerBottomBar->Add( 0, 0, 1, wxEXPAND, 5 );

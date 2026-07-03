@@ -70,13 +70,14 @@ void tpicons::initialize_images(void)
     m_failedBitmapLoad = false;
 
 #ifdef PLUGIN_USE_SVG
-    fn.SetFullName(wxT("openobserver-icon-v1.1-inactive.svg"));
+    // Versioned filenames avoid stale OpenCPN SVG cache entries after icon updates.
+    fn.SetFullName(wxT("openobserver-icon-v1.2-inactive.svg"));
     m_s_openobserver_pi = fn.GetFullPath();
     m_bm_openobserver_pi = LoadSVG( fn.GetFullPath() );
-    fn.SetFullName(wxT("openobserver-icon-v1.1-dark.svg"));
+    fn.SetFullName(wxT("openobserver-icon-v1.2-dark.svg"));
     m_s_openobserver_grey_pi = fn.GetFullPath();
     m_bm_openobserver_grey_pi = LoadSVG( fn.GetFullPath() );
-    fn.SetFullName(wxT("openobserver-icon-v1.1-active.svg"));
+    fn.SetFullName(wxT("openobserver-icon-v1.2-active.svg"));
     m_s_openobserver_toggled_pi = fn.GetFullPath();
     m_bm_openobserver_toggled_pi = LoadSVG( fn.GetFullPath() );
 #else
