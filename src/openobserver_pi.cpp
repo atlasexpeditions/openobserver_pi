@@ -641,7 +641,8 @@ bool openobserver_pi::DeInit(void)
     {
         m_dialogPosition = m_ooControlDialogImpl->GetRect();
         
-        m_ooControlDialogImpl->Close();
+        // Do not trigger user close handlers while OpenCPN unloads the plugin.
+        m_ooControlDialogImpl->Hide();
         delete m_ooControlDialogImpl;
         m_ooControlDialogImpl = nullptr;
     }
@@ -649,7 +650,8 @@ bool openobserver_pi::DeInit(void)
     {
         m_miniDialogPosition = m_ooMiniDialogImpl->GetRect();
 
-        m_ooMiniDialogImpl->Close();
+        // Do not trigger user close handlers while OpenCPN unloads the plugin.
+        m_ooMiniDialogImpl->Hide();
         delete m_ooMiniDialogImpl;
         m_ooMiniDialogImpl = nullptr;
     }
