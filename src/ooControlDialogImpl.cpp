@@ -745,7 +745,7 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
     wxStaticText* acknowledgementsText = new wxStaticText(
         panelAbout,
         wxID_ANY,
-        _("A huge thank you to the teams at Atlas Expedition, the Glacialis and Sila projects, as well as to the dedicated volunteer contributors to the project’s development: Alex Mansfield, Angie Gartz, Arnaud Conne, Christophe Daudin, and Matthew Ryle."),
+        _("A huge thank you to the teams at Atlas Expedition, the Glacialis and Sila projects, as well as to the dedicated volunteer contributors to the project's development: Alex Mansfield, Angie Gartz, Arnaud Conne, Christophe Daudin, and Matthew Ryle."),
         wxDefaultPosition,
         wxDefaultSize,
         wxALIGN_CENTER_HORIZONTAL);
@@ -3640,7 +3640,7 @@ static bool ShowDataPackageFolderDialog(
     wxButton* browseButton = new wxButton(
         &dialog,
         wxID_ANY,
-        _("Browse…"));
+        _("Browse..."));
 
     pathSizer->Add(pathText, 1, wxRIGHT | wxEXPAND, 8);
     pathSizer->Add(browseButton, 0);
@@ -3659,7 +3659,7 @@ static bool ShowDataPackageFolderDialog(
     wxStaticText* projectInfo = new wxStaticText(
         &dialog,
         wxID_ANY,
-        _("✓ project XML in 00_raw_data/project"));
+        _("Project XML: 00_raw_data/project"));
 
     wxStaticText* exportsTitle = new wxStaticText(
         &dialog,
@@ -3970,12 +3970,12 @@ void ooControlDialogImpl::OnButtonClickCreateScientificPackage(wxCommandEvent& e
     wxMessageBox(
         _("Data Package created successfully:\n\n") + createdPackagePath +
         _("\n\nSummary:\n") +
-        wxString::Format(_("• %d export files created\n"), runSummary.exportFilesRefreshed) +
-        wxString::Format(_("• %d folders created\n"), runSummary.foldersTouched) +
-        wxString::Format(_("• %d NMEA recordings exported\n"), runSummary.nmeaRecordingsCopied) +
-        wxString::Format(_("• %d daily GPX tracks exported\n"), runSummary.gpxDailyTracksExported) +
-        wxString::Format(_("• %d raw OpenCPN GPX tracks exported\n"), runSummary.gpxCompiledTracksExported) +
-        wxString::Format(_("• %d GPX track points exported\n"), runSummary.gpxTrackPointsExported) +
+        wxString::Format(_("- %d export files created\n"), runSummary.exportFilesRefreshed) +
+        wxString::Format(_("- %d folders created\n"), runSummary.foldersTouched) +
+        wxString::Format(_("- %d NMEA recordings exported\n"), runSummary.nmeaRecordingsCopied) +
+        wxString::Format(_("- %d daily GPX tracks exported\n"), runSummary.gpxDailyTracksExported) +
+        wxString::Format(_("- %d raw OpenCPN GPX tracks exported\n"), runSummary.gpxCompiledTracksExported) +
+        wxString::Format(_("- %d GPX track points exported\n"), runSummary.gpxTrackPointsExported) +
         _("\nA detailed log was written to:\n00_raw_data/metadata/data_package_last_run.txt"),
         _("Create Data Package"),
         wxOK | wxICON_INFORMATION,
@@ -4027,12 +4027,12 @@ void ooControlDialogImpl::OnButtonClickUpdateScientificPackage(wxCommandEvent& e
     wxMessageBox(
         _("Data Package updated successfully:\n\n") + packageFolder +
         _("\n\nSummary:\n") +
-        wxString::Format(_("• %d export files updated\n"), runSummary.exportFilesRefreshed) +
-        wxString::Format(_("• %d folders updated\n"), runSummary.foldersTouched) +
-        wxString::Format(_("• %d NMEA recordings exported\n"), runSummary.nmeaRecordingsCopied) +
-        wxString::Format(_("• %d daily GPX tracks exported\n"), runSummary.gpxDailyTracksExported) +
-        wxString::Format(_("• %d raw OpenCPN GPX tracks exported\n"), runSummary.gpxCompiledTracksExported) +
-        wxString::Format(_("• %d GPX track points exported\n"), runSummary.gpxTrackPointsExported) +
+        wxString::Format(_("- %d export files updated\n"), runSummary.exportFilesRefreshed) +
+        wxString::Format(_("- %d folders updated\n"), runSummary.foldersTouched) +
+        wxString::Format(_("- %d NMEA recordings exported\n"), runSummary.nmeaRecordingsCopied) +
+        wxString::Format(_("- %d daily GPX tracks exported\n"), runSummary.gpxDailyTracksExported) +
+        wxString::Format(_("- %d raw OpenCPN GPX tracks exported\n"), runSummary.gpxCompiledTracksExported) +
+        wxString::Format(_("- %d GPX track points exported\n"), runSummary.gpxTrackPointsExported) +
         _("\nA detailed log was written to:\n00_raw_data/metadata/data_package_last_run.txt"),
         _("Update Data Package"),
         wxOK | wxICON_INFORMATION,

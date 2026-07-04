@@ -1120,33 +1120,47 @@ bool ooObservations::ReadFromCSV(const wxString& filename, wxString& err)
 {
     wxFileInputStream file_input(filename);
     wxTextInputStream input(file_input);
-    const int C = m_project.GetColCount();
+
+    // CSV exports intentionally omit internal project fields such as Mark GUID.
+    // Build the matching list of user-visible project columns before importing.
+    wxArrayInt importedColumns;
+
+    for (int c = 0; c < m_project.GetColCount(); ++c) {
+        if (!IsInternalObservationFieldType(m_project.GetColFieldTypes()[c])) {
+            importedColumns.Add(c);
+        }
+    }
 
     wxString line;
     int r = GetRowsCount();
-    bool bSkip = true;
+    bool skipHeader = true;
+
     while ((line = input.ReadLine()).Length() > 0)
     {
-        if (bSkip) {
-            bSkip = false;
+        if (skipHeader) {
+            skipHeader = false;
             continue;
         }
-        wxArrayString cells = ParseCSVLine(line);
-    const int cellCount = cells.GetCount();
-    if (cellCount != C)
-    {
-        err = wxString::Format(wxT("CSV contains %i columns, but the current project has %i"), cellCount, C);
-        return false;
-    }
 
-    AppendRows(1);
-    int c = 0;
-    for (auto cell: cells)
-    {
-        SetValue(r, c, cell);
-        c++;
-    }
-        r++;
+        wxArrayString cells = ParseCSVLine(line);
+        const int cellCount = cells.GetCount();
+
+        if (cellCount != static_cast<int>(importedColumns.GetCount()))
+        {
+            err = wxString::Format(
+                wxT("CSV contains %i columns, but the current project expects %i user-visible columns"),
+                cellCount,
+                static_cast<int>(importedColumns.GetCount()));
+            return false;
+        }
+
+        AppendRows(1);
+
+        for (size_t i = 0; i < cells.GetCount(); ++i) {
+            SetValue(r, importedColumns[i], cells[i]);
+        }
+
+        ++r;
     }
 
     return true;
