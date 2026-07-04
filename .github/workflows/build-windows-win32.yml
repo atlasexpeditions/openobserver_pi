@@ -1,19 +1,20 @@
-name: Build Windows Win32 probe
+name: Build Windows (32-bit)
 
 on:
   workflow_dispatch:
   push:
     branches:
-      - develop
-    paths:
-      - ".github/workflows/build-windows-win32-probe.yml"
+      - main
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: read
 
 jobs:
   build-windows-win32:
-    name: Build Windows Win32 probe
+    name: Build Windows (32-bit)
     runs-on: windows-2022
 
     steps:
@@ -117,32 +118,32 @@ jobs:
           Write-Host "msgmerge: $msgmerge"
           Write-Host "xgettext: $xgettext"
 
-      - name: Configure Open Observer Win32 build
+      - name: Configure Open Observer build (32-bit)
         shell: pwsh
         env:
           WX_VER: "32"
         run: |
-          cmake -S . -B build-windows-win32-probe -A Win32 `
+          cmake -S . -B build-windows-win32 -A Win32 `
             -DCMAKE_BUILD_TYPE=Release `
             -DwxWidgets_ROOT_DIR="$env:WX_ROOT" `
             -DwxWidgets_LIB_DIR="$env:WX_LIB"
 
-      - name: Build Open Observer Win32
+      - name: Build Open Observer package (32-bit)
         shell: pwsh
         run: |
-          cmake --build build-windows-win32-probe --config Release --parallel
+          cmake --build build-windows-win32 --config Release --parallel
 
-      - name: Build Windows Win32 package
+      - name: Create Open Observer package (32-bit)
         shell: pwsh
         run: |
-          cmake --build build-windows-win32-probe --target package --config Release
+          cmake --build build-windows-win32 --target package --config Release
 
       - name: Create importable OpenCPN package
         shell: pwsh
         run: |
           $ErrorActionPreference = "Stop"
 
-          $buildDir = "build-windows-win32-probe"
+          $buildDir = "build-windows-win32"
           $buildDirFull = (Resolve-Path $buildDir).Path
 
           $tarball = Get-ChildItem $buildDir -File -Filter "openobserver_pi-*.tar.gz" |
@@ -194,7 +195,7 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
 
-          $importTarball = Get-ChildItem build-windows-win32-probe -File -Filter "*-IMPORT.tar.gz" |
+          $importTarball = Get-ChildItem build-windows-win32 -File -Filter "*-IMPORT.tar.gz" |
             Select-Object -First 1
 
           if (-not $importTarball) {
@@ -223,18 +224,19 @@ jobs:
           }
 
       - name: List generated Windows files
-        if: always() && hashFiles('build-windows-win32-probe/**') != ''
+        if: always() && hashFiles('build-windows-win32/**') != ''
         shell: pwsh
         run: |
-          Get-ChildItem build-windows-win32-probe -Recurse -Include *.dll,*.lib,*.exe,*.tar.gz,*.xml |
+          Get-ChildItem build-windows-win32 -Recurse -Include *.dll,*.lib,*.exe,*.tar.gz,*.xml |
             Select-Object FullName, Length |
             Format-Table -AutoSize
 
-      - name: Upload Windows Win32 probe artifact
-        if: always()
+      - name: Upload Windows package artifact
         uses: actions/upload-artifact@v6
         with:
-          name: openobserver-windows-win32-probe
-          path: build-windows-win32-probe
-          if-no-files-found: warn
+          name: openobserver-windows-32-bit
+          path: |
+            build-windows-win32/*-IMPORT.tar.gz
+            build-windows-win32/openobserver_pi-*.xml
+          if-no-files-found: error
           retention-days: 14
