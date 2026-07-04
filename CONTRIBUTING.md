@@ -91,9 +91,10 @@ Keep the pull request description understandable to collaborators who did not wr
 A pull request into `main` requires:
 
 - successful macOS Apple Silicon and Windows 32-bit CI builds;
-- at least one approval from another contributor;
 - resolution of review comments;
 - no unresolved scope or compatibility concern.
+
+Reviews are encouraged for all meaningful changes, but an approval is not required to merge.
 
 Any administrator may merge after these conditions are met. For changes affecting data compatibility, release packaging, licenses, project structure, or the public interface, agree on the intended direction before merging.
 
