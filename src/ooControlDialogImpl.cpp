@@ -860,6 +860,7 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
         wxEVT_BUTTON,
         &ooControlDialogImpl::OnDataLoggerStartStop,
         this);
+    RefreshDataLoggerControls();
 
     if (m_checkShowCurrentData) {
         m_checkShowCurrentData->Bind(
@@ -2185,69 +2186,63 @@ wxColour ooControlDialogImpl::GetProjectColourForSlot(int slotIndex) const
 
 void ooControlDialogImpl::RefreshDataLoggerControls()
 {
-    if (!g_openobserver_pi) return;
-
-    ooDataLogger& logger = g_openobserver_pi->GetDataLogger();
-    const bool loggerRunning = logger.IsRunning();
-
-    if (m_choiceDataLoggerProject) {
-        const int previousSelection = m_choiceDataLoggerProject->GetSelection();
-
-        m_choiceDataLoggerProject->Clear();
-
-        for (unsigned int i = 0; i < m_choiceObservations->GetCount(); ++i) {
-            m_choiceDataLoggerProject->Append(m_choiceObservations->GetString(i));
-        }
-
-        int selection = wxNOT_FOUND;
-
-        if (logger.HasLoggerProject()) {
-            selection = logger.GetLoggerProjectIndex();
-        } else if (previousSelection != wxNOT_FOUND) {
-            selection = previousSelection;
-        } else {
-            selection = m_currentObservationsIndex;
-        }
-
-        if (selection < 0 || selection >= (int)m_choiceDataLoggerProject->GetCount()) {
-            selection = m_currentObservationsIndex;
-        }
-
-        m_choiceDataLoggerProject->SetSelection(selection);
-        m_choiceDataLoggerProject->Enable(!loggerRunning);
-
-        if (m_panelDataLoggerColour) {
-            m_panelDataLoggerColour->SetBackgroundColour(GetProjectColourForSlot(selection));
-            m_panelDataLoggerColour->Refresh();
-        }
+    // Data Logger is retained in the codebase for future work, but is not
+    // part of the stable cross-platform release yet.
+    if (m_staticTextDataLogger) {
+        m_staticTextDataLogger->SetLabel(
+            _("Data Logger (not available in this release):"));
+        m_staticTextDataLogger->Disable();
     }
 
-    SetDurationControls(
-        logger.GetIntervalSeconds(),
-        m_textDataLoggerIntervalHours,
-        m_textDataLoggerIntervalMinutes,
-        m_textDataLoggerIntervalSeconds);
+    if (m_choiceDataLoggerProject) {
+        m_choiceDataLoggerProject->Disable();
+    }
 
-    SetDurationControls(
-        logger.GetCaptureDurationSeconds(),
-        m_textDataLoggerCaptureHours,
-        m_textDataLoggerCaptureMinutes,
-        m_textDataLoggerCaptureSeconds);
-
-    m_textDataLoggerIntervalHours->Enable(!loggerRunning);
-    m_textDataLoggerIntervalMinutes->Enable(!loggerRunning);
-    m_textDataLoggerIntervalSeconds->Enable(!loggerRunning);
-    m_textDataLoggerCaptureHours->Enable(!loggerRunning);
-    m_textDataLoggerCaptureMinutes->Enable(!loggerRunning);
-    m_textDataLoggerCaptureSeconds->Enable(!loggerRunning);
+    if (m_panelDataLoggerColour) {
+        m_panelDataLoggerColour->SetBackgroundColour(
+            wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE));
+        m_panelDataLoggerColour->Disable();
+        m_panelDataLoggerColour->Refresh();
+    }
 
     if (m_buttonDataLoggerStartStop) {
-        m_buttonDataLoggerStartStop->SetLabel(
-            loggerRunning ? _("Stop Logging") : _("Start Logging"));
+        m_buttonDataLoggerStartStop->Disable();
+    }
+
+    if (m_staticTextDataLoggerInterval) {
+        m_staticTextDataLoggerInterval->Disable();
+    }
+
+    if (m_textDataLoggerIntervalHours) {
+        m_textDataLoggerIntervalHours->Disable();
+    }
+
+    if (m_textDataLoggerIntervalMinutes) {
+        m_textDataLoggerIntervalMinutes->Disable();
+    }
+
+    if (m_textDataLoggerIntervalSeconds) {
+        m_textDataLoggerIntervalSeconds->Disable();
+    }
+
+    if (m_staticTextDataLoggerCapture) {
+        m_staticTextDataLoggerCapture->Disable();
+    }
+
+    if (m_textDataLoggerCaptureHours) {
+        m_textDataLoggerCaptureHours->Disable();
+    }
+
+    if (m_textDataLoggerCaptureMinutes) {
+        m_textDataLoggerCaptureMinutes->Disable();
+    }
+
+    if (m_textDataLoggerCaptureSeconds) {
+        m_textDataLoggerCaptureSeconds->Disable();
     }
 
     if (m_staticTextDataLoggerStatus) {
-        m_staticTextDataLoggerStatus->SetLabel(logger.GetStatusText());
+        m_staticTextDataLoggerStatus->SetLabel(wxEmptyString);
         m_staticTextDataLoggerStatus->GetParent()->Layout();
     }
 }
