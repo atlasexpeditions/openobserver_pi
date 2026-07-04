@@ -188,7 +188,6 @@ set(SRCS
     src/ooMiniDialogDef.cpp 
     src/ooMiniDialogImpl.cpp
     src/ooMiniPanel.cpp
-    src/ooAuiPanel.cpp
     src/ooNmeaRecorder.cpp
     src/ooDataLogger.cpp
     src/tpicons.cpp
@@ -206,7 +205,6 @@ set(HDRS
     src/ooMiniDialogDef.h
     src/ooMiniDialogImpl.h
     src/ooMiniPanel.h
-    src/ooAuiPanel.h
     src/ooNmeaRecorder.h
     src/tpicons.h
     src/tpIconCombo.h
