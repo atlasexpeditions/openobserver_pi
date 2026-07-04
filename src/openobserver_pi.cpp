@@ -668,16 +668,28 @@ bool openobserver_pi::DeInit(void)
     {
         wxLogMessage("Open Observer DeInit: removing AUI panel");
 
+        wxLogMessage("Open Observer DeInit: before StopUpdates");
         m_ooAuiPanel->StopUpdates();
+        wxLogMessage("Open Observer DeInit: after StopUpdates");
 
+        wxLogMessage("Open Observer DeInit: before GetFrameAuiManager");
         wxAuiManager* aui = GetFrameAuiManager();
+        wxLogMessage("Open Observer DeInit: after GetFrameAuiManager");
+
         if (aui) {
+            wxLogMessage("Open Observer DeInit: before DetachPane");
             aui->DetachPane(m_ooAuiPanel);
+            wxLogMessage("Open Observer DeInit: after DetachPane");
+
+            wxLogMessage("Open Observer DeInit: before AUI Update");
             aui->Update();
+            wxLogMessage("Open Observer DeInit: after AUI Update");
         }
 
+        wxLogMessage("Open Observer DeInit: before delete AUI panel");
         delete m_ooAuiPanel;
         m_ooAuiPanel = nullptr;
+        wxLogMessage("Open Observer DeInit: after delete AUI panel");
 
         wxLogMessage("Open Observer DeInit: AUI panel removed");
     }
@@ -1349,18 +1361,30 @@ void openobserver_pi::ShowPreferencesDialog(wxWindow *parent)
         }
     } else {
         if (m_ooAuiPanel) {
-            // Stop periodic callbacks before removing the pane from AUI.
-            m_ooAuiPanel->StopUpdates();
+            wxLogMessage("Open Observer Preferences: removing AUI panel");
 
+            wxLogMessage("Open Observer Preferences: before StopUpdates");
+            m_ooAuiPanel->StopUpdates();
+            wxLogMessage("Open Observer Preferences: after StopUpdates");
+
+            wxLogMessage("Open Observer Preferences: before GetFrameAuiManager");
             wxAuiManager* aui = GetFrameAuiManager();
+            wxLogMessage("Open Observer Preferences: after GetFrameAuiManager");
+
             if (aui) {
+                wxLogMessage("Open Observer Preferences: before DetachPane");
                 aui->DetachPane(m_ooAuiPanel);
+                wxLogMessage("Open Observer Preferences: after DetachPane");
+
+                wxLogMessage("Open Observer Preferences: before AUI Update");
                 aui->Update();
+                wxLogMessage("Open Observer Preferences: after AUI Update");
             }
 
-            // The plugin owns the detached pane.
+            wxLogMessage("Open Observer Preferences: before delete AUI panel");
             delete m_ooAuiPanel;
             m_ooAuiPanel = nullptr;
+            wxLogMessage("Open Observer Preferences: after delete AUI panel");
         }
     }
 
