@@ -635,30 +635,39 @@ void openobserver_pi::LateInit(void)
 
 bool openobserver_pi::DeInit(void)
 {
+    wxLogMessage("Open Observer DeInit: begin");
+
     StopNmeaRecordingIfNeeded();
+    wxLogMessage("Open Observer DeInit: NMEA stopped");
 
     if (m_ooControlDialogImpl)
     {
+        wxLogMessage("Open Observer DeInit: removing control dialog");
+
         m_dialogPosition = m_ooControlDialogImpl->GetRect();
-        
-        // Do not trigger user close handlers while OpenCPN unloads the plugin.
         m_ooControlDialogImpl->Hide();
         delete m_ooControlDialogImpl;
         m_ooControlDialogImpl = nullptr;
+
+        wxLogMessage("Open Observer DeInit: control dialog removed");
     }
+
     if (m_ooMiniDialogImpl)
     {
-        m_miniDialogPosition = m_ooMiniDialogImpl->GetRect();
+        wxLogMessage("Open Observer DeInit: removing mini dialog");
 
-        // Do not trigger user close handlers while OpenCPN unloads the plugin.
+        m_miniDialogPosition = m_ooMiniDialogImpl->GetRect();
         m_ooMiniDialogImpl->Hide();
         delete m_ooMiniDialogImpl;
         m_ooMiniDialogImpl = nullptr;
+
+        wxLogMessage("Open Observer DeInit: mini dialog removed");
     }
- 
+
     if (m_ooAuiPanel)
     {
-        // Stop plugin-owned callbacks before OpenCPN can unload this DLL.
+        wxLogMessage("Open Observer DeInit: removing AUI panel");
+
         m_ooAuiPanel->StopUpdates();
 
         wxAuiManager* aui = GetFrameAuiManager();
@@ -667,15 +676,22 @@ bool openobserver_pi::DeInit(void)
             aui->Update();
         }
 
-        // DetachPane leaves this plugin responsible for the window.
-        // Do not defer destruction beyond DeInit().
         delete m_ooAuiPanel;
         m_ooAuiPanel = nullptr;
-    }
-    if (m_pConfig) SaveConfig();
 
+        wxLogMessage("Open Observer DeInit: AUI panel removed");
+    }
+
+    if (m_pConfig) {
+        wxLogMessage("Open Observer DeInit: saving config");
+        SaveConfig();
+        wxLogMessage("Open Observer DeInit: config saved");
+    }
+
+    wxLogMessage("Open Observer DeInit: complete");
     return true;
 }
+
 
 int openobserver_pi::GetAPIVersionMajor()
 {
