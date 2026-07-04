@@ -4,6 +4,7 @@
 #include <wx/colour.h>
 #include <wx/settings.h>
 #include <wx/menu.h>
+#include <wx/log.h>
 
 #include "ooObservations.h"
 #include "openobserver_pi.h"
@@ -90,7 +91,11 @@ ooAuiPanel::ooAuiPanel(wxWindow* parent)
 
 ooAuiPanel::~ooAuiPanel()
 {
+    wxLogMessage("Open Observer AUI panel: destructor begin");
+
     StopUpdates();
+
+    wxLogMessage("Open Observer AUI panel: destructor end");
 }
 
 void ooAuiPanel::StopUpdates()
