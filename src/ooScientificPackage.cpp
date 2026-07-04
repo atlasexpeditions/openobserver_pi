@@ -1265,11 +1265,11 @@ bool ooScientificPackage::WriteGeneratedFilesWarning(
     wxString& errorMessage)
 {
     const wxString readmePath =
-        JoinPath(JoinPath(packageDir, "00_raw_data"), "*read-me.txt");
+        JoinPath(JoinPath(packageDir, "00_raw_data"), "read-me.txt");
 
     wxFile file(readmePath, wxFile::write);
     if (!file.IsOpened()) {
-        errorMessage = "Unable to write 00_raw_data/*read-me.txt";
+        errorMessage = "Unable to write 00_raw_data/read-me.txt";
         return false;
     }
 

@@ -52,18 +52,21 @@ else ()
       OUTPUT_STRIP_TRAILING_WHITESPACE
     )
     execute_process(
-      COMMAND git status --porcelain -b
+      COMMAND git rev-parse --abbrev-ref --symbolic-full-name "@{upstream}"
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
-      OUTPUT_VARIABLE GIT_STATUS
+      OUTPUT_VARIABLE GIT_UPSTREAM
       OUTPUT_STRIP_TRAILING_WHITESPACE
+      RESULT_VARIABLE GIT_UPSTREAM_RESULT
+      ERROR_QUIET
     )
-    string(FIND ${GIT_STATUS} "..." START_TRACKED)
-    if (NOT START_TRACKED EQUAL -1)
-      string(FIND ${GIT_STATUS} "/" END_TRACKED)
-      math(EXPR START_TRACKED "${START_TRACKED}+3")
-      math(EXPR END_TRACKED "${END_TRACKED}-${START_TRACKED}")
-      string(SUBSTRING ${GIT_STATUS} ${START_TRACKED} ${END_TRACKED}
-                       GIT_REPOSITORY_REMOTE
+
+    if (GIT_UPSTREAM_RESULT EQUAL 0)
+      string(
+        REGEX REPLACE
+        "^([^/]+)/.*$"
+        "\\1"
+        GIT_REPOSITORY_REMOTE
+        "${GIT_UPSTREAM}"
       )
       message(STATUS "${CMLOC}GIT_REPOSITORY_REMOTE: ${GIT_REPOSITORY_REMOTE}")
       execute_process(

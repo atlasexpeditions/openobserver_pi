@@ -71,10 +71,10 @@ set(LONG_DESCRIPTION
 )
 
 set(VERSION_MAJOR "0")
-set(VERSION_MINOR "0")
+set(VERSION_MINOR "2")
 set(VERSION_PATCH "1")
 set(VERSION_TWEAK "0")
-set(VERSION_DATE "21/05/2026") # DD/MM/YYYY format
+set(VERSION_DATE "04/07/2026") # DD/MM/YYYY format
 set(OCPN_MIN_VERSION "ov58")
 
 set(OCPN_API_VERSION_MAJOR "1")
@@ -188,8 +188,8 @@ set(SRCS
     src/ooMiniDialogDef.cpp 
     src/ooMiniDialogImpl.cpp
     src/ooMiniPanel.cpp
-    src/ooAuiPanel.cpp
     src/ooNmeaRecorder.cpp
+    src/ooDataLogger.cpp
     src/tpicons.cpp
     src/tpUtils.cpp
 )
@@ -205,7 +205,6 @@ set(HDRS
     src/ooMiniDialogDef.h
     src/ooMiniDialogImpl.h
     src/ooMiniPanel.h
-    src/ooAuiPanel.h
     src/ooNmeaRecorder.h
     src/tpicons.h
     src/tpIconCombo.h

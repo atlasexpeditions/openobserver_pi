@@ -69,6 +69,18 @@ class ooControlDialogDef : public wxFrame
 		wxStaticText* m_staticText11;
 		wxStaticText* m_staticTextListings;
 		wxButton* m_buttonRefreshListings;
+		wxStaticText* m_staticTextDataLogger;
+		wxChoice* m_choiceDataLoggerProject;
+		wxPanel* m_panelDataLoggerColour;
+		wxButton* m_buttonDataLoggerStartStop;
+		wxStaticText* m_staticTextDataLoggerInterval;
+		wxTextCtrl* m_textDataLoggerIntervalHours;
+		wxTextCtrl* m_textDataLoggerIntervalMinutes;
+		wxTextCtrl* m_textDataLoggerIntervalSeconds;
+		wxStaticText* m_staticTextDataLoggerCapture;
+		wxTextCtrl* m_textDataLoggerCaptureHours;
+		wxTextCtrl* m_textDataLoggerCaptureMinutes;
+		wxTextCtrl* m_textDataLoggerCaptureSeconds;
 		wxPanel* m_panelObservations;
 		wxFlexGridSizer* m_fgSizerObservations;
 		wxBoxSizer* bSizerTopButtons;
@@ -83,6 +95,7 @@ class ooControlDialogDef : public wxFrame
 		wxTextCtrl* m_ObservationsLat;
 		wxStaticText* m_ObservationsLonLabel;
 		wxTextCtrl* m_ObservationsLon;
+		wxStaticText* m_staticTextDataLoggerStatus;
 		wxStaticLine* m_staticline11;
 		wxButton* m_ObservationsNew;
 		wxButton* m_ObservationsDelete;

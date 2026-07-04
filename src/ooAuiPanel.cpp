@@ -4,6 +4,7 @@
 #include <wx/colour.h>
 #include <wx/settings.h>
 #include <wx/menu.h>
+#include <wx/log.h>
 
 #include "ooObservations.h"
 #include "openobserver_pi.h"
@@ -86,6 +87,22 @@ ooAuiPanel::ooAuiPanel(wxWindow* parent)
     Bind(wxEVT_SHOW, &ooAuiPanel::OnShow, this);
     Bind(wxEVT_CONTEXT_MENU, &ooAuiPanel::OnContextMenu, this);
     Bind(wxEVT_MENU, &ooAuiPanel::OnUndockPanel, this, ID_OO_AUI_UNDOCK_PANEL);
+}
+
+ooAuiPanel::~ooAuiPanel()
+{
+    wxLogMessage("Open Observer AUI panel: destructor begin");
+
+    StopUpdates();
+
+    wxLogMessage("Open Observer AUI panel: destructor end");
+}
+
+void ooAuiPanel::StopUpdates()
+{
+    if (m_timer.IsRunning()) {
+        m_timer.Stop();
+    }
 }
 
 void ooAuiPanel::ApplyThemeColours()

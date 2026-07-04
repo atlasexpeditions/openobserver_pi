@@ -1,0 +1,139 @@
+name: Build macOS (Apple Silicon)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-macos-arm64:
+    name: Build Open Observer package (Apple Silicon)
+    runs-on: macos-15
+
+    steps:
+      - name: Check out source and submodules
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Install build dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          brew update
+          brew install \
+            cmake \
+            gettext \
+            libexif \
+            wget \
+            openssl@3 \
+            wxwidgets@3.2
+
+      - name: Verify build tools
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          WX_CONFIG="$(brew --prefix wxwidgets@3.2)/bin/wx-config-3.2"
+
+          test -x "$WX_CONFIG"
+
+          echo "=== CMake ==="
+          cmake --version
+
+          echo
+          echo "=== wxWidgets ==="
+          "$WX_CONFIG" --version
+
+          echo
+          echo "=== Architecture ==="
+          uname -m
+
+      - name: Configure package build
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          WX_CONFIG="$(brew --prefix wxwidgets@3.2)/bin/wx-config-3.2"
+
+          cmake -S . -B build-ci \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DwxWidgets_CONFIG_EXECUTABLE="$WX_CONFIG"
+
+      - name: Build Open Observer package
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cmake --build build-ci --target package -j 2
+
+          echo "=== Build output ==="
+          find build-ci -maxdepth 1 -type f -print | sort
+
+      - name: Create importable OpenCPN package
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          cd build-ci
+
+          PKG_TAR="$(find . -maxdepth 1 -name 'openobserver_pi-*.tar.gz' ! -name '*IMPORT*' | grep arm64 | head -n 1)"
+          PKG_XML="$(find . -maxdepth 1 -name 'openobserver_pi-*.xml' | grep arm64 | head -n 1)"
+
+          test -n "$PKG_TAR"
+          test -n "$PKG_XML"
+
+          perl -pi -e 's#<target>\s*darwin\s*</target>#<target>darwin-wx32</target>#' "$PKG_XML"
+          perl -pi -e 's#<build-target>\s*darwin-wx32\s*</build-target>#<build-target>darwin</build-target>#' "$PKG_XML"
+
+          rm -rf oo_import_package
+          mkdir oo_import_package
+          cd oo_import_package
+
+          tar -xzf "../${PKG_TAR#./}"
+          cp "../${PKG_XML#./}" ./metadata.xml
+
+          ROOT_DIR="$(find . -maxdepth 1 -type d -name 'openobserver_pi-*' | head -n 1 | sed 's#^\./##')"
+
+          test -n "$ROOT_DIR"
+
+          tar -czf "../${ROOT_DIR}-IMPORT.tar.gz" metadata.xml "$ROOT_DIR"
+
+          cd ..
+
+          echo "=== Import package ==="
+          ls -lh ./*IMPORT.tar.gz
+
+      - name: Verify packaged resources
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          IMPORT="$(find build-ci -maxdepth 1 -name '*IMPORT.tar.gz' | head -n 1)"
+
+          test -n "$IMPORT"
+
+          tar -tzf "$IMPORT" | grep -q 'data/Listings/'
+          tar -tzf "$IMPORT" | grep -q 'data/ProjectTemplates/'
+          tar -tzf "$IMPORT" | grep -q 'data/ScientificPackageTemplates/'
+          tar -tzf "$IMPORT" | grep -q 'data/UserIcons/'
+          tar -tzf "$IMPORT" | grep -q 'openobserver-icon'
+
+      - name: Upload macOS package artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: openobserver-macos-apple-silicon
+          path: |
+            build-ci/*IMPORT.tar.gz
+            build-ci/openobserver_pi-*.xml
+          if-no-files-found: error
+          retention-days: 14

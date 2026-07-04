@@ -169,8 +169,13 @@ void ooMiniPanel::SetProjectInfo(const wxString& projectName,
     m_ProjectLabel->SetLabelText(wxString::Format(" %s ", projectName));
     m_ProjectLabelPanel->SetBackgroundColour(projectColor);
     m_ProjectLabel->SetForegroundColour(ContrastTextColour(projectColor));
+
     m_ProjectLabelPanel->Layout();
+    m_ProjectLabelPanel->Refresh();
+    m_ProjectLabelPanel->Update();
+
     m_ProjectLabelPanel->GetParent()->Layout();
+    m_ProjectLabelPanel->GetParent()->Refresh();
 }
 
 void ooMiniPanel::StartOrStopObservation()

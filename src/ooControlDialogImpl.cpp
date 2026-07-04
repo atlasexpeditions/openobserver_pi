@@ -700,24 +700,13 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
 
     aboutSizer->Add(aboutTitle, 0, wxALIGN_CENTER_HORIZONTAL | wxLEFT | wxRIGHT | wxBOTTOM, 18);
 
-    wxStaticText* aboutTagline = new wxStaticText(
-        panelAbout,
-        wxID_ANY,
-        _("The digital field notebook for the sea."),
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxALIGN_CENTER_HORIZONTAL);
-
-    wxFont italicFont = aboutTagline->GetFont();
+    wxFont italicFont = panelAbout->GetFont();
     italicFont.SetStyle(wxFONTSTYLE_ITALIC);
-    aboutTagline->SetFont(italicFont);
-
-    aboutSizer->Add(aboutTagline, 0, wxALIGN_CENTER_HORIZONTAL | wxLEFT | wxRIGHT | wxBOTTOM, 18);
 
     wxStaticText* aboutText = new wxStaticText(
         panelAbout,
         wxID_ANY,
-        _("Every trip, patrol, field mission, or observation campaign can yield valuable scientific observations.\n\n"
+        _("\"Every trip, patrol, field mission, or observation campaign can yield valuable scientific observations.\"\n\n"
           "Open Observer was designed to support this vision by helping to transform these observations into structured, shareable, and scientifically useful data.\n\n"
           "We wish you a safe watch, and many incredible sightings!"),
         wxDefaultPosition,
@@ -745,7 +734,7 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
     wxStaticText* acknowledgementsText = new wxStaticText(
         panelAbout,
         wxID_ANY,
-        _("A huge thank you to the teams at Atlas Expedition, the Glacialis and Sila projects, as well as to the dedicated volunteer contributors to the project’s development: Alex Mansfield, Angie Gartz, Arnaud Conne, Christophe Daudin, and Matthew Ryle."),
+        _("A huge thank you to the teams at Atlas Expedition, the Glacialis and Sila projects, as well as to the dedicated volunteer contributors to the project's development: Alex Mansfield, Angie Gartz, Arnaud Conne, Christophe Daudin, and Matthew Ryle."),
         wxDefaultPosition,
         wxDefaultSize,
         wxALIGN_CENTER_HORIZONTAL);
@@ -850,6 +839,17 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
         wxEVT_BUTTON,
         &ooControlDialogImpl::OnButtonClickClearObservationFilter,
         this);
+
+    m_choiceDataLoggerProject->Bind(
+        wxEVT_CHOICE,
+        &ooControlDialogImpl::OnDataLoggerProjectChanged,
+        this);
+
+    m_buttonDataLoggerStartStop->Bind(
+        wxEVT_BUTTON,
+        &ooControlDialogImpl::OnDataLoggerStartStop,
+        this);
+    RefreshDataLoggerControls();
 
     if (m_checkShowCurrentData) {
         m_checkShowCurrentData->Bind(
@@ -1041,6 +1041,43 @@ void ooControlDialogImpl::UpdateProjectCellEditors()
     HideInternalProjectColumns();
 }
 
+static void SetDurationControls(
+    long totalSeconds,
+    wxTextCtrl* hoursCtrl,
+    wxTextCtrl* minutesCtrl,
+    wxTextCtrl* secondsCtrl)
+{
+    if (totalSeconds < 0) totalSeconds = 0;
+
+    const long hours = totalSeconds / 3600;
+    const long minutes = (totalSeconds % 3600) / 60;
+    const long seconds = totalSeconds % 60;
+
+    hoursCtrl->SetValue(wxString::Format(wxT("%02ld"), hours));
+    minutesCtrl->SetValue(wxString::Format(wxT("%02ld"), minutes));
+    secondsCtrl->SetValue(wxString::Format(wxT("%02ld"), seconds));
+}
+
+static long ReadDurationControls(
+    wxTextCtrl* hoursCtrl,
+    wxTextCtrl* minutesCtrl,
+    wxTextCtrl* secondsCtrl)
+{
+    long hours = 0;
+    long minutes = 0;
+    long seconds = 0;
+
+    hoursCtrl->GetValue().ToLong(&hours);
+    minutesCtrl->GetValue().ToLong(&minutes);
+    secondsCtrl->GetValue().ToLong(&seconds);
+
+    if (hours < 0) hours = 0;
+    if (minutes < 0) minutes = 0;
+    if (seconds < 0) seconds = 0;
+
+    return hours * 3600 + minutes * 60 + seconds;
+}
+
 bool ooControlDialogImpl::LoadProject(const ooProject& project)
 {
     // delete columns
@@ -1076,6 +1113,8 @@ bool ooControlDialogImpl::LoadProject(const ooProject& project)
     HideInternalProjectColumns();
 
     m_CurrentProject = project;
+
+    RefreshDataLoggerControls();
 
     return true;
 }
@@ -2102,6 +2141,142 @@ void ooControlDialogImpl::SetPositionFix(time_t fixTime, double lat, double lon)
 
     m_ObservationsLat->SetValue(toSDMM_PlugIn(1, lat));
     m_ObservationsLon->SetValue(toSDMM_PlugIn(2, lon));
+
+    if (g_openobserver_pi && m_staticTextDataLoggerStatus) {
+        m_staticTextDataLoggerStatus->SetLabel(
+            g_openobserver_pi->GetDataLogger().GetStatusText());
+        m_staticTextDataLoggerStatus->GetParent()->Layout();
+    }
+}
+
+wxColour ooControlDialogImpl::GetProjectColourForSlot(int slotIndex) const
+{
+    if (slotIndex == m_currentObservationsIndex) {
+        return m_CurrentProject.GetColor();
+    }
+
+    int fileVersion = 0;
+    wxXmlDocument xmlDoc;
+    wxXmlNode* root = nullptr;
+    ooProject project;
+
+    if (ooObservations::ReadFromXML(
+            GetBackupFilename(slotIndex),
+            fileVersion,
+            project,
+            xmlDoc,
+            root,
+            ooProject())) {
+        return project.GetColor();
+    }
+
+    return DEFAULT_PROJECT_COLOUR;
+}
+
+void ooControlDialogImpl::RefreshDataLoggerControls()
+{
+    // Data Logger is retained in the codebase for future work, but is not
+    // part of the stable cross-platform release yet.
+    if (m_staticTextDataLogger) {
+        m_staticTextDataLogger->SetLabel(
+            _("Data Logger (not available in this release):"));
+        m_staticTextDataLogger->Disable();
+    }
+
+    if (m_choiceDataLoggerProject) {
+        m_choiceDataLoggerProject->Disable();
+    }
+
+    if (m_panelDataLoggerColour) {
+        m_panelDataLoggerColour->SetBackgroundColour(
+            wxSystemSettings::GetColour(wxSYS_COLOUR_BTNFACE));
+        m_panelDataLoggerColour->Disable();
+        m_panelDataLoggerColour->Refresh();
+    }
+
+    if (m_buttonDataLoggerStartStop) {
+        m_buttonDataLoggerStartStop->Disable();
+    }
+
+    if (m_staticTextDataLoggerInterval) {
+        m_staticTextDataLoggerInterval->Disable();
+    }
+
+    if (m_textDataLoggerIntervalHours) {
+        m_textDataLoggerIntervalHours->Disable();
+    }
+
+    if (m_textDataLoggerIntervalMinutes) {
+        m_textDataLoggerIntervalMinutes->Disable();
+    }
+
+    if (m_textDataLoggerIntervalSeconds) {
+        m_textDataLoggerIntervalSeconds->Disable();
+    }
+
+    if (m_staticTextDataLoggerCapture) {
+        m_staticTextDataLoggerCapture->Disable();
+    }
+
+    if (m_textDataLoggerCaptureHours) {
+        m_textDataLoggerCaptureHours->Disable();
+    }
+
+    if (m_textDataLoggerCaptureMinutes) {
+        m_textDataLoggerCaptureMinutes->Disable();
+    }
+
+    if (m_textDataLoggerCaptureSeconds) {
+        m_textDataLoggerCaptureSeconds->Disable();
+    }
+
+    if (m_staticTextDataLoggerStatus) {
+        m_staticTextDataLoggerStatus->SetLabel(wxEmptyString);
+        m_staticTextDataLoggerStatus->GetParent()->Layout();
+    }
+}
+
+void ooControlDialogImpl::ApplyDataLoggerControlsToRuntime()
+{
+    if (!g_openobserver_pi) return;
+
+    ooDataLogger& logger = g_openobserver_pi->GetDataLogger();
+
+    const int selection = m_choiceDataLoggerProject->GetSelection();
+
+    if (selection != wxNOT_FOUND) {
+        logger.SetLoggerProject(selection, m_choiceDataLoggerProject->GetString(selection));
+    }
+
+    logger.SetIntervalSeconds(ReadDurationControls(
+        m_textDataLoggerIntervalHours,
+        m_textDataLoggerIntervalMinutes,
+        m_textDataLoggerIntervalSeconds));
+
+    logger.SetCaptureDurationSeconds(ReadDurationControls(
+        m_textDataLoggerCaptureHours,
+        m_textDataLoggerCaptureMinutes,
+        m_textDataLoggerCaptureSeconds));
+}
+
+void ooControlDialogImpl::OnDataLoggerProjectChanged(wxCommandEvent& event)
+{
+    ApplyDataLoggerControlsToRuntime();
+    RefreshDataLoggerControls();
+    event.Skip();
+}
+
+void ooControlDialogImpl::OnDataLoggerStartStop(wxCommandEvent& event)
+{
+    if (!g_openobserver_pi) return;
+
+    ApplyDataLoggerControlsToRuntime();
+
+    ooDataLogger& logger = g_openobserver_pi->GetDataLogger();
+    logger.Toggle();
+
+    RefreshDataLoggerControls();
+    event.Skip();
 }
 
 void ooControlDialogImpl::SetNmeaSentence(const wxString& sentence)
@@ -3454,7 +3629,7 @@ static bool ShowDataPackageFolderDialog(
     wxButton* browseButton = new wxButton(
         &dialog,
         wxID_ANY,
-        _("Browse…"));
+        _("Browse..."));
 
     pathSizer->Add(pathText, 1, wxRIGHT | wxEXPAND, 8);
     pathSizer->Add(browseButton, 0);
@@ -3473,7 +3648,7 @@ static bool ShowDataPackageFolderDialog(
     wxStaticText* projectInfo = new wxStaticText(
         &dialog,
         wxID_ANY,
-        _("✓ project XML in 00_raw_data/project"));
+        _("Project XML: 00_raw_data/project"));
 
     wxStaticText* exportsTitle = new wxStaticText(
         &dialog,
@@ -3784,12 +3959,12 @@ void ooControlDialogImpl::OnButtonClickCreateScientificPackage(wxCommandEvent& e
     wxMessageBox(
         _("Data Package created successfully:\n\n") + createdPackagePath +
         _("\n\nSummary:\n") +
-        wxString::Format(_("• %d export files created\n"), runSummary.exportFilesRefreshed) +
-        wxString::Format(_("• %d folders created\n"), runSummary.foldersTouched) +
-        wxString::Format(_("• %d NMEA recordings exported\n"), runSummary.nmeaRecordingsCopied) +
-        wxString::Format(_("• %d daily GPX tracks exported\n"), runSummary.gpxDailyTracksExported) +
-        wxString::Format(_("• %d raw OpenCPN GPX tracks exported\n"), runSummary.gpxCompiledTracksExported) +
-        wxString::Format(_("• %d GPX track points exported\n"), runSummary.gpxTrackPointsExported) +
+        wxString::Format(_("- %d export files created\n"), runSummary.exportFilesRefreshed) +
+        wxString::Format(_("- %d folders created\n"), runSummary.foldersTouched) +
+        wxString::Format(_("- %d NMEA recordings exported\n"), runSummary.nmeaRecordingsCopied) +
+        wxString::Format(_("- %d daily GPX tracks exported\n"), runSummary.gpxDailyTracksExported) +
+        wxString::Format(_("- %d raw OpenCPN GPX tracks exported\n"), runSummary.gpxCompiledTracksExported) +
+        wxString::Format(_("- %d GPX track points exported\n"), runSummary.gpxTrackPointsExported) +
         _("\nA detailed log was written to:\n00_raw_data/metadata/data_package_last_run.txt"),
         _("Create Data Package"),
         wxOK | wxICON_INFORMATION,
@@ -3841,12 +4016,12 @@ void ooControlDialogImpl::OnButtonClickUpdateScientificPackage(wxCommandEvent& e
     wxMessageBox(
         _("Data Package updated successfully:\n\n") + packageFolder +
         _("\n\nSummary:\n") +
-        wxString::Format(_("• %d export files updated\n"), runSummary.exportFilesRefreshed) +
-        wxString::Format(_("• %d folders updated\n"), runSummary.foldersTouched) +
-        wxString::Format(_("• %d NMEA recordings exported\n"), runSummary.nmeaRecordingsCopied) +
-        wxString::Format(_("• %d daily GPX tracks exported\n"), runSummary.gpxDailyTracksExported) +
-        wxString::Format(_("• %d raw OpenCPN GPX tracks exported\n"), runSummary.gpxCompiledTracksExported) +
-        wxString::Format(_("• %d GPX track points exported\n"), runSummary.gpxTrackPointsExported) +
+        wxString::Format(_("- %d export files updated\n"), runSummary.exportFilesRefreshed) +
+        wxString::Format(_("- %d folders updated\n"), runSummary.foldersTouched) +
+        wxString::Format(_("- %d NMEA recordings exported\n"), runSummary.nmeaRecordingsCopied) +
+        wxString::Format(_("- %d daily GPX tracks exported\n"), runSummary.gpxDailyTracksExported) +
+        wxString::Format(_("- %d raw OpenCPN GPX tracks exported\n"), runSummary.gpxCompiledTracksExported) +
+        wxString::Format(_("- %d GPX track points exported\n"), runSummary.gpxTrackPointsExported) +
         _("\nA detailed log was written to:\n00_raw_data/metadata/data_package_last_run.txt"),
         _("Update Data Package"),
         wxOK | wxICON_INFORMATION,

@@ -141,8 +141,8 @@ std::cout << x  << std::endl ; } while (0)
 #include <unordered_map>
 
 #include "ooObservations.h"
-#include "ooAuiPanel.h"
 #include "ooNmeaRecorder.h"
+#include "ooDataLogger.h"
 #include "ooObservationHighlight.h"
 #include "globals.h"
 
@@ -200,7 +200,8 @@ public:
     void FocusCurrentObservationRow();
     void StartNmeaRecordingIfNeeded();
     void StopNmeaRecordingIfNeeded();
-    void UndockAuiPanel();
+    ooDataLogger& GetDataLogger();
+    const ooDataLogger& GetDataLogger() const;
     void ShowMiniPanel();
 
     void ToggleToolbarIcon();
@@ -226,12 +227,12 @@ public:
     tpicons *m_ptpicons;
     ooControlDialogImpl *m_ooControlDialogImpl;
     ooMiniDialogImpl *m_ooMiniDialogImpl;
-    ooAuiPanel *m_ooAuiPanel;
+
+    ooDataLogger m_dataLogger;
 
     bool    m_bReadyForRequests;
     int     m_iCallerId;
     bool    m_bShowMainDialog;
-    bool    m_useAuiPanel;
     bool    m_recordNmeaStreamDuringEachObservation;
     ooNmeaRecorder m_nmeaRecorder;
     int     m_openobserver_button_id;
@@ -240,7 +241,6 @@ public:
     wxString m_currentProjectName;
     wxColor m_currentProjectColor;
     int     m_addObservationItem;
-    int     m_showMiniPanelItem;
     int     m_showObservationItem;
     int     m_createObservationFromMarkItem;
 

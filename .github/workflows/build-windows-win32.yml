@@ -1,0 +1,242 @@
+name: Build Windows (32-bit)
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows-win32:
+    name: Build Windows (32-bit)
+    runs-on: windows-2022
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v5
+        with:
+          submodules: recursive
+
+      - name: Download wxWidgets 3.2.1 Win32 build dependencies
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          if (-not (Get-Command 7z -ErrorAction SilentlyContinue)) {
+            choco install 7zip --yes --no-progress
+          }
+
+          $wxDir = Join-Path $env:RUNNER_TEMP "wxwidgets-win32"
+          New-Item -ItemType Directory -Force -Path $wxDir | Out-Null
+
+          $devArchive = Join-Path $env:RUNNER_TEMP "wxMSW-3.2.1_vc14x_Dev.7z"
+          $headersArchive = Join-Path $env:RUNNER_TEMP "wxWidgets-3.2.1-headers.7z"
+
+          Invoke-WebRequest `
+            -Uri "https://github.com/wxWidgets/wxWidgets/releases/download/v3.2.1/wxMSW-3.2.1_vc14x_Dev.7z" `
+            -OutFile $devArchive
+
+          Invoke-WebRequest `
+            -Uri "https://github.com/wxWidgets/wxWidgets/releases/download/v3.2.1/wxWidgets-3.2.1-headers.7z" `
+            -OutFile $headersArchive
+
+          7z x $devArchive "-o$wxDir" | Out-Host
+          7z x $headersArchive "-o$wxDir" | Out-Host
+
+          $wxHeader = Get-ChildItem $wxDir -Recurse -File -Filter "wx.h" |
+            Where-Object { $_.FullName -match "\\include\\wx\\wx\.h$" } |
+            Select-Object -First 1
+
+          if (-not $wxHeader) {
+            throw "wxWidgets header wx.h was not found after extraction."
+          }
+
+          $wxRoot = Split-Path (Split-Path (Split-Path $wxHeader.FullName -Parent) -Parent) -Parent
+
+          $wxLib = Get-ChildItem $wxRoot -Directory -Recurse |
+            Where-Object { $_.Name -eq "vc14x_dll" } |
+            Select-Object -First 1
+
+          if (-not $wxLib) {
+            throw "wxWidgets Win32 DLL library directory was not found."
+          }
+
+          "WX_ROOT=$wxRoot" | Add-Content $env:GITHUB_ENV
+          "WX_LIB=$($wxLib.FullName)" | Add-Content $env:GITHUB_ENV
+
+          Write-Host "wxWidgets root: $wxRoot"
+          Write-Host "wxWidgets libraries: $($wxLib.FullName)"
+
+      - name: Download GNU Gettext tools
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          # Use a pinned upstream archive instead of the Chocolatey feed.
+          # These tools are needed only while building translations.
+          $gettextRoot = Join-Path $env:RUNNER_TEMP "gettext-win32"
+          $gettextArchive = Join-Path $env:RUNNER_TEMP "gettext-win32.zip"
+
+          Remove-Item -Recurse -Force $gettextRoot -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path $gettextRoot | Out-Null
+
+          Invoke-WebRequest `
+            -Uri "https://github.com/mlocati/gettext-iconv-windows/releases/download/v1.0-v1.18-r3/gettext1.0-iconv1.18-static-32.zip" `
+            -OutFile $gettextArchive
+
+          7z x $gettextArchive "-o$gettextRoot" | Out-Host
+
+          $msgfmt = Get-ChildItem $gettextRoot -Recurse -File -Filter "msgfmt.exe" |
+            Select-Object -First 1
+
+          if (-not $msgfmt) {
+            throw "msgfmt.exe was not found after extraction."
+          }
+
+          $gettextBin = $msgfmt.DirectoryName
+          $msgmerge = Join-Path $gettextBin "msgmerge.exe"
+          $xgettext = Join-Path $gettextBin "xgettext.exe"
+
+          if (-not (Test-Path $msgmerge)) {
+            throw "msgmerge.exe was not found: $msgmerge"
+          }
+
+          if (-not (Test-Path $xgettext)) {
+            throw "xgettext.exe was not found: $xgettext"
+          }
+
+          "$gettextBin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
+          Write-Host "gettext bin: $gettextBin"
+          Write-Host "msgfmt: $($msgfmt.FullName)"
+          Write-Host "msgmerge: $msgmerge"
+          Write-Host "xgettext: $xgettext"
+
+      - name: Configure Open Observer build (32-bit)
+        shell: pwsh
+        env:
+          WX_VER: "32"
+        run: |
+          cmake -S . -B build-windows-win32 -A Win32 `
+            -DCMAKE_BUILD_TYPE=Release `
+            -DwxWidgets_ROOT_DIR="$env:WX_ROOT" `
+            -DwxWidgets_LIB_DIR="$env:WX_LIB"
+
+      - name: Build Open Observer package (32-bit)
+        shell: pwsh
+        run: |
+          cmake --build build-windows-win32 --config Release --parallel
+
+      - name: Create Open Observer package (32-bit)
+        shell: pwsh
+        run: |
+          cmake --build build-windows-win32 --target package --config Release
+
+      - name: Create importable OpenCPN package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $buildDir = "build-windows-win32"
+          $buildDirFull = (Resolve-Path $buildDir).Path
+
+          $tarball = Get-ChildItem $buildDir -File -Filter "openobserver_pi-*.tar.gz" |
+            Where-Object { $_.Name -notmatch "-IMPORT\.tar\.gz$" } |
+            Select-Object -First 1
+
+          $metadata = Get-ChildItem $buildDir -File -Filter "openobserver_pi-*.xml" |
+            Select-Object -First 1
+
+          if (-not $tarball) {
+            throw "Original CPack tarball was not found."
+          }
+
+          if (-not $metadata) {
+            throw "Generated OpenCPN metadata XML was not found."
+          }
+
+          $stagingDir = Join-Path $buildDirFull "openobserver-import-staging"
+          Remove-Item -Recurse -Force $stagingDir -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Force -Path $stagingDir | Out-Null
+
+          tar -xzf $tarball.FullName -C $stagingDir
+
+          $rootDirs = @(Get-ChildItem $stagingDir -Directory)
+
+          if ($rootDirs.Count -ne 1) {
+            throw "Expected exactly one package root directory after extraction."
+          }
+
+          Copy-Item $metadata.FullName (Join-Path $stagingDir "metadata.xml")
+
+          $packageBaseName = $tarball.Name -replace "\.tar\.gz$", ""
+          $importTarball = Join-Path $buildDirFull "$packageBaseName-IMPORT.tar.gz"
+
+          Remove-Item -Force $importTarball -ErrorAction SilentlyContinue
+
+          Push-Location $stagingDir
+          try {
+            tar -czf $importTarball "metadata.xml" $rootDirs[0].Name
+          }
+          finally {
+            Pop-Location
+          }
+
+          Write-Host "Created import package: $importTarball"
+
+      - name: Verify importable OpenCPN package
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = "Stop"
+
+          $importTarball = Get-ChildItem build-windows-win32 -File -Filter "*-IMPORT.tar.gz" |
+            Select-Object -First 1
+
+          if (-not $importTarball) {
+            throw "OpenCPN import tarball was not created."
+          }
+
+          $entries = @(tar -tzf $importTarball.FullName)
+
+          if ($entries -notcontains "metadata.xml") {
+            throw "metadata.xml is missing from the import tarball root."
+          }
+
+          if (-not ($entries | Where-Object { $_ -match "openobserver_pi\.dll$" })) {
+            throw "openobserver_pi.dll is missing from the import tarball."
+          }
+
+          if (-not ($entries | Where-Object { $_ -match "data/Listings/" })) {
+            throw "Listings resources are missing from the import tarball."
+          }
+
+          Write-Host "=== Verified import package ==="
+          $entries | Where-Object {
+            $_ -eq "metadata.xml" -or
+            $_ -match "openobserver_pi\.dll$" -or
+            $_ -match "data/Listings/"
+          }
+
+      - name: List generated Windows files
+        if: always() && hashFiles('build-windows-win32/**') != ''
+        shell: pwsh
+        run: |
+          Get-ChildItem build-windows-win32 -Recurse -Include *.dll,*.lib,*.exe,*.tar.gz,*.xml |
+            Select-Object FullName, Length |
+            Format-Table -AutoSize
+
+      - name: Upload Windows package artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: openobserver-windows-32-bit
+          path: |
+            build-windows-win32/*-IMPORT.tar.gz
+            build-windows-win32/openobserver_pi-*.xml
+          if-no-files-found: error
+          retention-days: 14
