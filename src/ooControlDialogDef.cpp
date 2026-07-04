@@ -325,30 +325,32 @@ m_gridProject = new wxGrid( m_panelProject, wxID_ANY, wxDefaultPosition, wxSize(
 	m_ObservationsDateLabel->Wrap( -1 );
 	fgSizerObservationsLabels->Add( m_ObservationsDateLabel, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_ObservationsDate = new wxTextCtrl( m_panelObservations, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
-	fgSizerObservationsLabels->Add( m_ObservationsDate, 1, wxALL, 5 );
+	m_ObservationsDate = new wxTextCtrl( m_panelObservations, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 110,-1 ), wxTE_READONLY | wxTE_CENTER );
+	m_ObservationsDate->SetMinSize( wxSize( 110,-1 ) );
+	fgSizerObservationsLabels->Add( m_ObservationsDate, 0, wxALL, 5 );
 
 	m_ObservationsTimeLabel = new wxStaticText( m_panelObservations, wxID_ANY, _("Time"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_ObservationsTimeLabel->Wrap( -1 );
 	fgSizerObservationsLabels->Add( m_ObservationsTimeLabel, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_ObservationsTime = new wxTextCtrl( m_panelObservations, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_READONLY );
-	fgSizerObservationsLabels->Add( m_ObservationsTime, 1, wxALL, 5 );
+	m_ObservationsTime = new wxTextCtrl( m_panelObservations, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 90,-1 ), wxTE_READONLY | wxTE_CENTER );
+	m_ObservationsTime->SetMinSize( wxSize( 90,-1 ) );
+	fgSizerObservationsLabels->Add( m_ObservationsTime, 0, wxALL, 5 );
 
-	m_ObservationsLatLabel = new wxStaticText( m_panelObservations, wxID_ANY, _("Lat"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_ObservationsLatLabel = new wxStaticText( m_panelObservations, wxID_ANY, _("Latitude"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_ObservationsLatLabel->Wrap( -1 );
 	fgSizerObservationsLabels->Add( m_ObservationsLatLabel, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_ObservationsLat = new wxTextCtrl( m_panelObservations, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 120,-1 ), wxTE_READONLY | wxTE_CENTER );
-	m_ObservationsLat->SetMinSize( wxSize( 120,-1 ) );
+	m_ObservationsLat = new wxTextCtrl( m_panelObservations, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 140,-1 ), wxTE_READONLY | wxTE_CENTER );
+	m_ObservationsLat->SetMinSize( wxSize( 140,-1 ) );
 	fgSizerObservationsLabels->Add( m_ObservationsLat, 0, wxALL, 5 );
 
-	m_ObservationsLonLabel = new wxStaticText( m_panelObservations, wxID_ANY, _("Lon"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_ObservationsLonLabel = new wxStaticText( m_panelObservations, wxID_ANY, _("Longitude"), wxDefaultPosition, wxDefaultSize, 0 );
 	m_ObservationsLonLabel->Wrap( -1 );
 	fgSizerObservationsLabels->Add( m_ObservationsLonLabel, 0, wxALIGN_CENTER_VERTICAL|wxALL, 5 );
 
-	m_ObservationsLon = new wxTextCtrl( m_panelObservations, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 120,-1 ), wxTE_READONLY | wxTE_CENTER );
-	m_ObservationsLon->SetMinSize( wxSize( 120,-1 ) );
+	m_ObservationsLon = new wxTextCtrl( m_panelObservations, wxID_ANY, wxEmptyString, wxDefaultPosition, wxSize( 140,-1 ), wxTE_READONLY | wxTE_CENTER );
+	m_ObservationsLon->SetMinSize( wxSize( 140,-1 ) );
 	fgSizerObservationsLabels->Add( m_ObservationsLon, 0, wxALL, 5 );
 
 	m_staticTextDataLoggerStatus = new wxStaticText( m_panelObservations, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, 0 );

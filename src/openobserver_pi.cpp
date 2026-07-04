@@ -1099,7 +1099,7 @@ void openobserver_pi::ShowPreferencesDialog(wxWindow *parent)
 
     wxCheckBox* recordNmeaStreamCheckBox =
         new wxCheckBox(&dialog, wxID_ANY,
-                       _("Record NMEA stream during each observation"));
+                       _("Record NMEA stream during each observation (requires an NMEA Recording field)"));
     recordNmeaStreamCheckBox->SetValue(
         m_recordNmeaStreamDuringEachObservation);
 
