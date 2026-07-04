@@ -2,7 +2,7 @@
 
 Open Observer is an open-source OpenCPN plugin for structured marine observations.
 
-It helps mariners, expedition teams, citizen-science projects and researchers record observations at sea with consistent manual inputs, vessel data, positions, timestamps and configurable project protocols.
+It helps mariners, expedition teams, citizen-science projects and researchers record observations at sea with consistent manual inputs, automated vessel data, positions, timestamps and configurable project protocols.
 
 ## Status
 
