@@ -1381,10 +1381,10 @@ void openobserver_pi::ShowPreferencesDialog(wxWindow *parent)
                 wxLogMessage("Open Observer Preferences: after AUI Update");
             }
 
-            wxLogMessage("Open Observer Preferences: before delete AUI panel");
-            delete m_ooAuiPanel;
+            wxLogMessage("Open Observer Preferences: before Destroy AUI panel");
+            m_ooAuiPanel->Destroy();
             m_ooAuiPanel = nullptr;
-            wxLogMessage("Open Observer Preferences: after delete AUI panel");
+            wxLogMessage("Open Observer Preferences: after Destroy AUI panel");
         }
     }
 
