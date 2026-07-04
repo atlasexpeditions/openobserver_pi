@@ -700,24 +700,13 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
 
     aboutSizer->Add(aboutTitle, 0, wxALIGN_CENTER_HORIZONTAL | wxLEFT | wxRIGHT | wxBOTTOM, 18);
 
-    wxStaticText* aboutTagline = new wxStaticText(
-        panelAbout,
-        wxID_ANY,
-        _("The digital field notebook for the sea."),
-        wxDefaultPosition,
-        wxDefaultSize,
-        wxALIGN_CENTER_HORIZONTAL);
-
-    wxFont italicFont = aboutTagline->GetFont();
+    wxFont italicFont = panelAbout->GetFont();
     italicFont.SetStyle(wxFONTSTYLE_ITALIC);
-    aboutTagline->SetFont(italicFont);
-
-    aboutSizer->Add(aboutTagline, 0, wxALIGN_CENTER_HORIZONTAL | wxLEFT | wxRIGHT | wxBOTTOM, 18);
 
     wxStaticText* aboutText = new wxStaticText(
         panelAbout,
         wxID_ANY,
-        _("Every trip, patrol, field mission, or observation campaign can yield valuable scientific observations.\n\n"
+        _("\"Every trip, patrol, field mission, or observation campaign can yield valuable scientific observations.\"\n\n"
           "Open Observer was designed to support this vision by helping to transform these observations into structured, shareable, and scientifically useful data.\n\n"
           "We wish you a safe watch, and many incredible sightings!"),
         wxDefaultPosition,
