@@ -88,6 +88,18 @@ ooAuiPanel::ooAuiPanel(wxWindow* parent)
     Bind(wxEVT_MENU, &ooAuiPanel::OnUndockPanel, this, ID_OO_AUI_UNDOCK_PANEL);
 }
 
+ooAuiPanel::~ooAuiPanel()
+{
+    StopUpdates();
+}
+
+void ooAuiPanel::StopUpdates()
+{
+    if (m_timer.IsRunning()) {
+        m_timer.Stop();
+    }
+}
+
 void ooAuiPanel::ApplyThemeColours()
 {
     const wxColour backgroundColour =

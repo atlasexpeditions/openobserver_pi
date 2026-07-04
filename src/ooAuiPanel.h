@@ -9,6 +9,10 @@ class ooAuiPanel : public wxPanel
 {
 public:
     explicit ooAuiPanel(wxWindow* parent);
+    ~ooAuiPanel() override;
+
+    // Stop periodic plugin callbacks before removing this pane from AUI.
+    void StopUpdates();
 
     void SetProjectInfo(const wxString& projectName,
                         const wxColor& projectColor);

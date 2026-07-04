@@ -658,13 +658,18 @@ bool openobserver_pi::DeInit(void)
  
     if (m_ooAuiPanel)
     {
+        // Stop plugin-owned callbacks before OpenCPN can unload this DLL.
+        m_ooAuiPanel->StopUpdates();
+
         wxAuiManager* aui = GetFrameAuiManager();
         if (aui) {
             aui->DetachPane(m_ooAuiPanel);
             aui->Update();
         }
 
-        m_ooAuiPanel->Destroy();
+        // DetachPane leaves this plugin responsible for the window.
+        // Do not defer destruction beyond DeInit().
+        delete m_ooAuiPanel;
         m_ooAuiPanel = nullptr;
     }
     if (m_pConfig) SaveConfig();
@@ -1328,13 +1333,17 @@ void openobserver_pi::ShowPreferencesDialog(wxWindow *parent)
         }
     } else {
         if (m_ooAuiPanel) {
+            // Stop periodic callbacks before removing the pane from AUI.
+            m_ooAuiPanel->StopUpdates();
+
             wxAuiManager* aui = GetFrameAuiManager();
             if (aui) {
                 aui->DetachPane(m_ooAuiPanel);
                 aui->Update();
             }
 
-            m_ooAuiPanel->Destroy();
+            // The plugin owns the detached pane.
+            delete m_ooAuiPanel;
             m_ooAuiPanel = nullptr;
         }
     }
