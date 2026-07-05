@@ -91,11 +91,7 @@ ooAuiPanel::ooAuiPanel(wxWindow* parent)
 
 ooAuiPanel::~ooAuiPanel()
 {
-    wxLogMessage("Open Observer AUI panel: destructor begin");
-
     StopUpdates();
-
-    wxLogMessage("Open Observer AUI panel: destructor end");
 }
 
 void ooAuiPanel::StopUpdates()
@@ -168,7 +164,7 @@ void ooAuiPanel::OnStartStop(wxCommandEvent& event)
 
     }
 
-    g_openobserver_pi->MarkObservationsDirty("observation start/stop");
+    g_openobserver_pi->MarkObservationsDirty();
 
     UpdateObservationStatus();
     UpdateObservationDuration();

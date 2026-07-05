@@ -884,10 +884,13 @@ ooControlDialogImpl::ooControlDialogImpl(wxWindow* parent)
 
     m_currentObservationsIndex = 0;
 
-    // bind backup timer (started in RestoreBackupObservations)
-    m_BackupTimer.Bind(wxEVT_TIMER, &ooControlDialogImpl::OnBackupTimer, this, m_BackupTimer.GetId());
-    // start timer to backup observations every 30 seconds
-    m_BackupTimer.Start(30000);  // 30'000 ms = 30 s
+    // Check every 30 seconds for pending edits or the 10-minute safety backup.
+    m_BackupTimer.Bind(
+        wxEVT_TIMER,
+        &ooControlDialogImpl::OnBackupTimer,
+        this,
+        m_BackupTimer.GetId());
+    m_BackupTimer.Start(30000);
 }
 
 ooControlDialogImpl::~ooControlDialogImpl()
@@ -1277,7 +1280,7 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                         m_observationPasteUndoStack.erase(m_observationPasteUndoStack.begin());
                     }
 
-                    MarkObservationsDirty("paste");
+                    MarkObservationsDirty();
                 }
 
                 if (g_openobserver_pi) {
@@ -1311,7 +1314,7 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                     undoEntry.rows,
                     undoEntry.cols);
 
-                MarkObservationsDirty("undo paste");
+                MarkObservationsDirty();
 
                 if (g_openobserver_pi) {
                     g_openobserver_pi->RefreshObservationDisplay();
@@ -1427,7 +1430,7 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                             m_observationPasteUndoStack.erase(m_observationPasteUndoStack.begin());
                         }
 
-                        MarkObservationsDirty("paste");
+                        MarkObservationsDirty();
                     }
 
                     if (g_openobserver_pi) {
@@ -1467,7 +1470,7 @@ void ooControlDialogImpl::CreateObservationsTable(ooObservations *observations)
                         undoEntry.rows,
                         undoEntry.cols);
 
-                    MarkObservationsDirty("undo paste");
+                    MarkObservationsDirty();
 
                     if (g_openobserver_pi) {
                         g_openobserver_pi->RefreshObservationDisplay();
@@ -1604,57 +1607,13 @@ void ooControlDialogImpl::SetObservationsChoiceCount(int observationsChoiceCount
   m_choiceObservations->GetParent()->Layout();
 }
 
-void ooControlDialogImpl::LogObservationSaveEvent(const wxString& message) const
+void ooControlDialogImpl::MarkObservationsDirty()
 {
-    wxFileName logFileName(*g_PrivateDataDir, wxEmptyString);
-    logFileName.AppendDir("logs");
-    logFileName.SetFullName("observation_save_events.log");
-
-    wxFileName::Mkdir(logFileName.GetPath(), wxS_DIR_DEFAULT, wxPATH_MKDIR_FULL);
-
-    wxFFile logFile(logFileName.GetFullPath(), "a");
-
-    if (!logFile.IsOpened()) {
-        return;
-    }
-
-    logFile.Write(
-        wxDateTime::Now().FormatISOCombined(' ') +
-        " | " +
-        message +
-        "\n");
-
-    logFile.Close();
-
-    wxTextFile textLog(logFileName.GetFullPath());
-
-    if (!textLog.Open()) {
-        return;
-    }
-
-    while (textLog.GetLineCount() > 500) {
-        textLog.RemoveLine(0);
-    }
-
-    textLog.Write();
-    textLog.Close();
-}
-
-void ooControlDialogImpl::MarkObservationsDirty(const wxString& reason)
-{
-    if (!m_observationsDirty) {
-        LogObservationSaveEvent("DIRTY | " + reason);
-    }
-
     m_observationsDirty = true;
 }
 
-void ooControlDialogImpl::ClearObservationsDirty(const wxString& reason)
+void ooControlDialogImpl::ClearObservationsDirty()
 {
-    if (m_observationsDirty) {
-        LogObservationSaveEvent("CLEAN | " + reason);
-    }
-
     m_observationsDirty = false;
 }
 
@@ -1712,7 +1671,8 @@ bool ooControlDialogImpl::SaveObservations(const wxString& filename, bool stopOb
     }
 
     if (!wxRenameFile(tempPath, savePath, true)) {
-        LogObservationSaveEvent("SAVE FAILED | unable to replace final file | " + savePath);
+        wxLogWarning("Open Observer: unable to replace the saved observations file: %s",
+                    savePath);
 
         wxMessageBox(
             "Unable to replace project file safely.\n\n"
@@ -1724,12 +1684,9 @@ bool ooControlDialogImpl::SaveObservations(const wxString& filename, bool stopOb
         return false;
     }
 
-    LogObservationSaveEvent("SAVE OK | " + savePath);
-
     if (!filename.IsEmpty()) {
-        ClearObservationsDirty("internal save | " + savePath);
+        ClearObservationsDirty();
     } else {
-        LogObservationSaveEvent("EXTERNAL SAVE | dirty state preserved | " + savePath);
         OpenContainingFolder(savePath);
     }
 
@@ -2401,7 +2358,7 @@ void ooControlDialogImpl::ooControlDialogActivate(wxActivateEvent& event)
           // wxMessageBox(wxString::Format(wxT("The position of %i observation(s)
           // has been updated !"), count),
           //              "Position updated", wxOK, this);
-          MarkObservationsDirty("observation mark moved");
+          MarkObservationsDirty();
           RefreshGridAppearance(m_ObservationsTable);
         }
     }
@@ -2445,7 +2402,7 @@ void ooControlDialogImpl::UseProject()
 
     m_Observations->SetProject(project);
     m_CurrentProject = project;
-    MarkObservationsDirty("project applied");
+    MarkObservationsDirty();
 
     // update the project tab interface
     SetProjectEditable(false);
@@ -2491,7 +2448,7 @@ void ooControlDialogImpl::ImportPendingCsvRowsAfterUse()
         return;
     }
 
-    MarkObservationsDirty("CSV rows imported from Create from Table");
+    MarkObservationsDirty();
     RefreshObservationsGrid();
 
     wxMessageBox(
@@ -2849,11 +2806,6 @@ void ooControlDialogImpl::ApplyObservationTextFilter(const wxString& rawQuery)
         m_buttonFilterObservations->SetLabel(
             wxString::Format(_("Filter (%d/%d)"), visibleCount, rowCount));
     }
-
-    wxLogMessage(
-        "OpenObserver: observation filter applied, %d/%d visible",
-        visibleCount,
-        rowCount);
 }
 
 void ooControlDialogImpl::ClearObservationTextFilter()
@@ -2876,8 +2828,6 @@ void ooControlDialogImpl::ClearObservationTextFilter()
     if (m_buttonFilterObservations) {
         m_buttonFilterObservations->SetLabel(_("Filter"));
     }
-
-    wxLogMessage("OpenObserver: observation filter cleared");
 }
 
 void ooControlDialogImpl::OnButtonClickFilterObservations(wxCommandEvent& event)
@@ -2948,7 +2898,7 @@ void ooControlDialogImpl::OnButtonClickDeleteObservation( wxCommandEvent& event 
         DeleteExistingFiles(nmeaRecordingPaths);
     }
 
-    MarkObservationsDirty("observation deleted");
+    MarkObservationsDirty();
 
     RefreshGridAppearance(m_ObservationsTable);
 }
@@ -4048,7 +3998,7 @@ void ooControlDialogImpl::OnButtonClickImportObservations(wxCommandEvent& event)
         return;
     }
 
-    MarkObservationsDirty("CSV import");
+    MarkObservationsDirty();
 }
 
 void ooControlDialogImpl::OnBackupTimer(wxTimerEvent& event)
@@ -4060,21 +4010,11 @@ void ooControlDialogImpl::OnBackupTimer(wxTimerEvent& event)
         !m_lastSafetySaveTime.IsValid() ||
         (now - m_lastSafetySaveTime).GetMinutes() >= 10;
 
-    if (!m_observationsDirty) {
-        if (safetySaveDue) {
-            LogObservationSaveEvent("SAFETY SAVE START | clean");
-            if (SaveObservations(GetBackupFilename(m_currentObservationsIndex), false)) {
-                m_lastSafetySaveTime = now;
-            }
-            return;
-        }
-
-        LogObservationSaveEvent("AUTOSAVE SKIPPED | clean");
+    if (!m_observationsDirty && !safetySaveDue) {
         return;
     }
 
-    LogObservationSaveEvent("AUTOSAVE START | dirty");
-
+    // Keep a recent independent backup even when no edits are pending.
     if (SaveObservations(GetBackupFilename(m_currentObservationsIndex), false)) {
         m_lastSafetySaveTime = now;
     }
@@ -4700,7 +4640,7 @@ void ooControlDialogImpl::OnObservationsGridCellChange(wxGridEvent& event)
         m_Observations->AddMarks(dataRow);
     }
 
-    MarkObservationsDirty("cell changed");
+    MarkObservationsDirty();
 
     if (g_openobserver_pi) {
         g_openobserver_pi->RefreshObservationDisplay();

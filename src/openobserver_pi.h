@@ -195,7 +195,7 @@ public:
     void HighlightObservationOnChart(double lat, double lon, const wxColour& colour);
     void JumpToObservationOnChart(double lat, double lon);
     void RefreshObservationDisplay();
-    void MarkObservationsDirty(const wxString& reason);
+    void MarkObservationsDirty();
     void CreateMarkForCompletedObservationIfRequested();
     void FocusCurrentObservationRow();
     void StartNmeaRecordingIfNeeded();

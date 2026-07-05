@@ -205,7 +205,7 @@ void ooMiniPanel::StartOrStopObservation()
   }
 
   if (g_openobserver_pi) {
-    g_openobserver_pi->MarkObservationsDirty("observation start/stop");
+    g_openobserver_pi->MarkObservationsDirty();
   }
 
   UpdateObservationStatus();

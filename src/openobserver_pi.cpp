@@ -592,42 +592,28 @@ void openobserver_pi::LateInit(void)
 
 bool openobserver_pi::DeInit(void)
 {
-    wxLogMessage("Open Observer DeInit: begin");
-
     StopNmeaRecordingIfNeeded();
-    wxLogMessage("Open Observer DeInit: NMEA stopped");
 
     if (m_ooControlDialogImpl)
     {
-        wxLogMessage("Open Observer DeInit: removing control dialog");
-
         m_dialogPosition = m_ooControlDialogImpl->GetRect();
         m_ooControlDialogImpl->Hide();
         delete m_ooControlDialogImpl;
         m_ooControlDialogImpl = nullptr;
-
-        wxLogMessage("Open Observer DeInit: control dialog removed");
     }
 
     if (m_ooMiniDialogImpl)
     {
-        wxLogMessage("Open Observer DeInit: removing mini dialog");
-
         m_miniDialogPosition = m_ooMiniDialogImpl->GetRect();
         m_ooMiniDialogImpl->Hide();
         delete m_ooMiniDialogImpl;
         m_ooMiniDialogImpl = nullptr;
-
-        wxLogMessage("Open Observer DeInit: mini dialog removed");
     }
 
     if (m_pConfig) {
-        wxLogMessage("Open Observer DeInit: saving config");
         SaveConfig();
-        wxLogMessage("Open Observer DeInit: config saved");
     }
 
-    wxLogMessage("Open Observer DeInit: complete");
     return true;
 }
 
@@ -798,7 +784,7 @@ void openobserver_pi::CreateObservationFromSelectedMark()
         return;
     }
 
-    MarkObservationsDirty("observation created from existing mark");
+    MarkObservationsDirty();
     RefreshObservationDisplay();
     FocusCurrentObservationRow();
 
@@ -829,7 +815,7 @@ void openobserver_pi::OnContextMenuItemCallback(int id)
     }
 
     m_ooObservations->AddObservation(m_cursor_lat, m_cursor_lon);
-    MarkObservationsDirty("observation added from chart context menu");
+    MarkObservationsDirty();
 
     m_ooObservations->AddMarks(m_ooObservations->GetCurrentObservationRow());
 
@@ -993,10 +979,10 @@ void openobserver_pi::RefreshObservationDisplay()
 
 }
 
-void openobserver_pi::MarkObservationsDirty(const wxString& reason)
+void openobserver_pi::MarkObservationsDirty()
 {
     if (m_ooControlDialogImpl) {
-        m_ooControlDialogImpl->MarkObservationsDirty(reason);
+        m_ooControlDialogImpl->MarkObservationsDirty();
     }
 }
 

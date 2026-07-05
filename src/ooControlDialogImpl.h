@@ -68,7 +68,7 @@ public:
         int DataRowToDisplayRow(int dataRow) const;
         wxArrayInt DisplayRowsToDataRows(const wxArrayInt& displayRows) const;
         void CreateMarkForCompletedObservationIfRequested();
-        void MarkObservationsDirty(const wxString& reason);
+        void MarkObservationsDirty();
       protected:
         void SetupObservationsForProject();
         bool LoadObservations(const wxString& filename, bool updateFromMarks = true);
@@ -152,8 +152,7 @@ public:
         wxString m_pendingCsvImportPath;
         wxDateTime m_lastSafetySaveTime;
 
-        void ClearObservationsDirty(const wxString& reason);
-        void LogObservationSaveEvent(const wxString& message) const;
+        void ClearObservationsDirty();
 
         void EnsureMarkIconChoiceContains(const wxString& iconName);
         void SelectMarkIconOrFallback(const wxString& iconName);
