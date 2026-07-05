@@ -65,36 +65,36 @@ public:
     openobserver_pi(void *ppimgr);
     ~openobserver_pi();
 
-    //    The required PlugIn Methods
-    int Init(void);
-    bool DeInit(void);
+    // Required OpenCPN plug-in callbacks.
+    int Init(void) override;
+    bool DeInit(void) override;
 
-    int GetPlugInVersionMajor();
-    int GetPlugInVersionMinor();
-    int GetPlugInVersionPatch();
-    int GetPlugInVersionPost();
+    int GetPlugInVersionMajor() override;
+    int GetPlugInVersionMinor() override;
+    int GetPlugInVersionPatch() override;
+    int GetPlugInVersionPost() override;
 
-    int GetAPIVersionMajor();
-    int GetAPIVersionMinor();
-    wxBitmap *GetPlugInBitmap();
-    wxString GetCommonName();
-    wxString GetShortDescription();
-    wxString GetLongDescription();
+    int GetAPIVersionMajor() override;
+    int GetAPIVersionMinor() override;
+    wxBitmap *GetPlugInBitmap() override;
+    wxString GetCommonName() override;
+    wxString GetShortDescription() override;
+    wxString GetLongDescription() override;
 
-    int GetToolbarToolCount(void);
-    void OnToolbarToolCallback(int id);
-    void OnToolbarToolDownCallback(int id);
-    void OnToolbarToolUpCallback(int id);
-    void OnContextMenuItemCallback(int id);
+    int GetToolbarToolCount(void) override;
+    void OnToolbarToolCallback(int id) override;
+    void OnToolbarToolDownCallback(int id) override;
+    void OnToolbarToolUpCallback(int id) override;
+    void OnContextMenuItemCallback(int id) override;
     void ShowPreferencesDialog(wxWindow *parent) override;
 
-    void LateInit(void);
-    bool KeyboardEventHook( wxKeyEvent &event );
-    bool MouseEventHook( wxMouseEvent &event );
-    void SetCursorLatLon(double lat, double lon);
-    void SetPositionFix(PlugIn_Position_Fix &pfix);
-    void SetNMEASentence(wxString& sentence);
-    void SetCurrentViewPort(PlugIn_ViewPort& vp);
+    void LateInit(void) override;
+    bool KeyboardEventHook(wxKeyEvent& event) override;
+    bool MouseEventHook(wxMouseEvent& event) override;
+    void SetCursorLatLon(double lat, double lon) override;
+    void SetPositionFix(PlugIn_Position_Fix& pfix) override;
+    void SetNMEASentence(wxString& sentence) override;
+    void SetCurrentViewPort(PlugIn_ViewPort& vp) override;
     bool RenderOverlayMultiCanvas(wxDC& dc, PlugIn_ViewPort* vp, int canvas_ix, int priority) override;
     bool RenderGLOverlayMultiCanvas(wxGLContext* pcontext, PlugIn_ViewPort* vp, int canvas_ix, int priority) override;
     bool RenderOverlay(wxDC& dc, PlugIn_ViewPort* vp) override;
