@@ -329,11 +329,7 @@ if (UNIX
       )
     endif (NOT (${elfedit} STREQUAL "elfedit-NOTFOUND"))
   endif (PI_JSON_SCHEMA_VALIDATOR)
-endif (
-  UNIX
-  AND NOT APPLE
-  AND NOT QT_ANDRIOD
-)
+endif()
 
 # ------- Change below to match project requirements
 
