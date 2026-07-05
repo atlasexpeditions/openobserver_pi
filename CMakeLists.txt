@@ -191,7 +191,6 @@ set(SRCS
     src/ooNmeaRecorder.cpp
     src/ooDataLogger.cpp
     src/tpicons.cpp
-    src/tpUtils.cpp
 )
 
 set(HDRS
@@ -208,7 +207,6 @@ set(HDRS
     src/ooNmeaRecorder.h
     src/tpicons.h
     src/tpIconCombo.h
-    src/tpUtils.h
     src/globals.h
 )
 
