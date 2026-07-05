@@ -28,98 +28,6 @@
 
 #pragma once
 
-#ifdef __WXMSW__
-#ifdef _DEBUG
-#define _CRTDBG_MAP_ALLOC
-#include <stdlib.h>
-#include <crtdbg.h>
-#include <sstream>
-#  define DEBUGSL(x) do { \
-std::ostringstream oss; \
-oss << x; \
-time_t now = time(0); \
-tm* localtm = localtime(&now); \
-char *stime = asctime(localtm); \
-stime[strlen(stime) - 1 ] = 0; \
-std::string s1(oss.str()); \
-std::string s = stime; \
-s += " :: "; \
-s += s1; \
-s += "\n"; \
-std::wstring stemp = std::wstring(s.begin(), s.end()); \
-LPCWSTR sw = stemp.c_str(); \
-OutputDebugString(sw); } while (0)
-
-#  define DEBUGST(x) do { \
-std::string s(""); \
-std::ostringstream oss; \
-oss << x; \
-time_t now = time(0); \
-tm* localtm = localtime(&now); \
-char *stime = asctime(localtm); \
-stime[strlen(stime) - 1 ] = 0; \
-do { \
-std::string s1(oss.str()); \
-s += stime; \
-s += " :: "; \
-s += s1; } while (0);
-
-#  define DEBUGCONT(x) do { \
-std::ostringstream oss; \
-oss << x; \
-std::string s1(oss.str()); \
-s += s1 ; } while (0);
-
-#  define DEBUGEND(x) do { \
-std::string s1(""); \
-std::ostringstream oss; \
-oss << x; \
-s1 = oss.str(); \
-s += s1; } while (0); \
-s += "\n" ; \
-std::wstring stemp = std::wstring(s.begin(), s.end()); \
-LPCWSTR sw = stemp.c_str(); \
-OutputDebugString(sw); } while (0)
-#else
-#  define DEBUGSL(x) do {} while (0)
-#  define DEBUGST(x) do {} while (0)
-#  define DEBUGCONT(x) do {} while (0)
-#  define DEBUGEND(x) do {} while (0)
-#endif
-#else
-#ifdef DEBUG_BUILD
-#  define DEBUGSL(x) do { \
-time_t now = time(0); \
-tm* localtm = localtime(&now); \
-char *stime = asctime(localtm); \
-stime[strlen(stime) - 1 ] = 0; \
-std::cout << stime << " :: "; \
-std::cout << x << std::endl ;} while (0)
-
-#  define DEBUGST(x) do { \
-time_t now = time(0); \
-tm* localtm = localtime(&now); \
-char *stime = asctime(localtm); \
-stime[strlen(stime) - 1 ] = 0; \
-std::cout << stime << " :: " ; \
-std::cout << x; } while (0)
-
-#  define DEBUGCONT(x) do { \
-std::cout << x ; } while (0)
-
-#  define DEBUGEND(x) do { \
-std::cout << x  << std::endl ; } while (0)
-#else
-#  define DEBUGSL(x) do {} while (0)
-#  define DEBUGST(x) do {} while (0)
-#  define DEBUGCONT(x) do {} while (0)
-#  define DEBUGEND(x) do {} while (0)
-#endif
-#endif
-
-#define STRINGIFY(x) #x
-#define TOSTRING(x) STRINGIFY(x)
-
 #ifdef __OCPN__ANDROID__
 #include "qopengl.h"                  // this gives us the qt runtime gles2.h
 #endif
@@ -157,36 +65,36 @@ public:
     openobserver_pi(void *ppimgr);
     ~openobserver_pi();
 
-    //    The required PlugIn Methods
-    int Init(void);
-    bool DeInit(void);
+    // Required OpenCPN plug-in callbacks.
+    int Init(void) override;
+    bool DeInit(void) override;
 
-    int GetPlugInVersionMajor();
-    int GetPlugInVersionMinor();
-    int GetPlugInVersionPatch();
-    int GetPlugInVersionPost();
+    int GetPlugInVersionMajor() override;
+    int GetPlugInVersionMinor() override;
+    int GetPlugInVersionPatch() override;
+    int GetPlugInVersionPost() override;
 
-    int GetAPIVersionMajor();
-    int GetAPIVersionMinor();
-    wxBitmap *GetPlugInBitmap();
-    wxString GetCommonName();
-    wxString GetShortDescription();
-    wxString GetLongDescription();
+    int GetAPIVersionMajor() override;
+    int GetAPIVersionMinor() override;
+    wxBitmap *GetPlugInBitmap() override;
+    wxString GetCommonName() override;
+    wxString GetShortDescription() override;
+    wxString GetLongDescription() override;
 
-    int GetToolbarToolCount(void);
-    void OnToolbarToolCallback(int id);
-    void OnToolbarToolDownCallback(int id);
-    void OnToolbarToolUpCallback(int id);
-    void OnContextMenuItemCallback(int id);
+    int GetToolbarToolCount(void) override;
+    void OnToolbarToolCallback(int id) override;
+    void OnToolbarToolDownCallback(int id) override;
+    void OnToolbarToolUpCallback(int id) override;
+    void OnContextMenuItemCallback(int id) override;
     void ShowPreferencesDialog(wxWindow *parent) override;
 
-    void LateInit(void);
-    bool KeyboardEventHook( wxKeyEvent &event );
-    bool MouseEventHook( wxMouseEvent &event );
-    void SetCursorLatLon(double lat, double lon);
-    void SetPositionFix(PlugIn_Position_Fix &pfix);
-    void SetNMEASentence(wxString& sentence);
-    void SetCurrentViewPort(PlugIn_ViewPort& vp);
+    void LateInit(void) override;
+    bool KeyboardEventHook(wxKeyEvent& event) override;
+    bool MouseEventHook(wxMouseEvent& event) override;
+    void SetCursorLatLon(double lat, double lon) override;
+    void SetPositionFix(PlugIn_Position_Fix& pfix) override;
+    void SetNMEASentence(wxString& sentence) override;
+    void SetCurrentViewPort(PlugIn_ViewPort& vp) override;
     bool RenderOverlayMultiCanvas(wxDC& dc, PlugIn_ViewPort* vp, int canvas_ix, int priority) override;
     bool RenderGLOverlayMultiCanvas(wxGLContext* pcontext, PlugIn_ViewPort* vp, int canvas_ix, int priority) override;
     bool RenderOverlay(wxDC& dc, PlugIn_ViewPort* vp) override;
@@ -195,7 +103,7 @@ public:
     void HighlightObservationOnChart(double lat, double lon, const wxColour& colour);
     void JumpToObservationOnChart(double lat, double lon);
     void RefreshObservationDisplay();
-    void MarkObservationsDirty(const wxString& reason);
+    void MarkObservationsDirty();
     void CreateMarkForCompletedObservationIfRequested();
     void FocusCurrentObservationRow();
     void StartNmeaRecordingIfNeeded();
@@ -215,9 +123,6 @@ public:
   private:
     void    SaveConfig();
     void    LoadConfig();
-
-    void    MenuPrepend(wxMenu *menu, int id, wxString label);
-    void    MenuAppend(wxMenu *menu, int id, wxString label);
     void    ShowObservationForSelectedMark();
     void    CreateObservationFromSelectedMark();
 

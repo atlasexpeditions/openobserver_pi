@@ -68,7 +68,7 @@ public:
         int DataRowToDisplayRow(int dataRow) const;
         wxArrayInt DisplayRowsToDataRows(const wxArrayInt& displayRows) const;
         void CreateMarkForCompletedObservationIfRequested();
-        void MarkObservationsDirty(const wxString& reason);
+        void MarkObservationsDirty();
       protected:
         void SetupObservationsForProject();
         bool LoadObservations(const wxString& filename, bool updateFromMarks = true);
@@ -76,45 +76,45 @@ public:
         ooProject GenerateProject() const;
         void SetProjectEditable(bool editable);
 
-        void OnButtonClickProjectEditUse(wxCommandEvent& event);
-        void OnButtonClickProjectNew(wxCommandEvent& event);
-	      void OnButtonClickProjectNewColumn(wxCommandEvent& event);
-        void OnButtonClickProjectMoveColumnLeft(wxCommandEvent& event);
-        void OnButtonClickProjectMoveColumnRight(wxCommandEvent& event);
-        void OnButtonClickProjectDeleteColumn(wxCommandEvent& event);
+        void OnButtonClickProjectEditUse(wxCommandEvent& event) override;
+        void OnButtonClickProjectNew(wxCommandEvent& event) override;
+        void OnButtonClickProjectNewColumn(wxCommandEvent& event) override;
+        void OnButtonClickProjectMoveColumnLeft(wxCommandEvent& event) override;
+        void OnButtonClickProjectMoveColumnRight(wxCommandEvent& event) override;
+        void OnButtonClickProjectDeleteColumn(wxCommandEvent& event) override;
         void OnProjectColourChanged(wxColourPickerEvent& event);
 
-        void OnButtonClickNewObservation( wxCommandEvent& event );
-        void OnButtonClickDeleteObservation( wxCommandEvent& event );
+        void OnButtonClickNewObservation(wxCommandEvent& event) override;
+        void OnButtonClickDeleteObservation(wxCommandEvent& event) override;
         void OnButtonClickFilterObservations(wxCommandEvent& event);
         void OnButtonClickClearObservationFilter(wxCommandEvent& event);
         void OnButtonClickProjectMenu(wxCommandEvent& event) override;
         void OnButtonClickDataMenu(wxCommandEvent& event) override;
         void OnButtonClickCreateProjectFromTable(wxCommandEvent& event);
         void OnButtonClickExportProjectTemplate(wxCommandEvent& event);
-        void OnButtonClickExportObservations( wxCommandEvent& event );
-        void OnButtonClickDataPackage( wxCommandEvent& event ) override;
-        void OnButtonClickCreateScientificPackage( wxCommandEvent& event ) override;
-        void OnButtonClickUpdateScientificPackage( wxCommandEvent& event ) override;
-        void OnButtonClickImportObservations(wxCommandEvent& event);
+        void OnButtonClickExportObservations(wxCommandEvent& event) override;
+        void OnButtonClickDataPackage(wxCommandEvent& event) override;
+        void OnButtonClickCreateScientificPackage(wxCommandEvent& event) override;
+        void OnButtonClickUpdateScientificPackage(wxCommandEvent& event) override;
+        void OnButtonClickImportObservations(wxCommandEvent& event) override;
         void OnCheckBoxShowObservationMarks(wxCommandEvent& event) override;
-        void OnButtonClickSaveObservation(wxCommandEvent& event);
-        void OnButtonClickLoadObservation(wxCommandEvent& event);
+        void OnButtonClickSaveObservation(wxCommandEvent& event) override;
+        void OnButtonClickLoadObservation(wxCommandEvent& event) override;
         void ooControlCloseClick(wxCommandEvent& event);
-        void ooControlDialogDefOnClose(wxCloseEvent& event);
-        void OnButtonClickScanNmea(wxCommandEvent& event);
+        void ooControlDialogDefOnClose(wxCloseEvent& event) override;
+        void OnButtonClickScanNmea(wxCommandEvent& event) override;
         void OnButtonClickCleanNmeaRecordings(wxCommandEvent& event) override;
         void OnCheckBoxShowAdvancedNmeaFields(wxCommandEvent& event) override;
         void CommitCurrentObservationsGridEdit();
-        void ooControlDialogActivate(wxActivateEvent& event);
-        void OnButtonClickOpenResourcesFolder(wxCommandEvent& event);
-        void OnButtonClickRefreshListings(wxCommandEvent& event);
-        void OnNotebookPageChanged(wxNotebookEvent& event);
-        void OnChoiceObservationsChanged(wxCommandEvent& event);
+        void ooControlDialogActivate(wxActivateEvent& event) override;
+        void OnButtonClickOpenResourcesFolder(wxCommandEvent& event) override;
+        void OnButtonClickRefreshListings(wxCommandEvent& event) override;
+        void OnNotebookPageChanged(wxNotebookEvent& event) override;
+        void OnChoiceObservationsChanged(wxCommandEvent& event) override;
         void OnObservationsGridCellSelect(wxGridEvent& event);
         void OnObservationsGridRangeSelect(wxGridRangeSelectEvent& event);
         void OnProjectGridCellSelect(wxGridEvent& event);
-        void OnProjectGridRangeSelect(wxGridRangeSelectEvent& event);
+        void OnProjectGridRangeSelect(wxGridRangeSelectEvent& event) override;
         void OnProjectGridCellChange(wxGridEvent& event);
         void OnObservationsGridCellChanging(wxGridEvent& event);
         void OnObservationsGridCellChange(wxGridEvent& event);
@@ -152,8 +152,7 @@ public:
         wxString m_pendingCsvImportPath;
         wxDateTime m_lastSafetySaveTime;
 
-        void ClearObservationsDirty(const wxString& reason);
-        void LogObservationSaveEvent(const wxString& message) const;
+        void ClearObservationsDirty();
 
         void EnsureMarkIconChoiceContains(const wxString& iconName);
         void SelectMarkIconOrFallback(const wxString& iconName);

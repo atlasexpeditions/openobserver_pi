@@ -165,8 +165,8 @@ wxString ooProjectFieldMapper::SuggestFieldTypeForColumn(
         name.Contains("espèce")) {
         return FirstAvailableListing(
             availableFieldTypes,
-            "Atlas oceanic species",
-            "Ocean species");
+            "Ocean species",
+            "Atlas oceanic species");
     }
 
     if (name.Contains("behavior") ||

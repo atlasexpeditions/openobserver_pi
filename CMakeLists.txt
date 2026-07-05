@@ -191,7 +191,6 @@ set(SRCS
     src/ooNmeaRecorder.cpp
     src/ooDataLogger.cpp
     src/tpicons.cpp
-    src/tpUtils.cpp
 )
 
 set(HDRS
@@ -208,7 +207,6 @@ set(HDRS
     src/ooNmeaRecorder.h
     src/tpicons.h
     src/tpIconCombo.h
-    src/tpUtils.h
     src/globals.h
 )
 
@@ -303,7 +301,7 @@ add_definitions(-DTIXML_USE_STL)
 
 if (UNIX
     AND NOT APPLE
-    AND NOT QT_ANDRIOD
+    AND NOT QT_ANDROID
     AND NOT OCPN_FLATPAK_CONFIG
     AND NOT OCPN_FLATPAK_BUILD
 )
@@ -331,11 +329,7 @@ if (UNIX
       )
     endif (NOT (${elfedit} STREQUAL "elfedit-NOTFOUND"))
   endif (PI_JSON_SCHEMA_VALIDATOR)
-endif (
-  UNIX
-  AND NOT APPLE
-  AND NOT QT_ANDRIOD
-)
+endif()
 
 # ------- Change below to match project requirements
 

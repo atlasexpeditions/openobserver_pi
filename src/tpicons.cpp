@@ -64,8 +64,6 @@ void tpicons::initialize_images(void)
     fn.SetPath(GetPluginDataDir("openobserver_pi"));
     fn.AppendDir(wxT("data"));
     g_SData_Locn = new wxString(fn.GetFullPath().c_str());
-    wxString s = _("openobserver_pi data location");
-    wxLogMessage( wxT("%s: %s"), s.c_str(), fn.GetFullPath().c_str());
 
     m_failedBitmapLoad = false;
 
@@ -86,8 +84,12 @@ void tpicons::initialize_images(void)
     if(!m_p_bm_openobserver_pi->IsOk())  m_failedBitmapLoad = true;
 #endif
 
-    if(m_failedBitmapLoad) {
-        int ret = OCPNMessageBox_PlugIn( NULL, _("Failed to load all openobserver_pi icons, check OCPN log for details"), _("OpenCPN Alert"), wxOK );
+    if (m_failedBitmapLoad) {
+        OCPNMessageBox_PlugIn(
+            NULL,
+            _("Open Observer could not load one or more toolbar icons."),
+            _("OpenCPN Alert"),
+            wxOK);
     } else {
         CreateSchemeIcons();
         ScaleIcons();
@@ -100,15 +102,14 @@ wxBitmap tpicons::LoadSVG( const wxString filename, unsigned int width, unsigned
     if( width == -1 ) width = m_iImageRefSize;
     if( height == -1 ) height = m_iImageRefSize;
 
-    wxString s = _("openobserver_pi LoadSVG");
-    wxLogMessage( wxT("%s: filename: %s,  width: %u, height: %u"), s.c_str(), filename, width, height);
+    wxBitmap bitmap = GetBitmapFromSVGFile(filename, width, height);
 
-    wxBitmap l__Bitmap = GetBitmapFromSVGFile(filename , width, height);
-    if(!l__Bitmap.IsOk()) {
+    if (!bitmap.IsOk()) {
         m_failedBitmapLoad = true;
+        wxLogWarning("Open Observer: unable to load SVG icon: %s", filename);
     }
 
-    return l__Bitmap;
+    return bitmap;
 }
 #endif // PLUGIN_USE_SVG
 
