@@ -83,6 +83,11 @@ private:
         RunSummary& runSummary);
     static bool IsScientificPackageFolder(ooObservations* observations,const wxString& packageDir);
     
+    static wxString ResolveDailyFolder(
+        const wxString& packageDir,
+        const wxString& date,
+        wxString& folderName);
+
     static bool CreateDailyFolders(
         const wxString& packageDir,
         const wxArrayString& dates,

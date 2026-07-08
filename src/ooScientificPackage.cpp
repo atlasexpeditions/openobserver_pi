@@ -18,6 +18,7 @@
 #include <wx/xml/xml.h>
 #include <wx/datetime.h>
 #include <wx/txtstrm.h>
+#include <wx/dir.h>
 
 #include <cmath>
 
@@ -505,6 +506,39 @@ wxArrayString ooScientificPackage::GetObservationIdsOrFallbacks(ooObservations* 
     return ids;
 }
 
+wxString ooScientificPackage::ResolveDailyFolder(
+    const wxString& packageDir,
+    const wxString& date,
+    wxString& folderName)
+{
+    const wxString dailyRoot = JoinPath(packageDir, "01_daily_data");
+
+    folderName = date;
+    wxString dayDir = JoinPath(dailyRoot, date);
+
+    if (wxDirExists(dayDir)) {
+        return dayDir;
+    }
+
+    wxDir dir(dailyRoot);
+    wxString candidate;
+
+    // Reuse a human-renamed daily folder when it still contains the date.
+    bool found = dir.IsOpened() &&
+        dir.GetFirst(&candidate, wxEmptyString, wxDIR_DIRS);
+
+    while (found) {
+        if (candidate.Contains(date)) {
+            folderName = candidate;
+            return JoinPath(dailyRoot, candidate);
+        }
+
+        found = dir.GetNext(&candidate);
+    }
+
+    return dayDir;
+}
+
 bool ooScientificPackage::CreateDailyFolders(
     const wxString& packageDir,
     const wxArrayString& dates,
@@ -519,14 +553,15 @@ bool ooScientificPackage::CreateDailyFolders(
     }
 
     for (size_t i = 0; i < dates.GetCount(); ++i) {
-        const wxString dayDir = JoinPath(dailyRoot, dates[i]);
+        wxString dayFolderName;
+        const wxString dayDir = ResolveDailyFolder(packageDir, dates[i], dayFolderName);
 
         if (!EnsureDirectory(dayDir, errorMessage)) {
             return false;
         }
 
         runSummary.foldersTouched++;
-        runSummary.logLines.Add("Folder ensured: 01_daily_data/" + dates[i]);
+        runSummary.logLines.Add("Folder ensured: 01_daily_data/" + dayFolderName);
 
         for (size_t j = 0; j < dailyFolders.GetCount(); ++j) {
             if (dailyFolders[j] == "daily_csv") {
@@ -541,7 +576,7 @@ bool ooScientificPackage::CreateDailyFolders(
 
             runSummary.foldersTouched++;
             runSummary.logLines.Add(
-                "Folder ensured: 01_daily_data/" + dates[i] + "/" + dailyFolders[j]);
+                "Folder ensured: 01_daily_data/" + dayFolderName + "/" + dailyFolders[j]);
         }
     }
 
@@ -1046,9 +1081,9 @@ bool ooScientificPackage::ExportDailyCsvFiles(
 
     for (size_t i = 0; i < dates.GetCount(); ++i) {
         const wxString date = dates[i];
-        const wxString dayDir = JoinPath(
-            JoinPath(packageDir, "01_daily_data"),
-            date);
+
+        wxString dayFolderName;
+        const wxString dayDir = ResolveDailyFolder(packageDir, date, dayFolderName);
 
         if (!EnsureDirectory(dayDir, errorMessage)) {
             return false;
@@ -1066,7 +1101,7 @@ bool ooScientificPackage::ExportDailyCsvFiles(
 
         runSummary.exportFilesRefreshed++;
         runSummary.logLines.Add(
-            "Daily CSV updated: 01_daily_data/" + date + "/" + date + "-daily.csv");
+            "Daily CSV updated: 01_daily_data/" + dayFolderName + "/" + date + "-daily.csv");
     }
 
     return true;
@@ -1167,10 +1202,9 @@ bool ooScientificPackage::CopyNmeaRecordings(
             continue;
         }
 
+        wxString dayFolderName;
         const wxString dailyNmeaDir = JoinPath(
-            JoinPath(
-                JoinPath(packageDir, "01_daily_data"),
-                dateValue),
+            ResolveDailyFolder(packageDir, dateValue, dayFolderName),
             "nmea");
 
         const wxString rawNmeaDir = JoinPath(
@@ -1191,7 +1225,7 @@ bool ooScientificPackage::CopyNmeaRecordings(
         if (!CopyFileIfNewOrModified(
                 sourcePath,
                 dailyDestination,
-                "NMEA daily export: 01_daily_data/" + dateValue + "/nmea/" + recordingName,
+                "NMEA daily export: 01_daily_data/" + dayFolderName + "/nmea/" + recordingName,
                 errorMessage,
                 runSummary)) {
             return false;
