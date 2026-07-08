@@ -54,6 +54,7 @@ int gpxTrackPointsExported;
         const wxArrayString& dailyFolders,
         const wxArrayString& workingFolders,
         const wxArrayString& rawDataFolders,
+        bool updateOnlyAfterLastExistingDailyFolder,
         RunSummary& runSummary);
 
 private:
@@ -83,6 +84,18 @@ private:
         RunSummary& runSummary);
     static bool IsScientificPackageFolder(ooObservations* observations,const wxString& packageDir);
     
+    static wxString ResolveDailyFolder(
+        const wxString& packageDir,
+        const wxString& date,
+        wxString& folderName);
+
+    static wxString ExtractIsoDateFromText(const wxString& text);
+    static wxString GetLatestExistingDailyFolderDate(const wxString& packageDir);
+    static wxArrayString FilterDatesAfterLastExistingDailyFolder(
+        const wxString& packageDir,
+        const wxArrayString& dates,
+        RunSummary& runSummary);
+
     static bool CreateDailyFolders(
         const wxString& packageDir,
         const wxArrayString& dates,
@@ -113,6 +126,7 @@ private:
     static bool CopyNmeaRecordings(
         ooObservations* observations,
         const wxString& packageDir,
+        const wxArrayString& dates,
         wxString& errorMessage,
         RunSummary& runSummary);
 

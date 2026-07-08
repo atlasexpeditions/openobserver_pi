@@ -3520,7 +3520,8 @@ static bool ShowDataPackageFolderDialog(
     wxString& selectedPath,
     wxArrayString& selectedDailyFolders,
     wxArrayString& selectedWorkingFolders,
-    wxArrayString& selectedRawDataFolders)
+    wxArrayString& selectedRawDataFolders,
+    bool& updateOnlyAfterLastExistingDailyFolder)
 {
     wxDialog dialog(
         parent,
@@ -3659,6 +3660,20 @@ static bool ShowDataPackageFolderDialog(
         wxSize(520, 38),
         workingChoices);
 
+    wxCheckBox* updateAfterLastDailyCheck = NULL;
+
+    if (!createMode) {
+        updateAfterLastDailyCheck = new wxCheckBox(
+            &dialog,
+            wxID_ANY,
+            _("Update only after last existing daily folder"));
+        updateAfterLastDailyCheck->SetValue(true);
+        updateAfterLastDailyCheck->SetToolTip(
+            _("Existing and earlier daily folders will be left unchanged. "
+              "Open Observer will only create and update daily folders for dates after "
+              "the latest date already present in 01_daily_data."));
+    }
+
     for (unsigned int i = 0; i < rawChoices.GetCount(); ++i) {
         rawChecklist->Check(i, true);
     }
@@ -3696,6 +3711,9 @@ static bool ShowDataPackageFolderDialog(
     } else {
         mainSizer->Add(pathSizer, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 14);
         mainSizer->Add(folderIntro, 0, wxLEFT | wxRIGHT | wxBOTTOM, 14);
+        if (updateAfterLastDailyCheck) {
+            mainSizer->Add(updateAfterLastDailyCheck, 0, wxLEFT | wxRIGHT | wxBOTTOM, 14);
+        }
         mainSizer->Add(listsSizer, 0, wxLEFT | wxRIGHT | wxBOTTOM | wxEXPAND, 14);
     }
 
@@ -3757,7 +3775,8 @@ static bool ShowDataPackageFolderDialog(
     if (dialog.ShowModal() != wxID_OK) {
         return false;
     }
-
+    updateOnlyAfterLastExistingDailyFolder =
+        updateAfterLastDailyCheck && updateAfterLastDailyCheck->GetValue();
     selectedPath = pathText->GetValue();
     selectedPath.Trim(true);
     selectedPath.Trim(false);
@@ -3874,6 +3893,7 @@ void ooControlDialogImpl::OnButtonClickCreateScientificPackage(wxCommandEvent& e
     wxArrayString selectedDailyFolders;
     wxArrayString selectedWorkingFolders;
     wxArrayString selectedRawDataFolders;
+    bool updateOnlyAfterLastExistingDailyFolder = false;
 
     if (!ShowDataPackageFolderDialog(
             this,
@@ -3881,7 +3901,8 @@ void ooControlDialogImpl::OnButtonClickCreateScientificPackage(wxCommandEvent& e
             destinationFolder,
             selectedDailyFolders,
             selectedWorkingFolders,
-            selectedRawDataFolders)) {
+            selectedRawDataFolders,
+            updateOnlyAfterLastExistingDailyFolder)) {
         return;
     }
 
@@ -3933,6 +3954,7 @@ void ooControlDialogImpl::OnButtonClickUpdateScientificPackage(wxCommandEvent& e
     wxArrayString selectedDailyFolders;
     wxArrayString selectedWorkingFolders;
     wxArrayString selectedRawDataFolders;
+    bool updateOnlyAfterLastExistingDailyFolder = false;
 
     if (!ShowDataPackageFolderDialog(
             this,
@@ -3940,7 +3962,8 @@ void ooControlDialogImpl::OnButtonClickUpdateScientificPackage(wxCommandEvent& e
             packageFolder,
             selectedDailyFolders,
             selectedWorkingFolders,
-            selectedRawDataFolders)) {
+            selectedRawDataFolders,
+            updateOnlyAfterLastExistingDailyFolder)) {
         return;
     }
 
@@ -3954,6 +3977,7 @@ void ooControlDialogImpl::OnButtonClickUpdateScientificPackage(wxCommandEvent& e
             selectedDailyFolders,
             selectedWorkingFolders,
             selectedRawDataFolders,
+            updateOnlyAfterLastExistingDailyFolder,
             runSummary)) {
         wxMessageBox(
             _("Unable to update data package:\n\n") + errorMessage,

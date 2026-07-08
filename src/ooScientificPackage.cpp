@@ -18,6 +18,7 @@
 #include <wx/xml/xml.h>
 #include <wx/datetime.h>
 #include <wx/txtstrm.h>
+#include <wx/dir.h>
 
 #include <cmath>
 
@@ -505,6 +506,121 @@ wxArrayString ooScientificPackage::GetObservationIdsOrFallbacks(ooObservations* 
     return ids;
 }
 
+wxString ooScientificPackage::ResolveDailyFolder(
+    const wxString& packageDir,
+    const wxString& date,
+    wxString& folderName)
+{
+    const wxString dailyRoot = JoinPath(packageDir, "01_daily_data");
+
+    folderName = date;
+    wxString dayDir = JoinPath(dailyRoot, date);
+
+    if (wxDirExists(dayDir)) {
+        return dayDir;
+    }
+
+    wxDir dir(dailyRoot);
+    wxString candidate;
+
+    // Reuse a human-renamed daily folder when it still contains the date.
+    bool found = dir.IsOpened() &&
+        dir.GetFirst(&candidate, wxEmptyString, wxDIR_DIRS);
+
+    while (found) {
+        if (candidate.Contains(date)) {
+            folderName = candidate;
+            return JoinPath(dailyRoot, candidate);
+        }
+
+        found = dir.GetNext(&candidate);
+    }
+
+    return dayDir;
+}
+
+wxString ooScientificPackage::ExtractIsoDateFromText(const wxString& text)
+{
+    for (size_t i = 0; i + 10 <= text.Length(); ++i) {
+        if (text[i + 4] != '-' || text[i + 7] != '-') {
+            continue;
+        }
+
+        bool digitsOk = true;
+        for (size_t j = 0; j < 10; ++j) {
+            if (j == 4 || j == 7) {
+                continue;
+            }
+
+            if (text[i + j] < '0' || text[i + j] > '9') {
+                digitsOk = false;
+                break;
+            }
+        }
+
+        if (digitsOk) {
+            return text.Mid(i, 10);
+        }
+    }
+
+    return wxString();
+}
+
+wxString ooScientificPackage::GetLatestExistingDailyFolderDate(const wxString& packageDir)
+{
+    const wxString dailyRoot = JoinPath(packageDir, "01_daily_data");
+
+    wxDir dir(dailyRoot);
+    wxString candidate;
+    wxString latestDate;
+
+    bool found = dir.IsOpened() &&
+        dir.GetFirst(&candidate, wxEmptyString, wxDIR_DIRS);
+
+    while (found) {
+        const wxString date = ExtractIsoDateFromText(candidate);
+
+        if (!date.IsEmpty() && (latestDate.IsEmpty() || date > latestDate)) {
+            latestDate = date;
+        }
+
+        found = dir.GetNext(&candidate);
+    }
+
+    return latestDate;
+}
+
+wxArrayString ooScientificPackage::FilterDatesAfterLastExistingDailyFolder(
+    const wxString& packageDir,
+    const wxArrayString& dates,
+    RunSummary& runSummary)
+{
+    wxArrayString filteredDates;
+    const wxString latestDate = GetLatestExistingDailyFolderDate(packageDir);
+
+    if (latestDate.IsEmpty()) {
+        runSummary.logLines.Add(
+            "Daily update mode: no existing daily folder date found; all observation dates are eligible.");
+        return dates;
+    }
+
+    for (size_t i = 0; i < dates.GetCount(); ++i) {
+        if (dates[i] > latestDate) {
+            filteredDates.Add(dates[i]);
+        }
+    }
+
+    runSummary.logLines.Add(
+        "Daily update mode: only dates after " + latestDate + " are eligible.");
+
+    if (filteredDates.IsEmpty()) {
+        runSummary.logLines.Add(
+            "Daily update mode: no newer observation dates found.");
+    }
+
+    return filteredDates;
+}
+
 bool ooScientificPackage::CreateDailyFolders(
     const wxString& packageDir,
     const wxArrayString& dates,
@@ -519,14 +635,15 @@ bool ooScientificPackage::CreateDailyFolders(
     }
 
     for (size_t i = 0; i < dates.GetCount(); ++i) {
-        const wxString dayDir = JoinPath(dailyRoot, dates[i]);
+        wxString dayFolderName;
+        const wxString dayDir = ResolveDailyFolder(packageDir, dates[i], dayFolderName);
 
         if (!EnsureDirectory(dayDir, errorMessage)) {
             return false;
         }
 
         runSummary.foldersTouched++;
-        runSummary.logLines.Add("Folder ensured: 01_daily_data/" + dates[i]);
+        runSummary.logLines.Add("Folder ensured: 01_daily_data/" + dayFolderName);
 
         for (size_t j = 0; j < dailyFolders.GetCount(); ++j) {
             if (dailyFolders[j] == "daily_csv") {
@@ -541,7 +658,7 @@ bool ooScientificPackage::CreateDailyFolders(
 
             runSummary.foldersTouched++;
             runSummary.logLines.Add(
-                "Folder ensured: 01_daily_data/" + dates[i] + "/" + dailyFolders[j]);
+                "Folder ensured: 01_daily_data/" + dayFolderName + "/" + dailyFolders[j]);
         }
     }
 
@@ -1046,9 +1163,9 @@ bool ooScientificPackage::ExportDailyCsvFiles(
 
     for (size_t i = 0; i < dates.GetCount(); ++i) {
         const wxString date = dates[i];
-        const wxString dayDir = JoinPath(
-            JoinPath(packageDir, "01_daily_data"),
-            date);
+
+        wxString dayFolderName;
+        const wxString dayDir = ResolveDailyFolder(packageDir, date, dayFolderName);
 
         if (!EnsureDirectory(dayDir, errorMessage)) {
             return false;
@@ -1066,7 +1183,7 @@ bool ooScientificPackage::ExportDailyCsvFiles(
 
         runSummary.exportFilesRefreshed++;
         runSummary.logLines.Add(
-            "Daily CSV updated: 01_daily_data/" + date + "/" + date + "-daily.csv");
+            "Daily CSV updated: 01_daily_data/" + dayFolderName + "/" + date + "-daily.csv");
     }
 
     return true;
@@ -1075,6 +1192,7 @@ bool ooScientificPackage::ExportDailyCsvFiles(
 bool ooScientificPackage::CopyNmeaRecordings(
     ooObservations* observations,
     const wxString& packageDir,
+    const wxArrayString& dates,
     wxString& errorMessage,
     RunSummary& runSummary)
 {
@@ -1156,6 +1274,10 @@ bool ooScientificPackage::CopyNmeaRecordings(
             continue;
         }
 
+        if (dates.Index(dateValue) == wxNOT_FOUND) {
+            continue;
+        }
+
         const wxString sourcePath = JoinPath(
             JoinPath(
                 JoinPath(*g_PrivateDataDir, "NMEArecordings"),
@@ -1167,10 +1289,9 @@ bool ooScientificPackage::CopyNmeaRecordings(
             continue;
         }
 
+        wxString dayFolderName;
         const wxString dailyNmeaDir = JoinPath(
-            JoinPath(
-                JoinPath(packageDir, "01_daily_data"),
-                dateValue),
+            ResolveDailyFolder(packageDir, dateValue, dayFolderName),
             "nmea");
 
         const wxString rawNmeaDir = JoinPath(
@@ -1191,7 +1312,7 @@ bool ooScientificPackage::CopyNmeaRecordings(
         if (!CopyFileIfNewOrModified(
                 sourcePath,
                 dailyDestination,
-                "NMEA daily export: 01_daily_data/" + dateValue + "/nmea/" + recordingName,
+                "NMEA daily export: 01_daily_data/" + dayFolderName + "/nmea/" + recordingName,
                 errorMessage,
                 runSummary)) {
             return false;
@@ -1615,7 +1736,7 @@ if (rawDataFolders.Index("00_raw_data/tracks") != wxNOT_FOUND) {
         runSummary.logLines.Add("Compiled GPX track not exported: " + gpxResult.message);
     }
 }
-    if (!CopyNmeaRecordings(observations, packageDir, errorMessage, runSummary)) return false;
+    if (!CopyNmeaRecordings(observations, packageDir, dates, errorMessage, runSummary)) return false;
     if (!ExportObservations(observations, packageDir, rawDataFolders, errorMessage, runSummary)) return false;
     if (!WriteGeneratedFilesWarning(packageDir, errorMessage)) return false;
     if (!WriteReadme(observations, packageDir, errorMessage)) return false;
@@ -1636,6 +1757,7 @@ bool ooScientificPackage::Update(
     const wxArrayString& dailyFolders,
     const wxArrayString& workingFolders,
     const wxArrayString& rawDataFolders,
+    bool updateOnlyAfterLastExistingDailyFolder,
     RunSummary& runSummary)
 {
     if (!observations) {
@@ -1660,16 +1782,21 @@ bool ooScientificPackage::Update(
     if (!EnsureDirectory(JoinPath(packageDir, "01_daily_data"), errorMessage)) return false;
 
     wxArrayString dates = GetObservationDates(observations);
+    wxArrayString dailyDates = dates;
+
+    if (updateOnlyAfterLastExistingDailyFolder) {
+        dailyDates = FilterDatesAfterLastExistingDailyFolder(packageDir, dates, runSummary);
+    }
 
     if (!CreateStaticFolders(packageDir, workingFolders, errorMessage, runSummary)) return false;
     if (!CreateStaticFolders(packageDir, rawDataFolders, errorMessage, runSummary)) return false;
-    if (!CreateDailyFolders(packageDir, dates, dailyFolders, errorMessage, runSummary)) return false;
+    if (!CreateDailyFolders(packageDir, dailyDates, dailyFolders, errorMessage, runSummary)) return false;
     if (dailyFolders.Index("daily_csv") != wxNOT_FOUND) {
-        if (!ExportDailyCsvFiles(observations, packageDir, dates, errorMessage, runSummary)) return false;
+        if (!ExportDailyCsvFiles(observations, packageDir, dailyDates, errorMessage, runSummary)) return false;
     }
     if (dailyFolders.Index("tracks") != wxNOT_FOUND) {
     ooGpxExportResult gpxResult =
-        ooGpxTrackExport::ExportDailyOpenCpnTracks(dates, packageDir);
+        ooGpxTrackExport::ExportDailyOpenCpnTracks(dailyDates, packageDir);
 
     runSummary.gpxDailyTracksExported += gpxResult.exportedTrackCount;
     runSummary.gpxTrackPointsExported += gpxResult.exportedPointCount;
@@ -1698,7 +1825,7 @@ if (rawDataFolders.Index("00_raw_data/tracks") != wxNOT_FOUND) {
         runSummary.logLines.Add("Compiled GPX track not exported: " + gpxResult.message);
     }
 }
-    if (!CopyNmeaRecordings(observations, packageDir, errorMessage, runSummary)) return false;
+    if (!CopyNmeaRecordings(observations, packageDir, dailyDates, errorMessage, runSummary)) return false;
     if (!ExportObservations(observations, packageDir, rawDataFolders, errorMessage, runSummary)) return false;
     if (!WriteGeneratedFilesWarning(packageDir, errorMessage)) return false;
     if (!WriteReadme(observations, packageDir, errorMessage)) return false;

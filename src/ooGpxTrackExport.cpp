@@ -5,7 +5,37 @@
 #include <wx/log.h>
 #include <wx/textfile.h>
 #include <wx/filefn.h>
+#include <wx/dir.h>
 #include <memory>
+
+static wxString ResolveDailyFolderForGpx(
+    const wxString& packageDir,
+    const wxString& date)
+{
+    const wxString dailyRoot = packageDir + "/01_daily_data";
+    const wxString exactDayDir = dailyRoot + "/" + date;
+
+    if (wxDirExists(exactDayDir)) {
+        return exactDayDir;
+    }
+
+    wxDir dir(dailyRoot);
+    wxString candidate;
+
+    // Reuse a human-renamed daily folder when it still contains the date.
+    bool found = dir.IsOpened() &&
+        dir.GetFirst(&candidate, wxEmptyString, wxDIR_DIRS);
+
+    while (found) {
+        if (candidate.Contains(date)) {
+            return dailyRoot + "/" + candidate;
+        }
+
+        found = dir.GetNext(&candidate);
+    }
+
+    return exactDayDir;
+}
 
 static bool ReadTextFileContent(const wxString& path, wxString& content)
 {
@@ -430,7 +460,7 @@ ooGpxExportResult ooGpxTrackExport::ExportDailyOpenCpnTracks(
         }
 
         wxFileName outputFile(
-            packageDir + "/01_daily_data/" + date + "/tracks",
+            ResolveDailyFolderForGpx(packageDir, date) + "/tracks",
             date + "_openobserver_daily_track.gpx");
 
         wxString errorMessage;
